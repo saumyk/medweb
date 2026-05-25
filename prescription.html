@@ -1,0 +1,40 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MediAssist - Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container nav-container">
+      <div class="logo">❤️ MediAssist</div>
+      <ul class="nav-links">
+        <li><a href="index.html" class="active">Dashboard</a></li>
+        <li><a href="prescription.html">Prescription</a></li>
+        <li><a href="symptoms.html">Symptoms</a></li>
+        <li><a href="hospitals.html">Hospitals</a></li>
+        <li><a href="doctors.html">Doctors</a></li>
+        <li><a href="settings.html">Settings</a></li>
+      </ul>
+    </div>
+  </nav>
+  <div class="upload-container">
+    <h2> 📑 Upload Prescription</h2>
+    <p>Upload your prescription image or PDF to extract medicine details automatically.</p>
+
+    <div id="drop-area">
+      <div class="icon">📋</div>
+      <p class="area-text-main">Drop your prescription here</p>
+<p class="area-text-note">(Supported: JPG, PNG, PDF | Max size: 10MB)</p>
+
+      <input type="file" id="fileElem" accept=".jpg,.png,.pdf" hidden>
+      <button id="fileSelect">Choose File</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <app src="app.js"></app>
+</body>
+</html>
