@@ -90,7 +90,6 @@ const Nearby = () => {
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [manualLocationText, setManualLocationText] = useState('');
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
-  const [isSimulatedData, setIsSimulatedData] = useState(false);
   const [searchRadius, setSearchRadius] = useState(10000); // 10km default search radius
   const [googleMapsLoaded, setGoogleMapsLoaded] = useState(
     !!(typeof window !== 'undefined' && window.google && window.google.maps)
@@ -141,7 +140,6 @@ const Nearby = () => {
   function getUserLocation() {
     setIsLoading(true);
     setError(null);
-    setIsSimulatedData(false);
     
     if (!navigator.geolocation) {
       // Geolocation not supported, default to Noida
@@ -221,7 +219,6 @@ const Nearby = () => {
 
   const fetchFromGooglePlaces = (lat, lng, radius) => {
     setIsLoading(true);
-    setIsSimulatedData(false);
     setError(null);
 
     try {
@@ -358,7 +355,6 @@ const Nearby = () => {
 
     if (!data) {
       console.warn("All Overpass endpoints failed. Falling back to simulated nearby facilities.", lastError);
-      setIsSimulatedData(true);
       const mocks = generateMockFacilities(lat, lng);
       setLocations(mocks);
       setIsLoading(false);
@@ -366,7 +362,6 @@ const Nearby = () => {
     }
 
     try {
-      setIsSimulatedData(false);
       const formattedLocations = data.elements
         .filter(el => el.tags && el.tags.name) // Only keep places with names
         .map(el => {
@@ -597,11 +592,7 @@ const Nearby = () => {
               <span>⚠️ {error}</span>
             </div>
           )}
-          {isSimulatedData && !isLoading && filteredLocations.length > 0 && (
-            <div className="offline-warning-banner">
-              <span>⚠️ Showing simulated facilities due to connection timeout with OSM servers.</span>
-            </div>
-          )}
+
           {isLoading ? (
             <div className="loading-state">
               <Loader2 className="spinner" size={40} />
@@ -630,21 +621,8 @@ const Nearby = () => {
                   <span className={`status-dot ${loc.isOpen ? 'open' : 'closed'}`}></span>
                 </div>
                 
-                <div className="loc-details">
-                  <div className="detail-row">
-                    <div className="detail-item">
-                      <Navigation size={16} />
-                      <span>{loc.distance}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="loc-actions">
-                  <a href={loc.website} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
-                    <MapPin size={16} />
-                    View on Google
-                  </a>
-                  <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(loc.name + ' ' + loc.type)}`} target="_blank" rel="noreferrer" className="btn btn-primary btn-sm">
+                <div className="loc-actions" style={{ marginTop: '1rem' }}>
+                  <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(loc.name + ' ' + loc.type)}`} target="_blank" rel="noreferrer" className="btn btn-primary btn-sm" style={{ width: '100%' }}>
                     <Navigation size={16} />
                     Directions
                   </a>
