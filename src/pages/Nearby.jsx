@@ -509,29 +509,6 @@ const Nearby = () => {
           </button>
         </form>
 
-        {/* API Key Configuration Banner */}
-        {!apiKeyUsed ? (
-          <div className="api-key-banner glass">
-            <span>💡 Set a Google Maps API Key to fetch exact ratings, phone numbers, and timings directly from Google.</span>
-            <button className="btn btn-sm btn-outline" type="button" onClick={() => {
-              const key = prompt("Enter your Google Maps API Key:");
-              if (key) {
-                localStorage.setItem('google_maps_api_key', key.trim());
-                window.location.reload();
-              }
-            }}>Configure Key</button>
-          </div>
-        ) : (
-          localStorage.getItem('google_maps_api_key') && (
-            <div className="api-key-banner glass">
-              <span>✅ Using custom Google Maps API Key.</span>
-              <button className="btn btn-sm btn-outline" type="button" onClick={() => {
-                localStorage.removeItem('google_maps_api_key');
-                window.location.reload();
-              }}>Clear Key</button>
-            </div>
-          )
-        )}
 
         <div className="filter-chips">
           <button 
