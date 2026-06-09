@@ -450,3 +450,132 @@
   from { opacity: 0; transform: translateY(30px) scale(0.95); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* Location Search Bar Styling */
+.location-search-container {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 600px;
+  margin: 1.5rem 0 2rem 0;
+}
+
+.location-input-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.location-input-wrapper input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border-radius: 0.75rem;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-main);
+  font-size: 0.95rem;
+  transition: all 0.3s;
+}
+
+.location-input-wrapper input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+}
+
+.location-input-wrapper svg {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.location-search-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gps-btn {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gps-btn:hover {
+  background: rgba(15, 118, 110, 0.05);
+  border-color: var(--primary);
+}
+
+/* Category Badges for Healthcare Cards */
+.card-category-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-top: 0.35rem;
+  letter-spacing: 0.02em;
+}
+
+.card-category-tag.hospital {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+[data-theme='dark'] .card-category-tag.hospital {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.card-category-tag.pharmacy {
+  background: rgba(16, 185, 129, 0.08);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+[data-theme='dark'] .card-category-tag.pharmacy {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.card-category-tag.clinic {
+  background: rgba(59, 130, 246, 0.08);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+[data-theme='dark'] .card-category-tag.clinic {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.card-category-tag.doctor {
+  background: rgba(139, 92, 246, 0.08);
+  color: #7c3aed;
+  border: 1px solid rgba(139, 92, 246, 0.15);
+}
+[data-theme='dark'] .card-category-tag.doctor {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+}
+
+.card-category-tag.dentist {
+  background: rgba(20, 184, 166, 0.08);
+  color: #0d9488;
+  border: 1px solid rgba(20, 184, 166, 0.15);
+}
+[data-theme='dark'] .card-category-tag.dentist {
+  background: rgba(20, 184, 166, 0.15);
+  color: #2dd4bf;
+}

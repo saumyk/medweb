@@ -12,6 +12,8 @@ const Nearby = () => {
   const [error, setError] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  const [manualLocationText, setManualLocationText] = useState('');
+  const [isResolvingLocation, setIsResolvingLocation] = useState(false);
 
   useEffect(() => {
     const searchVal = searchParams.get('search');
@@ -55,11 +57,46 @@ const Nearby = () => {
       },
       (err) => {
         console.error(err);
-        setError('Unable to retrieve your location. Please enable location permissions.');
+        setError('Unable to retrieve your location automatically. Type your city/area in the search bar below.');
         setIsLoading(false);
       }
     );
   }
+
+  const handleManualLocationSearch = async (e) => {
+    if (e) e.preventDefault();
+    if (!manualLocationText.trim()) return;
+
+    setIsResolvingLocation(true);
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(manualLocationText)}&limit=1`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          const lat = parseFloat(data[0].lat);
+          const lng = parseFloat(data[0].lon);
+          setUserLocation({ lat, lng });
+          await fetchNearbyFacilities(lat, lng);
+        } else {
+          setError(`Could not find coordinates for "${manualLocationText}". Try adding city or country name.`);
+          setIsLoading(false);
+        }
+      } else {
+        setError('Location search service failed. Please try again.');
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.error("Geocoding failed:", err);
+      setError('Failed to contact location service. Please check your internet connection.');
+      setIsLoading(false);
+    } finally {
+      setIsResolvingLocation(false);
+    }
+  };
 
   async function fetchNearbyFacilities(lat, lng) {
     setIsLoading(true);
@@ -99,7 +136,7 @@ const Nearby = () => {
                     Math.sin(dLon/2) * Math.sin(dLon/2);
           const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
           const d = R * c; // Distance in km
-
+ 
           const type = el.tags.amenity === 'doctors' ? 'doctor' : el.tags.amenity;
           const speciality = (el.tags['healthcare:speciality'] || '').toLowerCase();
 
@@ -132,6 +169,22 @@ const Nearby = () => {
       setIsLoading(false);
     }
   }
+
+  const getCategoryCount = (cat) => {
+    return locations.filter(loc => {
+      if (cat === 'all') return true;
+      if (cat === 'gynecologist') return loc.speciality.includes('gynaecology') || loc.speciality.includes('gynecology') || loc.name.toLowerCase().includes('gynec');
+      if (cat === 'orthopedist') return loc.speciality.includes('orthopaedics') || loc.speciality.includes('orthopedics') || loc.name.toLowerCase().includes('ortho');
+      if (cat === 'dentist') return loc.type === 'dentist' || loc.speciality.includes('dentist') || loc.name.toLowerCase().includes('dent');
+      if (cat === 'pediatrician') return loc.speciality.includes('paediatrics') || loc.speciality.includes('pediatrics') || loc.name.toLowerCase().includes('pediatr') || loc.name.toLowerCase().includes('child');
+      return loc.type === cat || loc.name.toLowerCase().includes(cat.toLowerCase());
+    }).length;
+  };
+
+  const getChipLabel = (label, cat) => {
+    if (isLoading || locations.length === 0) return label;
+    return `${label} (${getCategoryCount(cat)})`;
+  };
 
   const filteredLocations = locations.filter(loc => {
     if (filter === 'all') return true;
@@ -175,54 +228,73 @@ const Nearby = () => {
         <h1 className="page-title">Nearby Healthcare</h1>
         <p className="page-subtitle">Real-time data for hospitals, clinics, and pharmacies near your location.</p>
         
+        {/* Manual Geocoding Location Search */}
+        <form onSubmit={handleManualLocationSearch} className="location-search-container">
+          <div className="location-input-wrapper">
+            <MapPin size={18} />
+            <input 
+              type="text" 
+              placeholder="Search town, city or area (e.g. Noida, Delhi)..."
+              value={manualLocationText}
+              onChange={(e) => setManualLocationText(e.target.value)}
+            />
+          </div>
+          <button type="submit" className="btn btn-primary location-search-btn" disabled={isResolvingLocation || isLoading}>
+            {isResolvingLocation ? <Loader2 className="spinner" size={16} /> : 'Search'}
+          </button>
+          <button type="button" onClick={getUserLocation} className="gps-btn" title="Use GPS Location" disabled={isLoading}>
+            <Navigation size={18} />
+          </button>
+        </form>
+
         <div className="filter-chips">
           <button 
             className={`chip ${filter === 'all' ? 'active' : ''}`}
             onClick={() => setFilter('all')}
           >
-            All
+            {getChipLabel('All', 'all')}
           </button>
           <button 
             className={`chip ${filter === 'hospital' ? 'active' : ''}`}
             onClick={() => setFilter('hospital')}
           >
-            Hospitals
+            {getChipLabel('Hospitals', 'hospital')}
           </button>
           <button 
             className={`chip ${filter === 'pharmacy' ? 'active' : ''}`}
             onClick={() => setFilter('pharmacy')}
           >
-            Pharmacies
+            {getChipLabel('Pharmacies', 'pharmacy')}
           </button>
           <button 
             className={`chip ${filter === 'clinic' ? 'active' : ''}`}
             onClick={() => setFilter('clinic')}
           >
-            Clinics
+            {getChipLabel('Clinics', 'clinic')}
           </button>
           <button 
             className={`chip ${filter === 'gynecologist' ? 'active' : ''}`}
             onClick={() => setFilter('gynecologist')}
           >
-            Gynecologists
+            {getChipLabel('Gynecologists', 'gynecologist')}
           </button>
           <button 
             className={`chip ${filter === 'orthopedist' ? 'active' : ''}`}
             onClick={() => setFilter('orthopedist')}
           >
-            Orthopedists
+            {getChipLabel('Orthopedists', 'orthopedist')}
           </button>
           <button 
             className={`chip ${filter === 'pediatrician' ? 'active' : ''}`}
             onClick={() => setFilter('pediatrician')}
           >
-            Pediatricians
+            {getChipLabel('Pediatricians', 'pediatrician')}
           </button>
           <button 
             className={`chip ${filter === 'dentist' ? 'active' : ''}`}
             onClick={() => setFilter('dentist')}
           >
-            Dentists
+            {getChipLabel('Dentists', 'dentist')}
           </button>
         </div>
       </div>
@@ -238,7 +310,7 @@ const Nearby = () => {
             <div className="error-state">
               <AlertCircle size={40} />
               <p>{error}</p>
-              <button className="btn btn-primary" onClick={getUserLocation}>Retry</button>
+              <button className="btn btn-primary" onClick={getUserLocation}>Retry GPS</button>
             </div>
           ) : filteredLocations.length === 0 && userLocation ? (
             <div className="empty-state">
@@ -254,7 +326,12 @@ const Nearby = () => {
                 transition={{ delay: index * 0.05 }}
               >
                 <div className="loc-header">
-                  <h3>{loc.name}</h3>
+                  <div>
+                    <h3>{loc.name}</h3>
+                    <span className={`card-category-tag ${loc.type}`}>
+                      {loc.type}
+                    </span>
+                  </div>
                   <span className={`status-dot ${loc.isOpen ? 'open' : 'closed'}`}></span>
                 </div>
                 
