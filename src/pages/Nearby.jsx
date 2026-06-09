@@ -95,9 +95,10 @@ const Nearby = () => {
   const [googleMapsLoaded, setGoogleMapsLoaded] = useState(
     !!(typeof window !== 'undefined' && window.google && window.google.maps)
   );
+  const apiKeyUsed = (typeof window !== 'undefined' && (import.meta.env.VITE_GOOGLE_MAPS_API_KEY || localStorage.getItem('google_maps_api_key'))) || '';
 
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || localStorage.getItem('google_maps_api_key');
     if (!apiKey) return;
 
     if (window.google && window.google.maps) {
@@ -218,6 +219,34 @@ const Nearby = () => {
     }
   };
 
+  const getTodayTiming = (openingHours) => {
+    if (!openingHours) return 'Hours vary';
+    if (openingHours.weekday_text && Array.isArray(openingHours.weekday_text)) {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const todayIndex = new Date().getDay();
+      const todayName = days[todayIndex];
+      const todayHoursText = openingHours.weekday_text.find(text => text.startsWith(todayName));
+      if (todayHoursText) {
+        const parts = todayHoursText.split(': ');
+        if (parts.length > 1) {
+          return parts.slice(1).join(': ');
+        }
+        return todayHoursText;
+      }
+    }
+    try {
+      if (typeof openingHours.isOpen === 'function') {
+        return openingHours.isOpen() ? 'Open Now' : 'Closed';
+      }
+      if (typeof openingHours.open_now !== 'undefined') {
+        return openingHours.open_now ? 'Open Now' : 'Closed';
+      }
+    } catch (e) {
+      console.warn("Error checking open status:", e);
+    }
+    return 'Hours vary';
+  };
+
   const fetchFromGooglePlaces = (lat, lng, radius) => {
     setIsLoading(true);
     setIsSimulatedData(false);
@@ -258,11 +287,9 @@ const Nearby = () => {
           }
         }
 
-        const formatted = uniquePlaces.map(place => {
+        const withDistance = uniquePlaces.map(place => {
           const placeLat = place.geometry.location.lat();
           const placeLng = place.geometry.location.lng();
-          
-          // Calculate distance
           const R = 6371;
           const dLat = (placeLat - lat) * Math.PI / 180;
           const dLon = (placeLng - lng) * Math.PI / 180;
@@ -271,30 +298,86 @@ const Nearby = () => {
                     Math.sin(dLon/2) * Math.sin(dLon/2);
           const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
           const d = R * c;
+          return { place, distanceVal: d, distanceStr: d.toFixed(1) + ' km' };
+        }).sort((a, b) => a.distanceVal - b.distanceVal);
 
-          const type = place.primaryType;
-          const timingText = place.opening_hours ? (place.opening_hours.isOpen() ? 'Open Now' : 'Closed') : 'Hours vary';
+        const topPlaces = withDistance.slice(0, 15);
+        const remainingPlaces = withDistance.slice(15, 30);
 
-          return {
-            id: place.place_id,
-            name: place.name,
-            type: type,
-            speciality: type === 'hospital' ? 'general medicine' : 'healthcare practitioner',
-            distance: d.toFixed(1) + ' km',
-            distanceVal: d,
-            rating: place.rating ? place.rating.toFixed(1) : 'N/A',
-            isOpen: place.opening_hours ? place.opening_hours.isOpen() : true,
-            timing: timingText,
-            website: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
-            address: place.vicinity || 'Address unavailable',
-            phone: 'View on Google Maps'
-          };
-        })
-        .sort((a, b) => a.distanceVal - b.distanceVal)
-        .slice(0, 30);
+        const fetchDetails = (item) => {
+          return new Promise((resolve) => {
+            service.getDetails({
+              placeId: item.place.place_id,
+              fields: ['formatted_phone_number', 'opening_hours', 'rating', 'name', 'vicinity']
+            }, (details, status) => {
+              if (status === window.google.maps.places.PlacesServiceStatus.OK && details) {
+                resolve({
+                  id: item.place.place_id,
+                  name: details.name || item.place.name,
+                  type: item.place.primaryType,
+                  speciality: item.place.primaryType === 'hospital' ? 'general medicine' : 'healthcare practitioner',
+                  distance: item.distanceStr,
+                  distanceVal: item.distanceVal,
+                  rating: details.rating ? details.rating.toFixed(1) : (item.place.rating ? item.place.rating.toFixed(1) : 'N/A'),
+                  isOpen: details.opening_hours ? (typeof details.opening_hours.isOpen === 'function' ? details.opening_hours.isOpen() : !!details.opening_hours.open_now) : true,
+                  timing: getTodayTiming(details.opening_hours),
+                  website: `https://www.google.com/maps/place/?q=place_id:${item.place.place_id}`,
+                  address: details.vicinity || item.place.vicinity || 'Address unavailable',
+                  phone: details.formatted_phone_number || 'N/A'
+                });
+              } else {
+                const timingText = item.place.opening_hours ? (item.place.opening_hours.isOpen() ? 'Open Now' : 'Closed') : 'Hours vary';
+                resolve({
+                  id: item.place.place_id,
+                  name: item.place.name,
+                  type: item.place.primaryType,
+                  speciality: item.place.primaryType === 'hospital' ? 'general medicine' : 'healthcare practitioner',
+                  distance: item.distanceStr,
+                  distanceVal: item.distanceVal,
+                  rating: item.place.rating ? item.place.rating.toFixed(1) : 'N/A',
+                  isOpen: item.place.opening_hours ? item.place.opening_hours.isOpen() : true,
+                  timing: timingText,
+                  website: `https://www.google.com/maps/place/?q=place_id:${item.place.place_id}`,
+                  address: item.place.vicinity || 'Address unavailable',
+                  phone: 'N/A'
+                });
+              }
+            });
+          });
+        };
 
-        setLocations(formatted);
-        setIsLoading(false);
+        const fetchAllDetails = async () => {
+          const detailedResults = [];
+          for (const item of topPlaces) {
+            const res = await fetchDetails(item);
+            detailedResults.push(res);
+            await new Promise(r => setTimeout(r, 50)); // Tiny delay to prevent hitting API QPS limits
+          }
+
+          const remainingFormatted = remainingPlaces.map(item => {
+            const timingText = item.place.opening_hours ? (item.place.opening_hours.isOpen() ? 'Open Now' : 'Closed') : 'Hours vary';
+            return {
+              id: item.place.place_id,
+              name: item.place.name,
+              type: item.place.primaryType,
+              speciality: item.place.primaryType === 'hospital' ? 'general medicine' : 'healthcare practitioner',
+              distance: item.distanceStr,
+              distanceVal: item.distanceVal,
+              rating: item.place.rating ? item.place.rating.toFixed(1) : 'N/A',
+              isOpen: item.place.opening_hours ? item.place.opening_hours.isOpen() : true,
+              timing: timingText,
+              website: `https://www.google.com/maps/place/?q=place_id:${item.place.place_id}`,
+              address: item.place.vicinity || 'Address unavailable',
+              phone: 'View on Maps'
+            };
+          });
+
+          const finalResults = [...detailedResults, ...remainingFormatted].sort((a, b) => a.distanceVal - b.distanceVal);
+          setLocations(finalResults);
+          setIsLoading(false);
+        };
+
+        fetchAllDetails();
       }).catch(err => {
         console.error("Google Places processing failed, falling back to OSM:", err);
         fetchNearbyFacilitiesOSM(lat, lng, radius);
@@ -307,7 +390,7 @@ const Nearby = () => {
 
   async function fetchNearbyFacilities(lat, lng, customRadius) {
     const radius = customRadius || searchRadius;
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || localStorage.getItem('google_maps_api_key');
     
     if (apiKey && window.google && window.google.maps && window.google.maps.places) {
       fetchFromGooglePlaces(lat, lng, radius);
@@ -519,6 +602,30 @@ const Nearby = () => {
           </button>
         </form>
 
+        {/* API Key Configuration Banner */}
+        {!apiKeyUsed ? (
+          <div className="api-key-banner glass">
+            <span>💡 Set a Google Maps API Key to fetch exact ratings, phone numbers, and timings directly from Google.</span>
+            <button className="btn btn-sm btn-outline" type="button" onClick={() => {
+              const key = prompt("Enter your Google Maps API Key:");
+              if (key) {
+                localStorage.setItem('google_maps_api_key', key.trim());
+                window.location.reload();
+              }
+            }}>Configure Key</button>
+          </div>
+        ) : (
+          localStorage.getItem('google_maps_api_key') && (
+            <div className="api-key-banner glass">
+              <span>✅ Using custom Google Maps API Key.</span>
+              <button className="btn btn-sm btn-outline" type="button" onClick={() => {
+                localStorage.removeItem('google_maps_api_key');
+                window.location.reload();
+              }}>Clear Key</button>
+            </div>
+          )
+        )}
+
         <div className="filter-chips">
           <button 
             className={`chip ${filter === 'all' ? 'active' : ''}`}
@@ -621,25 +728,31 @@ const Nearby = () => {
                       <Navigation size={16} />
                       <span>{loc.distance}</span>
                     </div>
-                    {loc.phone !== 'N/A' && (
-                      <div className="detail-item">
-                        <Phone size={16} />
-                        <span>{loc.phone}</span>
-                      </div>
-                    )}
                     <div className="detail-item rating">
                       <Star size={16} fill="currentColor" />
                       <span>{loc.rating}</span>
                     </div>
                   </div>
+                  <div className="detail-row">
+                    <div className="detail-item">
+                      <Clock size={16} />
+                      <span>{loc.timing}</span>
+                    </div>
+                    {loc.phone && loc.phone !== 'N/A' && (
+                      <div className="detail-item">
+                        <Phone size={16} />
+                        <span>{loc.phone}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="loc-actions">
-                  <a href={loc.website} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm" title={loc.timing}>
+                  <a href={loc.website} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
                     <Clock size={16} />
-                    {loc.timing.length < 15 ? loc.timing : 'View Timings'}
+                    More Info
                   </a>
-                  <a href={`https://www.google.com/maps/dir/?api=1&destination=${loc.name} ${loc.type}`} target="_blank" rel="noreferrer" className="btn btn-primary btn-sm">
+                  <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(loc.name + ' ' + loc.type)}`} target="_blank" rel="noreferrer" className="btn btn-primary btn-sm">
                     <Navigation size={16} />
                     Directions
                   </a>
@@ -665,13 +778,13 @@ const Nearby = () => {
             </>
           ) : (
             <div className="map-active-state">
-              {googleMapsLoaded && import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+              {googleMapsLoaded && apiKeyUsed ? (
                 <iframe
                   width="100%"
                   height="100%"
                   frameBorder="0"
                   style={{ border: 'none', borderRadius: '1rem', height: '100%', minHeight: '400px' }}
-                  src={`https://www.google.com/maps/embed/v1/search?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(filter === 'all' ? 'healthcare' : filter)}+near+${userLocation.lat},${userLocation.lng}&zoom=13`}
+                  src={`https://www.google.com/maps/embed/v1/search?key=${apiKeyUsed}&q=${encodeURIComponent(filter === 'all' ? 'healthcare' : filter)}+near+${userLocation.lat},${userLocation.lng}&zoom=13`}
                   allowFullScreen
                 ></iframe>
               ) : (
