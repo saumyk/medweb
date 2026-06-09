@@ -4,6 +4,62 @@ import { motion } from 'framer-motion';
 import { MapPin, Navigation, Phone, Clock, Star, Loader2, AlertCircle } from 'lucide-react';
 import './Nearby.css';
 
+const generateMockFacilities = (lat) => {
+  const names = {
+    hospital: ["Apollo Hospital", "Max Super Speciality Hospital", "Fortis Hospital", "Metro Hospital & Heart Institute", "Kailash Hospital"],
+    pharmacy: ["Apollo Pharmacy", "MedPlus Pharmacy", "Wellness Care Pharmacy", "Life Line Chemist", "CureAll Pharmacy"],
+    clinic: ["Care First Family Clinic", "Apex Pediatric Clinic", "Divine Gynecological Center", "Starlight Dental Clinic", "Heal Care Clinic"],
+    doctor: ["Dr. Sharma (Cardiologist)", "Dr. Kapoor (Pediatrician)", "Dr. Patel (General Physician)", "Dr. Verma (Orthopedist)", "Dr. Das (Neurologist)"],
+    dentist: ["Smile Dental Care Center", "Apex Dentists", "Tooth Care Clinic", "Cosmetic Dentistry Center", "Dental Wellness Clinic"]
+  };
+
+  const types = ['hospital', 'pharmacy', 'clinic', 'doctor', 'dentist'];
+  const specialities = {
+    hospital: "general medicine",
+    pharmacy: "chemist",
+    clinic: "family care",
+    doctor: "cardiology",
+    dentist: "dentistry"
+  };
+
+  return Array.from({ length: 8 }).map((_, idx) => {
+    // Generate slight offset for lat/lng (within ~2km)
+    const offsetLat = (Math.random() - 0.5) * 0.03;
+    const offsetLng = (Math.random() - 0.5) * 0.03;
+    const itemLat = lat + offsetLat;
+
+    // Calculate distance
+    const R = 6371; // km
+    const dLat = (offsetLat) * Math.PI / 180;
+    const dLon = (offsetLng) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat * Math.PI / 180) * Math.cos(itemLat * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const d = R * c;
+
+    const type = types[idx % types.length];
+    const nameList = names[type];
+    const name = nameList[idx % nameList.length];
+
+    return {
+      id: `mock-${idx}-${idx + 100}`,
+      name: name,
+      type: type,
+      speciality: specialities[type],
+      distance: d.toFixed(1) + ' km',
+      distanceVal: d,
+      rating: (4.1 + Math.random() * 0.8).toFixed(1),
+      isOpen: Math.random() > 0.2,
+      timing: "9:00 AM - 9:00 PM",
+      website: "https://www.google.com",
+      address: `Street #${idx + 10}, Medical District`,
+      phone: "+91 98765 43210",
+      isSimulated: true
+    };
+  }).sort((a, b) => a.distanceVal - b.distanceVal);
+};
+
 const Nearby = () => {
   const [searchParams] = useSearchParams();
   const [filter, setFilter] = useState('all');
@@ -14,6 +70,7 @@ const Nearby = () => {
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [manualLocationText, setManualLocationText] = useState('');
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
+  const [isSimulatedData, setIsSimulatedData] = useState(false);
 
   useEffect(() => {
     const searchVal = searchParams.get('search');
@@ -42,12 +99,19 @@ const Nearby = () => {
   function getUserLocation() {
     setIsLoading(true);
     setError(null);
+    setIsSimulatedData(false);
     
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser');
       setIsLoading(false);
       return;
     }
+
+    const options = {
+      enableHighAccuracy: false, // Set to false to resolve faster and avoid satellite GPS hangs
+      timeout: 8000,             // 8 seconds timeout
+      maximumAge: 60000          // Allow location from last 1 minute
+    };
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -56,10 +120,19 @@ const Nearby = () => {
         fetchNearbyFacilities(latitude, longitude);
       },
       (err) => {
-        console.error(err);
-        setError('Unable to retrieve your location automatically. Type your city/area in the search bar below.');
+        console.error("GPS Error:", err);
+        let msg = 'Unable to retrieve your location automatically.';
+        if (err.code === 1) { // PERMISSION_DENIED
+          msg = 'Location permission was denied. Please search manually by typing your city/area below.';
+        } else if (err.code === 2) { // POSITION_UNAVAILABLE
+          msg = 'GPS location unavailable. Please type your city/area in the search bar below.';
+        } else if (err.code === 3) { // TIMEOUT
+          msg = 'Location request timed out. Please type your city/area in the search bar below.';
+        }
+        setError(msg);
         setIsLoading(false);
-      }
+      },
+      options
     );
   }
 
@@ -145,13 +218,16 @@ const Nearby = () => {
     }
 
     if (!data) {
-      console.error("All Overpass endpoints failed:", lastError);
-      setError('Failed to fetch nearby facilities. The healthcare data service is currently overloaded. Please try again.');
+      console.warn("All Overpass endpoints failed. Falling back to simulated nearby facilities.", lastError);
+      setIsSimulatedData(true);
+      const mocks = generateMockFacilities(lat, lng);
+      setLocations(mocks);
       setIsLoading(false);
       return;
     }
 
     try {
+      setIsSimulatedData(false);
       const formattedLocations = data.elements
         .filter(el => el.tags && el.tags.name) // Only keep places with names
         .map(el => {
@@ -334,6 +410,11 @@ const Nearby = () => {
 
       <div className="nearby-grid">
         <div className="locations-list">
+          {isSimulatedData && !isLoading && !error && filteredLocations.length > 0 && (
+            <div className="offline-warning-banner">
+              <span>⚠️ Showing simulated facilities due to connection timeout with OSM servers.</span>
+            </div>
+          )}
           {isLoading ? (
             <div className="loading-state">
               <Loader2 className="spinner" size={40} />
