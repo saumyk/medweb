@@ -4,6 +4,26 @@ import { motion } from 'framer-motion';
 import { MapPin, Navigation, Phone, Clock, Star, Loader2 } from 'lucide-react';
 import './Nearby.css';
 
+const fetchWithTimeout = (url, options = {}, timeoutMs = 5000) => {
+  return new Promise((resolve, reject) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error("Timeout"));
+    }, timeoutMs);
+
+    fetch(url, { ...options, signal: controller.signal })
+      .then(res => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch(err => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+};
+
 const generateMockFacilities = (lat) => {
   const names = {
     hospital: ["Apollo Hospital", "Max Super Speciality Hospital", "Fortis Hospital", "Metro Hospital & Heart Institute", "Kailash Hospital"],
@@ -153,7 +173,7 @@ const Nearby = () => {
 
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(manualLocationText)}&limit=1`;
-      const res = await fetch(url);
+      const res = await fetchWithTimeout(url, {}, 4000); // 4 seconds timeout
       if (res.ok) {
         const data = await res.json();
         if (data && data.length > 0) {
@@ -206,13 +226,13 @@ const Nearby = () => {
 
     for (const url of endpoints) {
       try {
-        const response = await fetch(url, {
+        const response = await fetchWithTimeout(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
           },
           body: `data=${encodeURIComponent(query)}`
-        });
+        }, 3500); // 3.5 seconds timeout per endpoint
         
         if (response.ok) {
           data = await response.json();
