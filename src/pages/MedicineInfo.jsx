@@ -54,6 +54,27 @@ const getMedCareInstructions = (query) => {
   return { selfCare, seekHelp };
 };
 
+// Helper function to fetch with a timeout using AbortController
+const fetchWithTimeout = (url, timeoutMs) => {
+  return new Promise((resolve, reject) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error("Timeout"));
+    }, timeoutMs);
+
+    fetch(url, { signal: controller.signal })
+      .then(res => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch(err => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+};
+
 const MedicineInfo = () => {
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,56 +117,78 @@ const MedicineInfo = () => {
 
     const normalizedQuery = query.toLowerCase().trim();
     const fdaQuery = nameMapping[normalizedQuery] || normalizedQuery;
+    const encodedFda = encodeURIComponent(fdaQuery);
 
     try {
-      // Fetch Indian Pricing from Tata 1mg (via proxy)
-      let tataInfo = null;
-      try {
-        const tataUrl = encodeURIComponent(`https://www.1mg.com/api/v1/search/autocomplete?name=${query}`);
-        const tataRes = await fetch(`https://api.allorigins.win/get?url=${tataUrl}`);
-        if (tataRes.ok) {
-           const proxyData = await tataRes.json();
-           if (proxyData.contents) {
-             const tataData = JSON.parse(proxyData.contents);
-             const drug = tataData.results?.find(r => r.type === 'drug' && r.price);
-             if (drug) {
-                tataInfo = {
-                   price: drug.price,
-                   discountPrice: drug.discounted_price,
-                   packSize: drug.pack_size_label,
-                   manufacturer: drug.manufacturer_name,
-                   name: drug.name.replace(/<[^>]*>?/gm, ''), // Remove HTML bold tags
-                   url: `https://www.1mg.com${drug.url_path}`
-                };
+      // URLs for parallel fetch
+      const tataUrl = encodeURIComponent(`https://www.1mg.com/api/v1/search/autocomplete?name=${query}`);
+      const tataProxyUrl = `https://api.allorigins.win/get?url=${tataUrl}`;
+
+      const fdaUrls = [
+        `https://api.fda.gov/drug/label.json?search=openfda.generic_name:"${encodedFda}"&limit=1`,
+        `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${encodedFda}"&limit=1`,
+        `https://api.fda.gov/drug/label.json?search=openfda.substance_name:"${encodedFda}"&limit=1`,
+        `https://api.fda.gov/drug/label.json?search="${encodedFda}"&limit=1`
+      ];
+
+      // 1. Fetch Indian Pricing from Tata 1mg (via proxy) in parallel with 1500ms timeout
+      const fetchTataPromise = fetchWithTimeout(tataProxyUrl, 1500)
+        .then(async (res) => {
+          if (res.ok) {
+             const proxyData = await res.json();
+             if (proxyData.contents) {
+               const tataData = JSON.parse(proxyData.contents);
+               const drug = tataData.results?.find(r => r.type === 'drug' && r.price);
+               if (drug) {
+                  return {
+                     price: drug.price,
+                     discountPrice: drug.discounted_price,
+                     packSize: drug.pack_size_label,
+                     manufacturer: drug.manufacturer_name,
+                     name: drug.name.replace(/<[^>]*>?/gm, ''), // Remove HTML bold tags
+                     url: `https://www.1mg.com${drug.url_path}`
+                  };
+               }
              }
-           }
+          }
+          return null;
+        })
+        .catch(err => {
+          console.warn("Tata 1mg fetch failed or timed out:", err);
+          return null;
+        });
+
+      // 2. Fetch FDA configurations in parallel to get first matching category
+      const fetchFdaPromises = fdaUrls.map((url, idx) => 
+        fetch(url)
+          .then(async (res) => {
+            if (res.ok) {
+              const data = await res.json();
+              if (data.results && data.results.length > 0) {
+                return { data: data.results[0], index: idx };
+              }
+            }
+            return null;
+          })
+          .catch(() => null)
+      );
+
+      // Resolve both Tata and FDA requests concurrently
+      const [tataInfo, ...fdaResults] = await Promise.all([
+        fetchTataPromise,
+        ...fetchFdaPromises
+      ]);
+
+      // Prioritize the best matching FDA result based on search index
+      let med = null;
+      for (const fdaRes of fdaResults) {
+        if (fdaRes) {
+          med = fdaRes.data;
+          break;
         }
-      } catch (e) {
-        console.error("Tata 1mg fetch failed", e);
-      }
-
-      const encodedFda = encodeURIComponent(fdaQuery);
-      // 1. Try fetching from OpenFDA API by generic name
-      let fdaRes = await fetch(`https://api.fda.gov/drug/label.json?search=openfda.generic_name:"${encodedFda}"&limit=1`);
-      
-      // 2. If fails, try brand name
-      if (!fdaRes.ok) {
-        fdaRes = await fetch(`https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${encodedFda}"&limit=1`);
       }
       
-      // 3. If fails, try substance name
-      if (!fdaRes.ok) {
-        fdaRes = await fetch(`https://api.fda.gov/drug/label.json?search=openfda.substance_name:"${encodedFda}"&limit=1`);
-      }
-
-      // 4. If fails, try broad search
-      if (!fdaRes.ok) {
-        fdaRes = await fetch(`https://api.fda.gov/drug/label.json?search="${encodedFda}"&limit=1`);
-      }
-      
-      if (fdaRes.ok) {
-        const data = await fdaRes.json();
-        const med = data.results[0];
+      if (med) {
         const care = getMedCareInstructions(fdaQuery);
         
         setResult({
@@ -180,7 +223,7 @@ const MedicineInfo = () => {
         return;
       }
 
-      // 5. Ultimate Fallback to Wikipedia API
+      // 3. Ultimate Fallback to Wikipedia API
       const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
       if (wikiRes.ok) {
         const wikiData = await wikiRes.json();
