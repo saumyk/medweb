@@ -92,6 +92,26 @@ const Nearby = () => {
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
   const [isSimulatedData, setIsSimulatedData] = useState(false);
   const [searchRadius, setSearchRadius] = useState(10000); // 10km default search radius
+  const [googleMapsLoaded, setGoogleMapsLoaded] = useState(
+    !!(typeof window !== 'undefined' && window.google && window.google.maps)
+  );
+
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) return;
+
+    if (window.google && window.google.maps) {
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setGoogleMapsLoaded(true);
+    script.onerror = () => console.error("Google Maps SDK failed to load.");
+    document.head.appendChild(script);
+  }, []);
 
   useEffect(() => {
     const searchVal = searchParams.get('search');
@@ -198,10 +218,107 @@ const Nearby = () => {
     }
   };
 
+  const fetchFromGooglePlaces = (lat, lng, radius) => {
+    setIsLoading(true);
+    setIsSimulatedData(false);
+    setError(null);
+
+    try {
+      const mapDiv = document.createElement('div');
+      const service = new window.google.maps.places.PlacesService(mapDiv);
+
+      const types = ['hospital', 'pharmacy', 'doctor', 'dentist'];
+      const promises = types.map(type => {
+        return new Promise((resolve) => {
+          const request = {
+            location: new window.google.maps.LatLng(lat, lng),
+            radius: radius,
+            type: [type]
+          };
+          service.nearbySearch(request, (results, status) => {
+            if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
+              resolve(results.map(place => ({ ...place, primaryType: type })));
+            } else {
+              resolve([]);
+            }
+          });
+        });
+      });
+
+      Promise.all(promises).then((allResults) => {
+        const flatResults = allResults.flat();
+        
+        // De-duplicate
+        const seenIds = new Set();
+        const uniquePlaces = [];
+        for (const place of flatResults) {
+          if (!seenIds.has(place.place_id)) {
+            seenIds.add(place.place_id);
+            uniquePlaces.push(place);
+          }
+        }
+
+        const formatted = uniquePlaces.map(place => {
+          const placeLat = place.geometry.location.lat();
+          const placeLng = place.geometry.location.lng();
+          
+          // Calculate distance
+          const R = 6371;
+          const dLat = (placeLat - lat) * Math.PI / 180;
+          const dLon = (placeLng - lng) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat * Math.PI / 180) * Math.cos(placeLat * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const d = R * c;
+
+          const type = place.primaryType;
+          const timingText = place.opening_hours ? (place.opening_hours.isOpen() ? 'Open Now' : 'Closed') : 'Hours vary';
+
+          return {
+            id: place.place_id,
+            name: place.name,
+            type: type,
+            speciality: type === 'hospital' ? 'general medicine' : 'healthcare practitioner',
+            distance: d.toFixed(1) + ' km',
+            distanceVal: d,
+            rating: place.rating ? place.rating.toFixed(1) : 'N/A',
+            isOpen: place.opening_hours ? place.opening_hours.isOpen() : true,
+            timing: timingText,
+            website: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
+            address: place.vicinity || 'Address unavailable',
+            phone: 'View on Google Maps'
+          };
+        })
+        .sort((a, b) => a.distanceVal - b.distanceVal)
+        .slice(0, 30);
+
+        setLocations(formatted);
+        setIsLoading(false);
+      }).catch(err => {
+        console.error("Google Places processing failed, falling back to OSM:", err);
+        fetchNearbyFacilitiesOSM(lat, lng, radius);
+      });
+    } catch (err) {
+      console.error("Google Places Service failed, falling back to OSM:", err);
+      fetchNearbyFacilitiesOSM(lat, lng, radius);
+    }
+  };
+
   async function fetchNearbyFacilities(lat, lng, customRadius) {
+    const radius = customRadius || searchRadius;
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    
+    if (apiKey && window.google && window.google.maps && window.google.maps.places) {
+      fetchFromGooglePlaces(lat, lng, radius);
+    } else {
+      fetchNearbyFacilitiesOSM(lat, lng, radius);
+    }
+  }
+
+  async function fetchNearbyFacilitiesOSM(lat, lng, radius) {
     setIsLoading(true);
     // Overpass API query for hospitals, pharmacies, clinics, and doctors (using nwr to fetch ways/relations)
-    const radius = customRadius || searchRadius;
     const query = `
       [out:json][timeout:25];
       (
@@ -548,22 +665,35 @@ const Nearby = () => {
             </>
           ) : (
             <div className="map-active-state">
-              <iframe 
-                width="100%" 
-                height="100%" 
-                frameBorder="0" 
-                scrolling="no" 
-                marginHeight="0" 
-                marginWidth="0" 
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${userLocation.lng - ((searchRadius / 1000) * 0.009)}%2C${userLocation.lat - ((searchRadius / 1000) * 0.009)}%2C${userLocation.lng + ((searchRadius / 1000) * 0.009)}%2C${userLocation.lat + ((searchRadius / 1000) * 0.009)}&layer=mapnik&marker=${userLocation.lat}%2C${userLocation.lng}`}
-                style={{ border: 'none', borderRadius: '1rem', height: '100%', minHeight: '400px' }}
-              ></iframe>
-              <br/>
-              <small>
-                <a href={`https://www.openstreetmap.org/?mlat=${userLocation.lat}&mlon=${userLocation.lng}#map=15/${userLocation.lat}/${userLocation.lng}`} target="_blank" rel="noreferrer">
-                  View Larger Map
-                </a>
-              </small>
+              {googleMapsLoaded && import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+                <iframe
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  style={{ border: 'none', borderRadius: '1rem', height: '100%', minHeight: '400px' }}
+                  src={`https://www.google.com/maps/embed/v1/search?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(filter === 'all' ? 'healthcare' : filter)}+near+${userLocation.lat},${userLocation.lng}&zoom=13`}
+                  allowFullScreen
+                ></iframe>
+              ) : (
+                <>
+                  <iframe 
+                    width="100%" 
+                    height="100%" 
+                    frameBorder="0" 
+                    scrolling="no" 
+                    marginHeight="0" 
+                    marginWidth="0" 
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${userLocation.lng - ((searchRadius / 1000) * 0.009)}%2C${userLocation.lat - ((searchRadius / 1000) * 0.009)}%2C${userLocation.lng + ((searchRadius / 1000) * 0.009)}%2C${userLocation.lat + ((searchRadius / 1000) * 0.009)}&layer=mapnik&marker=${userLocation.lat}%2C${userLocation.lng}`}
+                    style={{ border: 'none', borderRadius: '1rem', height: '100%', minHeight: '400px' }}
+                  ></iframe>
+                  <br/>
+                  <small>
+                    <a href={`https://www.openstreetmap.org/?mlat=${userLocation.lat}&mlon=${userLocation.lng}#map=15/${userLocation.lat}/${userLocation.lng}`} target="_blank" rel="noreferrer">
+                      View Larger Map
+                    </a>
+                  </small>
+                </>
+              )}
             </div>
           )}
         </div>
