@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MapPin, Navigation, Phone, Clock, Star, Loader2, AlertCircle } from 'lucide-react';
+import { MapPin, Navigation, Phone, Clock, Star, Loader2 } from 'lucide-react';
 import './Nearby.css';
 
 const generateMockFacilities = (lat) => {
@@ -71,6 +71,7 @@ const Nearby = () => {
   const [manualLocationText, setManualLocationText] = useState('');
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
   const [isSimulatedData, setIsSimulatedData] = useState(false);
+  const [searchRadius, setSearchRadius] = useState(10000); // 10km default search radius
 
   useEffect(() => {
     const searchVal = searchParams.get('search');
@@ -102,14 +103,19 @@ const Nearby = () => {
     setIsSimulatedData(false);
     
     if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser');
+      // Geolocation not supported, default to Noida
+      const defaultLat = 28.5706;
+      const defaultLng = 77.3272;
+      setUserLocation({ lat: defaultLat, lng: defaultLng });
+      fetchNearbyFacilities(defaultLat, defaultLng);
+      setError('Geolocation not supported. Defaulted to Noida (Delhi NCR).');
       setIsLoading(false);
       return;
     }
 
     const options = {
       enableHighAccuracy: false, // Set to false to resolve faster and avoid satellite GPS hangs
-      timeout: 8000,             // 8 seconds timeout
+      timeout: 3000,             // 3 seconds timeout to prevent long hangs on startup
       maximumAge: 60000          // Allow location from last 1 minute
     };
 
@@ -120,14 +126,15 @@ const Nearby = () => {
         fetchNearbyFacilities(latitude, longitude);
       },
       (err) => {
-        console.error("GPS Error:", err);
-        let msg = 'Unable to retrieve your location automatically.';
+        console.error("GPS Error, defaulting to Noida:", err);
+        const defaultLat = 28.5706;
+        const defaultLng = 77.3272;
+        setUserLocation({ lat: defaultLat, lng: defaultLng });
+        fetchNearbyFacilities(defaultLat, defaultLng);
+        
+        let msg = 'Could not retrieve GPS location automatically. Defaulted to Noida (Delhi NCR).';
         if (err.code === 1) { // PERMISSION_DENIED
-          msg = 'Location permission was denied. Please search manually by typing your city/area below.';
-        } else if (err.code === 2) { // POSITION_UNAVAILABLE
-          msg = 'GPS location unavailable. Please type your city/area in the search bar below.';
-        } else if (err.code === 3) { // TIMEOUT
-          msg = 'Location request timed out. Please type your city/area in the search bar below.';
+          msg = 'Location permission denied. Defaulted to Noida. Search your city manually below.';
         }
         setError(msg);
         setIsLoading(false);
@@ -171,10 +178,10 @@ const Nearby = () => {
     }
   };
 
-  async function fetchNearbyFacilities(lat, lng) {
+  async function fetchNearbyFacilities(lat, lng, customRadius) {
     setIsLoading(true);
-    // Overpass API query for hospitals, pharmacies, clinics, and doctors within 5km (using nwr to fetch ways/relations)
-    const radius = 5000;
+    // Overpass API query for hospitals, pharmacies, clinics, and doctors (using nwr to fetch ways/relations)
+    const radius = customRadius || searchRadius;
     const query = `
       [out:json][timeout:25];
       (
@@ -348,6 +355,25 @@ const Nearby = () => {
               onChange={(e) => setManualLocationText(e.target.value)}
             />
           </div>
+
+          <select 
+            className="radius-select" 
+            value={searchRadius} 
+            onChange={(e) => {
+              const r = parseInt(e.target.value);
+              setSearchRadius(r);
+              if (userLocation) {
+                fetchNearbyFacilities(userLocation.lat, userLocation.lng, r);
+              }
+            }}
+          >
+            <option value={2000}>2 km</option>
+            <option value={5000}>5 km</option>
+            <option value={10000}>10 km</option>
+            <option value={20000}>20 km</option>
+            <option value={50000}>50 km</option>
+          </select>
+
           <button type="submit" className="btn btn-primary location-search-btn" disabled={isResolvingLocation || isLoading}>
             {isResolvingLocation ? <Loader2 className="spinner" size={16} /> : 'Search'}
           </button>
@@ -410,7 +436,12 @@ const Nearby = () => {
 
       <div className="nearby-grid">
         <div className="locations-list">
-          {isSimulatedData && !isLoading && !error && filteredLocations.length > 0 && (
+          {error && (
+            <div className="location-notice-banner error">
+              <span>⚠️ {error}</span>
+            </div>
+          )}
+          {isSimulatedData && !isLoading && filteredLocations.length > 0 && (
             <div className="offline-warning-banner">
               <span>⚠️ Showing simulated facilities due to connection timeout with OSM servers.</span>
             </div>
@@ -420,17 +451,9 @@ const Nearby = () => {
               <Loader2 className="spinner" size={40} />
               <p>Locating facilities near you...</p>
             </div>
-          ) : error ? (
-            <div className="error-state">
-              <AlertCircle size={40} />
-              <p>{error}</p>
-              <button className="btn btn-primary" onClick={() => userLocation ? fetchNearbyFacilities(userLocation.lat, userLocation.lng) : getUserLocation()}>
-                Retry
-              </button>
-            </div>
           ) : filteredLocations.length === 0 && userLocation ? (
             <div className="empty-state">
-              <p>No facilities found in your immediate area.</p>
+              <p>No facilities found in your area. Try expanding the search radius above.</p>
             </div>
           ) : (
             filteredLocations.map((loc, index) => (
@@ -512,7 +535,7 @@ const Nearby = () => {
                 scrolling="no" 
                 marginHeight="0" 
                 marginWidth="0" 
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${userLocation.lng-0.02}%2C${userLocation.lat-0.02}%2C${userLocation.lng+0.02}%2C${userLocation.lat+0.02}&layer=mapnik&marker=${userLocation.lat}%2C${userLocation.lng}`}
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${userLocation.lng - ((searchRadius / 1000) * 0.009)}%2C${userLocation.lat - ((searchRadius / 1000) * 0.009)}%2C${userLocation.lng + ((searchRadius / 1000) * 0.009)}%2C${userLocation.lat + ((searchRadius / 1000) * 0.009)}&layer=mapnik&marker=${userLocation.lat}%2C${userLocation.lng}`}
                 style={{ border: 'none', borderRadius: '1rem', height: '100%', minHeight: '400px' }}
               ></iframe>
               <br/>
