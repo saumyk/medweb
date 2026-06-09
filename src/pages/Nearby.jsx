@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MapPin, Navigation, Phone, Clock, Star, Loader2 } from 'lucide-react';
+import { MapPin, Navigation, Loader2 } from 'lucide-react';
 import './Nearby.css';
 
 const fetchWithTimeout = (url, options = {}, timeoutMs = 5000) => {
@@ -219,34 +219,6 @@ const Nearby = () => {
     }
   };
 
-  const getTodayTiming = (openingHours) => {
-    if (!openingHours) return 'Hours vary';
-    if (openingHours.weekday_text && Array.isArray(openingHours.weekday_text)) {
-      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const todayIndex = new Date().getDay();
-      const todayName = days[todayIndex];
-      const todayHoursText = openingHours.weekday_text.find(text => text.startsWith(todayName));
-      if (todayHoursText) {
-        const parts = todayHoursText.split(': ');
-        if (parts.length > 1) {
-          return parts.slice(1).join(': ');
-        }
-        return todayHoursText;
-      }
-    }
-    try {
-      if (typeof openingHours.isOpen === 'function') {
-        return openingHours.isOpen() ? 'Open Now' : 'Closed';
-      }
-      if (typeof openingHours.open_now !== 'undefined') {
-        return openingHours.open_now ? 'Open Now' : 'Closed';
-      }
-    } catch (e) {
-      console.warn("Error checking open status:", e);
-    }
-    return 'Hours vary';
-  };
-
   const fetchFromGooglePlaces = (lat, lng, radius) => {
     setIsLoading(true);
     setIsSimulatedData(false);
@@ -287,7 +259,7 @@ const Nearby = () => {
           }
         }
 
-        const withDistance = uniquePlaces.map(place => {
+        const formatted = uniquePlaces.map(place => {
           const placeLat = place.geometry.location.lat();
           const placeLng = place.geometry.location.lng();
           const R = 6371;
@@ -298,86 +270,26 @@ const Nearby = () => {
                     Math.sin(dLon/2) * Math.sin(dLon/2);
           const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
           const d = R * c;
-          return { place, distanceVal: d, distanceStr: d.toFixed(1) + ' km' };
-        }).sort((a, b) => a.distanceVal - b.distanceVal);
 
-        const topPlaces = withDistance.slice(0, 15);
-        const remainingPlaces = withDistance.slice(15, 30);
+          const type = place.primaryType;
+          const queryText = encodeURIComponent(`${place.name} ${type} ${place.vicinity || ''}`);
 
-        const fetchDetails = (item) => {
-          return new Promise((resolve) => {
-            service.getDetails({
-              placeId: item.place.place_id,
-              fields: ['formatted_phone_number', 'opening_hours', 'rating', 'name', 'vicinity']
-            }, (details, status) => {
-              if (status === window.google.maps.places.PlacesServiceStatus.OK && details) {
-                resolve({
-                  id: item.place.place_id,
-                  name: details.name || item.place.name,
-                  type: item.place.primaryType,
-                  speciality: item.place.primaryType === 'hospital' ? 'general medicine' : 'healthcare practitioner',
-                  distance: item.distanceStr,
-                  distanceVal: item.distanceVal,
-                  rating: details.rating ? details.rating.toFixed(1) : (item.place.rating ? item.place.rating.toFixed(1) : 'N/A'),
-                  isOpen: details.opening_hours ? (typeof details.opening_hours.isOpen === 'function' ? details.opening_hours.isOpen() : !!details.opening_hours.open_now) : true,
-                  timing: getTodayTiming(details.opening_hours),
-                  website: `https://www.google.com/maps/place/?q=place_id:${item.place.place_id}`,
-                  address: details.vicinity || item.place.vicinity || 'Address unavailable',
-                  phone: details.formatted_phone_number || 'N/A'
-                });
-              } else {
-                const timingText = item.place.opening_hours ? (item.place.opening_hours.isOpen() ? 'Open Now' : 'Closed') : 'Hours vary';
-                resolve({
-                  id: item.place.place_id,
-                  name: item.place.name,
-                  type: item.place.primaryType,
-                  speciality: item.place.primaryType === 'hospital' ? 'general medicine' : 'healthcare practitioner',
-                  distance: item.distanceStr,
-                  distanceVal: item.distanceVal,
-                  rating: item.place.rating ? item.place.rating.toFixed(1) : 'N/A',
-                  isOpen: item.place.opening_hours ? item.place.opening_hours.isOpen() : true,
-                  timing: timingText,
-                  website: `https://www.google.com/maps/place/?q=place_id:${item.place.place_id}`,
-                  address: item.place.vicinity || 'Address unavailable',
-                  phone: 'N/A'
-                });
-              }
-            });
-          });
-        };
+          return {
+            id: place.place_id,
+            name: place.name,
+            type: type,
+            speciality: type === 'hospital' ? 'general medicine' : 'healthcare practitioner',
+            distance: d.toFixed(1) + ' km',
+            distanceVal: d,
+            isOpen: place.opening_hours ? (typeof place.opening_hours.isOpen === 'function' ? place.opening_hours.isOpen() : !!place.opening_hours.open_now) : true,
+            website: `https://www.google.com/maps/search/?api=1&query=${queryText}`
+          };
+        })
+        .sort((a, b) => a.distanceVal - b.distanceVal)
+        .slice(0, 30);
 
-        const fetchAllDetails = async () => {
-          const detailedResults = [];
-          for (const item of topPlaces) {
-            const res = await fetchDetails(item);
-            detailedResults.push(res);
-            await new Promise(r => setTimeout(r, 50)); // Tiny delay to prevent hitting API QPS limits
-          }
-
-          const remainingFormatted = remainingPlaces.map(item => {
-            const timingText = item.place.opening_hours ? (item.place.opening_hours.isOpen() ? 'Open Now' : 'Closed') : 'Hours vary';
-            return {
-              id: item.place.place_id,
-              name: item.place.name,
-              type: item.place.primaryType,
-              speciality: item.place.primaryType === 'hospital' ? 'general medicine' : 'healthcare practitioner',
-              distance: item.distanceStr,
-              distanceVal: item.distanceVal,
-              rating: item.place.rating ? item.place.rating.toFixed(1) : 'N/A',
-              isOpen: item.place.opening_hours ? item.place.opening_hours.isOpen() : true,
-              timing: timingText,
-              website: `https://www.google.com/maps/place/?q=place_id:${item.place.place_id}`,
-              address: item.place.vicinity || 'Address unavailable',
-              phone: 'View on Maps'
-            };
-          });
-
-          const finalResults = [...detailedResults, ...remainingFormatted].sort((a, b) => a.distanceVal - b.distanceVal);
-          setLocations(finalResults);
-          setIsLoading(false);
-        };
-
-        fetchAllDetails();
+        setLocations(formatted);
+        setIsLoading(false);
       }).catch(err => {
         console.error("Google Places processing failed, falling back to OSM:", err);
         fetchNearbyFacilitiesOSM(lat, lng, radius);
@@ -719,38 +631,18 @@ const Nearby = () => {
                 </div>
                 
                 <div className="loc-details">
-                  <div className="detail-item">
-                    <MapPin size={16} />
-                    <span className="address-text">{loc.address}</span>
-                  </div>
                   <div className="detail-row">
                     <div className="detail-item">
                       <Navigation size={16} />
                       <span>{loc.distance}</span>
                     </div>
-                    <div className="detail-item rating">
-                      <Star size={16} fill="currentColor" />
-                      <span>{loc.rating}</span>
-                    </div>
-                  </div>
-                  <div className="detail-row">
-                    <div className="detail-item">
-                      <Clock size={16} />
-                      <span>{loc.timing}</span>
-                    </div>
-                    {loc.phone && loc.phone !== 'N/A' && (
-                      <div className="detail-item">
-                        <Phone size={16} />
-                        <span>{loc.phone}</span>
-                      </div>
-                    )}
                   </div>
                 </div>
 
                 <div className="loc-actions">
                   <a href={loc.website} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">
-                    <Clock size={16} />
-                    More Info
+                    <MapPin size={16} />
+                    View on Google
                   </a>
                   <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(loc.name + ' ' + loc.type)}`} target="_blank" rel="noreferrer" className="btn btn-primary btn-sm">
                     <Navigation size={16} />
