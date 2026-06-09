@@ -72,7 +72,7 @@ const generateMockFacilities = (lat) => {
       rating: (4.1 + Math.random() * 0.8).toFixed(1),
       isOpen: Math.random() > 0.2,
       timing: "9:00 AM - 9:00 PM",
-      website: "https://www.google.com",
+      website: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' ' + type + ' Street #' + (idx + 10) + ', Medical District')}`,
       address: `Street #${idx + 10}, Medical District`,
       phone: "+91 98765 43210",
       isSimulated: true
@@ -276,7 +276,7 @@ const Nearby = () => {
           const speciality = (el.tags['healthcare:speciality'] || '').toLowerCase();
 
           const timing = el.tags['opening_hours'] || 'Hours vary';
-          const website = el.tags.website || el.tags['contact:website'] || `https://www.google.com/search?q=${encodeURIComponent(el.tags.name + ' ' + type + ' website')}`;
+          const website = el.tags.website || el.tags['contact:website'] || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(el.tags.name + ' ' + type + ' ' + (el.tags['addr:street'] || '') + ' ' + (el.tags['addr:city'] || ''))}`;
 
           return {
             id: el.id,
