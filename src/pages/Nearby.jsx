@@ -100,39 +100,71 @@ const Nearby = () => {
 
   async function fetchNearbyFacilities(lat, lng) {
     setIsLoading(true);
-    // Overpass API query for hospitals, pharmacies, clinics, and doctors within 5km
+    // Overpass API query for hospitals, pharmacies, clinics, and doctors within 5km (using nwr to fetch ways/relations)
     const radius = 5000;
     const query = `
       [out:json][timeout:25];
       (
-        node["amenity"="hospital"](around:${radius},${lat},${lng});
-        node["amenity"="pharmacy"](around:${radius},${lat},${lng});
-        node["amenity"="clinic"](around:${radius},${lat},${lng});
-        node["amenity"="doctors"](around:${radius},${lat},${lng});
-        node["amenity"="dentist"](around:${radius},${lat},${lng});
+        nwr["amenity"="hospital"](around:${radius},${lat},${lng});
+        nwr["amenity"="pharmacy"](around:${radius},${lat},${lng});
+        nwr["amenity"="clinic"](around:${radius},${lat},${lng});
+        nwr["amenity"="doctors"](around:${radius},${lat},${lng});
+        nwr["amenity"="dentist"](around:${radius},${lat},${lng});
       );
-      out body;
-      >;
-      out skel qt;
+      out center;
     `;
 
+    // Try multiple public Overpass API servers in case of rate limits or downtime
+    const endpoints = [
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter',
+      'https://api.openstreetmap.fr/oapi/interpreter'
+    ];
+
+    let data = null;
+    let lastError = null;
+
+    for (const url of endpoints) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: `data=${encodeURIComponent(query)}`
+        });
+        
+        if (response.ok) {
+          data = await response.json();
+          break; // Successfully fetched
+        }
+        lastError = new Error(`Server returned status ${response.status}`);
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (!data) {
+      console.error("All Overpass endpoints failed:", lastError);
+      setError('Failed to fetch nearby facilities. The healthcare data service is currently overloaded. Please try again.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        body: query
-      });
-      
-      const data = await response.json();
-      
       const formattedLocations = data.elements
         .filter(el => el.tags && el.tags.name) // Only keep places with names
         .map(el => {
-          // Calculate rough distance
+          // Calculate rough distance using node lat/lon or way center coordinates
+          const itemLat = el.lat || el.center?.lat;
+          const itemLon = el.lon || el.center?.lon;
+          if (!itemLat || !itemLon) return null;
+
           const R = 6371; // km
-          const dLat = (el.lat - lat) * Math.PI / 180;
-          const dLon = (el.lon - lng) * Math.PI / 180;
+          const dLat = (itemLat - lat) * Math.PI / 180;
+          const dLon = (itemLon - lng) * Math.PI / 180;
           const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat * Math.PI / 180) * Math.cos(el.lat * Math.PI / 180) *
+                    Math.cos(lat * Math.PI / 180) * Math.cos(itemLat * Math.PI / 180) *
                     Math.sin(dLon/2) * Math.sin(dLon/2);
           const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
           const d = R * c; // Distance in km
@@ -158,13 +190,14 @@ const Nearby = () => {
             phone: el.tags.phone || el.tags['contact:phone'] || 'N/A'
           };
         })
+        .filter(Boolean) // Filter out null items (items with missing coordinates)
         .sort((a, b) => a.distanceVal - b.distanceVal)
         .slice(0, 30); // limit to 30 closest
 
       setLocations(formattedLocations);
     } catch (err) {
       console.error(err);
-      setError('Failed to fetch nearby facilities. Please try again later.');
+      setError('Failed to format nearby facilities. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -310,7 +343,9 @@ const Nearby = () => {
             <div className="error-state">
               <AlertCircle size={40} />
               <p>{error}</p>
-              <button className="btn btn-primary" onClick={getUserLocation}>Retry GPS</button>
+              <button className="btn btn-primary" onClick={() => userLocation ? fetchNearbyFacilities(userLocation.lat, userLocation.lng) : getUserLocation()}>
+                Retry
+              </button>
             </div>
           ) : filteredLocations.length === 0 && userLocation ? (
             <div className="empty-state">
