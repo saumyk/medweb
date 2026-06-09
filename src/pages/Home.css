@@ -1,0 +1,442 @@
+.home-container {
+  min-height: calc(100vh - 73px);
+}
+
+.hero-section {
+  padding: 6rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-section::before {
+  content: "";
+  z-index: -1;
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.15) 0%, rgba(20, 184, 166, 0) 70%);
+  border-radius: 50%;
+  width: 600px;
+  height: 600px;
+  position: absolute;
+  top: -20%;
+  right: -10%;
+}
+
+.hero-content {
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 4rem;
+  display: grid;
+}
+
+.badge {
+  color: var(--primary);
+  background: rgba(15, 118, 110, 0.1);
+  border-radius: 2rem;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.hero-title {
+  color: var(--text-main);
+  margin-bottom: 1.25rem;
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.hero-subtitle {
+  color: var(--text-muted);
+  max-width: 95%;
+  margin-bottom: 1.5rem;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.hero-actions {
+  gap: 1rem;
+  display: flex;
+}
+
+.phone-mockup {
+  background: var(--background);
+  z-index: 5;
+  border: 10px solid #0f172a;
+  border-radius: 2.25rem;
+  flex-direction: column;
+  width: 320px;
+  height: 500px;
+  transition: border-color 0.3s;
+  animation: 6s ease-in-out infinite float-phone;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  padding: 0 !important;
+}
+
+[data-theme=dark] .phone-mockup {
+  border-color: #334155;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+}
+
+.phone-notch {
+  z-index: 10;
+  background: #0f172a;
+  border-bottom-right-radius: 12px;
+  border-bottom-left-radius: 12px;
+  width: 100px;
+  height: 18px;
+  transition: background-color 0.3s;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%);
+}
+
+[data-theme=dark] .phone-notch {
+  background: #334155;
+}
+
+.phone-status-bar {
+  color: var(--text-muted);
+  background: var(--surface);
+  -webkit-user-select: none;
+  user-select: none;
+  z-index: 6;
+  border-bottom: 1px solid transparent;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 16px 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+}
+
+.phone-status-icons {
+  align-items: center;
+  gap: 4px;
+  display: flex;
+}
+
+.phone-status-icon {
+  opacity: 0.8;
+}
+
+.phone-battery-icon {
+  margin-left: 2px;
+  transform: rotate(90deg) scaleX(-1);
+}
+
+.phone-screen-content {
+  background: var(--surface);
+  flex-direction: column;
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.phone-home-indicator {
+  opacity: 0.3;
+  z-index: 10;
+  background: #0f172a;
+  border-radius: 2px;
+  width: 90px;
+  height: 4px;
+  transition: background-color 0.3s;
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translate(-50%);
+}
+
+[data-theme=dark] .phone-home-indicator {
+  background: #f8fafc;
+}
+
+/* Chat interface styles inside phone */
+.mockup-header-chat {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(15, 118, 110, 0.2);
+}
+
+.chat-status-info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.chat-bot-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.chat-status-text {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.status-dot-active {
+  width: 6px;
+  height: 6px;
+  background: var(--success);
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.mockup-body-chat {
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.02);
+}
+
+.chat-bubble {
+  max-width: 85%;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  border-radius: 1rem;
+}
+
+.user-bubble {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 0.25rem;
+}
+
+.bot-bubble {
+  background: var(--surface);
+  color: var(--text-main);
+  align-self: flex-start;
+  border-bottom-left-radius: 0.25rem;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.bot-bubble ul {
+  padding-left: 1rem;
+  margin-top: 0.25rem;
+}
+
+.warning-box-chat {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--text-main);
+}
+
+.text-warning-chat {
+  color: var(--error);
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.mockup-input-chat {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.input-placeholder {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.input-action-icon {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+.input-send-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+
+/* Float Animation */
+@keyframes float-phone {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Features */
+.features-section {
+  background: var(--background);
+  padding: 5rem 0;
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: 3rem;
+  font-size: 2.5rem;
+}
+
+.features-grid {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  display: grid;
+}
+
+.feature-card {
+  background: var(--glass-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 1rem;
+  padding: 2rem;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s, box-shadow 0.3s;
+}
+
+.feature-card:hover {
+  background: var(--glass-bg-hover);
+  transform: scale(0.97);
+  box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon {
+  width: 64px;
+  height: 64px;
+  color: var(--primary);
+  background: rgba(15, 118, 110, 0.1);
+  border-radius: 1rem;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  display: flex;
+}
+
+.feature-card h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.feature-card p {
+  color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 3rem 0;
+  }
+  
+  .hero-content {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  
+  .hero-title {
+    font-size: 2.6rem;
+  }
+  
+  .hero-subtitle {
+    max-width: 100%;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+  }
+  
+  .hero-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+  }
+  
+  .hero-actions .btn {
+    width: 100%;
+  }
+  
+  .features-section {
+    padding: 3rem 0;
+  }
+  
+  .section-title {
+    margin-bottom: 2rem;
+    font-size: 1.8rem;
+  }
+  
+  .feature-card {
+    padding: 1.5rem;
+  }
+  
+  .hero-image-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .phone-mockup {
+    border-width: 8px;
+    border-radius: 1.75rem;
+    width: 280px;
+    height: 440px;
+  }
+  
+  .phone-notch {
+    width: 80px;
+    height: 14px;
+  }
+  
+  .phone-status-bar {
+    padding: 14px 12px 2px;
+  }
+}
+
+/* Button Active states for Touch/Mobile click feedback */
+.btn:active {
+  transform: scale(0.97) !important;
+  opacity: 0.95;
+}
