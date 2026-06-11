@@ -50,6 +50,7 @@ const AIAssistant = () => {
     setIsTyping(true);
 
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || '';
+    console.log("AI Chatbot API Key status:", apiKey ? "FOUND (calling Gemini API)" : "MISSING (falling back to local database)");
 
     if (apiKey) {
       try {
@@ -89,7 +90,7 @@ const AIAssistant = () => {
 
         Keep the formatting clean, clear, and highly structured so the web UI can parse it.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
