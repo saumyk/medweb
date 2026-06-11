@@ -2,6 +2,195 @@
 
 export const symptomDb = [
   {
+    keys: ["appendix", "appendicitis", "right lower stomach", "rupture appendix"],
+    disease: "Appendicitis (Acute Abdomen)",
+    explanation: "Appendicitis is an acute inflammation of the appendix. It is a critical medical emergency that requires prompt surgical removal (appendectomy) before the organ ruptures.",
+    selfCare: [
+      "Rest quietly in a comfortable position.",
+      "Do not apply heat pads to your stomach (can accelerate rupture risk).",
+      "Do not take laxatives, enemas, or pain relievers as they can mask warning signs or cause rupture.",
+      "Go to the emergency room immediately."
+    ],
+    whatToEat: [
+      "Do not eat or drink anything (remain completely NPO - Nil Per Os) to prepare your stomach for potential emergency surgery and anesthesia."
+    ],
+    whatToAvoid: [
+      "Do not consume water, food, or sodas.",
+      "Do not take pain relief pills or antacids.",
+      "Do not perform strenuous movements."
+    ],
+    seekHelp: "🚨 EMERGENCY. Go to the nearest emergency room immediately. A ruptured appendix can cause life-threatening abdominal infections (peritonitis)."
+  },
+  {
+    keys: ["chest", "heart", "breath", "lungs", "stroke", "numb", "cardiac", "dizzy", "unconscious", "collapse"],
+    disease: "Chest Distress / Shortness of Breath (Emergency Risk)",
+    explanation: "Severe chest pain, tightness, or extreme breathing difficulties can indicate life-threatening cardiac or pulmonary emergencies like a heart attack, blood clot, or severe asthma attack.",
+    selfCare: [
+      "🛑 STOP all physical activity immediately and sit in an upright, comfortable position.",
+      "Loosen all tight clothing, collars, ties, and belts to assist breathing.",
+      "Call your local emergency services (108 / 911) immediately.",
+      "Do not try to drive yourself to the emergency room."
+    ],
+    whatToEat: [
+      "Do not consume any food, liquids, or oral medications during an emergency unless specifically instructed by a medical dispatcher or emergency responder."
+    ],
+    whatToAvoid: [
+      "Do not eat, drink, or smoke.",
+      "Do not engage in physical exertion.",
+      "Do not ignore the pain or wait to see if it passes."
+    ],
+    seekHelp: "🚨 CALL EMERGENCY SERVICES IMMEDIATELY. This is a critical situation. Do not delay under any circumstances."
+  },
+  {
+    keys: ["diabetes", "diabetic", "sugar", "insulin", "high blood sugar", "hyperglycemia"],
+    disease: "Diabetes Mellitus (High Blood Sugar)",
+    explanation: "Diabetes is a chronic metabolic disorder where the body either cannot produce enough insulin or cannot effectively use it, leading to elevated glucose levels in the blood stream.",
+    selfCare: [
+      "Check your blood glucose levels immediately using a glucometer.",
+      "Take your prescribed insulin or diabetes medication exactly as directed by your doctor.",
+      "Drink plenty of water to help flush excess glucose out of your bloodstream through urine.",
+      "Inspect your feet daily for any minor cuts, sores, or blisters."
+    ],
+    whatToEat: [
+      "Fiber-rich whole grains (steel-cut oats, quinoa, brown rice).",
+      "Leafy green vegetables (spinach, kale) and non-starchy vegetables (broccoli, cauliflower).",
+      "Lean proteins (skinless chicken, baked fish, tofu, beans).",
+      "Healthy fats in small portions (almonds, walnuts, avocados).",
+      "Cinnamon water or herbal green tea (supports glycemic health)."
+    ],
+    whatToAvoid: [
+      "Refined sugars, syrups, candies, and sweetened beverages/sodas.",
+      "White flour products (white bread, regular pasta, pastries).",
+      "High-glycemic processed foods and snacks (potato chips, crackers).",
+      "Excessive fruit juice (lacks fiber and spikes blood sugar rapidly).",
+      "Alcohol and trans-fats."
+    ],
+    seekHelp: "Seek emergency care if blood sugar exceeds 240 mg/dL accompanied by ketones, severe confusion, persistent vomiting, extreme thirst, rapid breathing, or a fruity odor to your breath (signs of Diabetic Ketoacidosis)."
+  },
+  {
+    keys: ["hypertension", "blood pressure", "high bp", "bp high"],
+    disease: "Hypertension (High Blood Pressure)",
+    explanation: "Hypertension is a condition where the blood pressure exerted against your arterial walls is consistently too high, forcing the heart to work harder and increasing cardiovascular risks.",
+    selfCare: [
+      "Sit down and rest quietly in a calm, dark environment.",
+      "Practice slow, deep breathing (inhale for 4 seconds, hold for 4, exhale for 6).",
+      "Take your prescribed blood pressure medication if you have missed a dose.",
+      "Avoid stressful conversations, work, or physical exertion."
+    ],
+    whatToEat: [
+      "Potassium-rich foods (bananas, sweet potatoes, spinach) to help flush out sodium.",
+      "Berries (blueberries, strawberries) which contain natural anti-inflammatory flavonoids.",
+      "Garlic (raw or cooked) and beetroot juice (supports nitric oxide vessel dilation).",
+      "Oatmeal, unsalted almonds, and flaxseeds.",
+      "Low-fat or skim milk."
+    ],
+    whatToAvoid: [
+      "High-sodium meals, pickles, table salt, and canned soups.",
+      "Processed meats (bacon, sausages, deli meats) and soy sauce.",
+      "Caffeine (coffee, energy drinks) and alcohol.",
+      "Saturated fats, fried foods, and tobacco/smoking."
+    ],
+    seekHelp: "Seek urgent emergency care if your blood pressure reading is 180/120 mmHg or higher, or if it is accompanied by chest pain, a severe headache, blurred vision, shortness of breath, or numbness/weakness."
+  },
+  {
+    keys: ["asthma", "wheezing", "breathless", "inhaler", "bronchospasm"],
+    disease: "Bronchial Asthma / Wheezing",
+    explanation: "Asthma is a chronic inflammation of the airways that causes them to swell, narrow, and produce excess mucus, triggering chest tightness, coughing, and whistling wheezes during exhalation.",
+    selfCare: [
+      "Sit upright immediately; do not lie down as it constricts breathing.",
+      "Take 2-4 puffs of your quick-relief rescue inhaler (Albuterol/Salbutamol) immediately.",
+      "Stay calm; anxiety can tighten chest muscles and worsen airway constriction.",
+      "Move away from trigger sources (dust, smoke, cold air, pet dander)."
+    ],
+    whatToEat: [
+      "Warm liquids like herbal teas (ginger, chamomile) to relax bronchia.",
+      "Foods high in Vitamin D (fortified milks, egg yolks) to support lung immunity.",
+      "Magnesium-rich foods (spinach, pumpkin seeds, dark chocolate) which support muscle relaxation.",
+      "Anti-inflammatory omega-3 foods (walnuts, flaxseeds)."
+    ],
+    whatToAvoid: [
+      "Foods containing sulfites (dried fruits, processed potatoes, pickled foods, wine).",
+      "Very cold drinks or ice creams that can trigger reflex airway spasms.",
+      "Heavy meals that bloat the stomach and press upward against the diaphragm."
+    ],
+    seekHelp: "Seek emergency medical help if your rescue inhaler does not ease breathing within 15 minutes, you struggle to speak in full sentences, your chest and ribs pull inward deeply when breathing, or your lips turn blue."
+  },
+  {
+    keys: ["malaria", "dengue", "typhoid", "mosquito", "viral fever", "chikungunya"],
+    disease: "Tropical Infections (Dengue, Malaria, Typhoid)",
+    explanation: "Tropical febrile illnesses are caused by mosquito-borne parasites/viruses (Malaria, Dengue) or bacterial contamination in food/water (Typhoid), causing persistent high fevers.",
+    selfCare: [
+      "Maintain strict bed rest in a well-ventilated, mosquito-netted room.",
+      "Apply cool, damp compresses to your forehead and underarms to ease high fever.",
+      "Stay hydrated at all costs to prevent severe fluid loss.",
+      "Monitor temperature and check platelet count (especially for Dengue) as advised by a doctor."
+    ],
+    whatToEat: [
+      "Fresh coconut water and Oral Rehydration Salts (ORS) to maintain mineral balance.",
+      "Papaya leaf extract juice (shown to help boost platelet counts in Dengue).",
+      "Light, semi-solid foods like plain rice porridge, khichdi, or soft oats.",
+      "Boiled eggs or double-boiled chicken broth for protein support.",
+      "Warm herbal decoctions of tulsi, ginger, or coriander seeds."
+    ],
+    whatToAvoid: [
+      "DO NOT take pain relievers like Aspirin, Ibuprofen, or Naproxen (NSAIDs) as they can cause severe internal bleeding in Dengue. Use only Paracetamol.",
+      "Spicy, oily, and heavy ghee-laden foods that strain the digestive tract.",
+      "Raw vegetables and fruits that are not peeled/washed in boiled water (Typhoid risk)."
+    ],
+    seekHelp: "Seek immediate hospitalization if you experience bleeding from the nose, gums, or skin, persistent vomiting, severe abdominal pain, sudden extreme weakness, or confusion."
+  },
+  {
+    keys: ["constipation", "hard stool", "straining", "bowel movement"],
+    disease: "Constipation",
+    explanation: "Constipation occurs when bowel movements become infrequent or difficult, usually due to a lack of dietary fiber, inadequate hydration, or low physical activity.",
+    selfCare: [
+      "Drink a large glass of warm water first thing in the morning.",
+      "Set a consistent daily time for bowel movements and do not rush.",
+      "Engage in a 20-minute walk to stimulate intestinal muscle contractions.",
+      "Try squatting or using a footstool to elevate your knees while on the toilet."
+    ],
+    whatToEat: [
+      "High-fiber foods (prunes, figs, apples, pears, berries, beans, lentils).",
+      "Whole grains (quinoa, oats, barley, whole-wheat bran).",
+      "Flaxseeds and chia seeds soaked in water (natural bulking mucilage).",
+      "Warm water, prune juice, and warm herbal teas.",
+      "Probiotic foods like plain unsweetened yogurt or kefir."
+    ],
+    whatToAvoid: [
+      "Processed junk foods, frozen meals, and fast food.",
+      "Heavy dairy items (large amounts of cheese, butter, whole milk).",
+      "Red meat, which is slow to digest and lacks fiber.",
+      "Unripe green bananas (contain high starch levels that bind stools).",
+      "Refined grains (white bread, white rice, pastries)."
+    ],
+    seekHelp: "Consult your doctor if constipation lasts more than 2 weeks, is accompanied by severe abdominal cramps, vomiting, fever, blood in stool, or unexplained weight loss."
+  },
+  {
+    keys: ["arthritis", "joint pain", "knee pain", "joint stiffness", "gout", "rheumatoid"],
+    disease: "Arthritis & Joint Inflammation",
+    explanation: "Arthritis is an inflammatory or degenerative condition of the joints (like Osteoarthritis, Rheumatoid Arthritis, or Gout) causing cartilage breakdown, swelling, stiffness, and pain.",
+    selfCare: [
+      "Apply a warm compress or take a warm shower to relieve morning stiffness.",
+      "Use an ice pack wrap on swollen, warm joints to numb acute inflammatory pain.",
+      "Perform gentle low-impact joint movements (swimming, cycling, walking).",
+      "Maintain a healthy weight to reduce load stress on knees, hips, and ankles."
+    ],
+    whatToEat: [
+      "Omega-3 fatty acid foods (salmon, sardines, walnuts, flaxseeds) to fight inflammation.",
+      "Extra virgin olive oil (contains oleocanthal, which behaves like natural ibuprofen).",
+      "Antioxidant fruits (tart cherries, strawberries, blueberries).",
+      "Turmeric and ginger (powerful natural anti-inflammatory spices).",
+      "Green tea (contains EGCG which limits joint destruction enzymes)."
+    ],
+    whatToAvoid: [
+      "High-sugar foods, candies, sodas, and baked treats (trigger cytokines).",
+      "Refined carbohydrates (white flour, white rice).",
+      "Trans-fats, margarine, and processed corn oil.",
+      "High-purine foods (for Gout patients, avoid red meat, shellfish, organ meats, and beer)."
+    ],
+    seekHelp: "See a clinician if joint pain is accompanied by high fever, rapid joint swelling with extreme redness, severe pain that prevents weight-bearing, or joint deformity."
+  },
+  {
     keys: ["fever", "temp", "cold", "cough", "flu", "throat", "bronchitis", "shiver", "congestion"],
     disease: "Fever, Cold & Flu (Respiratory Infection)",
     explanation: "A temporary rise in body temperature, coughing, or throat irritation is typically the body's immune response fighting off viral or bacterial infections like the common cold or influenza.",
@@ -56,7 +245,7 @@ export const symptomDb = [
     seekHelp: "Seek emergency medical help immediately if you experience a sudden, explosive 'thunderclap' headache, or if it is accompanied by fever, a stiff neck, confusion, double vision, numbness, or difficulty speaking."
   },
   {
-    keys: ["stomach", "belly", "nausea", "vomit", "diarrhea", "cramp", "poisoning", "indigestion", "gastroenteritis", "loose motion"],
+    keys: ["stomach", "belly", "nausea", "vomit", "diarrhea", "cramp", "poisoning", "gastroenteritis", "loose motion"],
     disease: "Stomach Distress, Food Poisoning & Gastroenteritis",
     explanation: "Inflammation of the stomach and intestines (commonly known as stomach flu or food poisoning) is caused by consuming contaminated food/water or viral/bacterial pathogens.",
     selfCare: [
@@ -131,26 +320,6 @@ export const symptomDb = [
       "Scratching, peeling, or picking at the healing skin/blisters."
     ],
     seekHelp: "Go to a clinic if the burn covers a major joint, face, hands, feet, or groin, is larger than 3 inches in diameter, is charred/white (third-degree), or shows signs of infection (increased pain, redness, warmth, or pus)."
-  },
-  {
-    keys: ["chest", "heart", "breath", "lungs", "stroke", "numb", "cardiac", "dizzy", "unconscious", "collapse"],
-    disease: "Chest Distress / Shortness of Breath (Emergency Risk)",
-    explanation: "Severe chest pain, tightness, or extreme breathing difficulties can indicate life-threatening cardiac or pulmonary emergencies like a heart attack, blood clot, or severe asthma attack.",
-    selfCare: [
-      "🛑 STOP all physical activity immediately and sit in an upright, comfortable position.",
-      "Loosen all tight clothing, collars, ties, and belts to assist breathing.",
-      "Call your local emergency services (108 / 911) immediately.",
-      "Do not try to drive yourself to the emergency room."
-    ],
-    whatToEat: [
-      "Do not consume any food, liquids, or oral medications during an emergency unless specifically instructed by a medical dispatcher or emergency responder."
-    ],
-    whatToAvoid: [
-      "Do not eat, drink, or smoke.",
-      "Do not engage in physical exertion.",
-      "Do not ignore the pain or wait to see if it passes."
-    ],
-    seekHelp: "🚨 CALL EMERGENCY SERVICES IMMEDIATELY. This is a critical situation. Do not delay under any circumstances."
   },
   {
     keys: ["allergy", "rash", "itching", "hives", "eczema", "bite", "sting"],
