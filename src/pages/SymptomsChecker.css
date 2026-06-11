@@ -193,8 +193,105 @@
 
 .guidance-content-grid {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 2.5rem;
+  grid-template-columns: 1.1fr 1.1fr 0.8fr;
+  gap: 2rem;
+}
+
+/* Disease Info Header Block */
+.disease-info-header {
+  padding: 1.25rem 1.5rem;
+  border-radius: 10px;
+  background: rgba(15, 118, 110, 0.04);
+  border: 1px dashed var(--primary);
+  margin-bottom: 2rem;
+}
+
+.disease-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: var(--primary);
+  font-family: var(--font-heading);
+}
+
+.disease-explanation {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Dietary Guidelines Columns */
+.dietary-section {
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+}
+
+.dietary-section.eat-section {
+  background: rgba(16, 185, 129, 0.04);
+  border-color: rgba(16, 185, 129, 0.15);
+}
+
+.dietary-section.avoid-section {
+  background: rgba(239, 68, 68, 0.04);
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+.dietary-section h3 {
+  font-size: 1rem !important;
+  margin-top: 0;
+  margin-bottom: 0.75rem !important;
+  font-weight: 700;
+}
+
+.dietary-section.eat-section h3 {
+  color: #059669;
+}
+
+.dietary-section.avoid-section h3 {
+  color: #dc2626;
+}
+
+.guidance-eat-list, .guidance-avoid-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.guidance-eat-list li, .guidance-avoid-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.eat-check {
+  color: #059669;
+  font-weight: bold;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.avoid-cross {
+  color: #dc2626;
+  font-weight: bold;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+/* Responsive adjustments for 3 column grid */
+@media (max-width: 992px) {
+  .guidance-content-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2rem;
+  }
 }
 
 .guidance-selfcare h3, .guidance-seekhelp h3 {

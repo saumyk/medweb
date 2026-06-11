@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Search, Loader2, ShieldAlert } from 'lucide-react';
+import { lookupSymptom } from '../utils/symptomDatabase';
 import './SymptomsChecker.css';
 
 const SymptomsChecker = () => {
@@ -20,62 +21,16 @@ const SymptomsChecker = () => {
 
     // Simulate search delay for medical AI processing
     setTimeout(() => {
-      const text = queryVal.toLowerCase();
-      let selfCareSteps;
-      let seekHelpAdvice;
-
-      if (text.includes("fever") || text.includes("temp") || text.includes("cold") || text.includes("cough") || text.includes("flu") || text.includes("throat")) {
-        selfCareSteps = [
-          "Drink plenty of fluids (water, ORS, herbal teas) to prevent dehydration.",
-          "Ensure adequate resting hours to assist your body's immune system.",
-          "Use warm saline water gargles (for throat irritation) or vapor inhalation.",
-          "Use a damp washcloth on your forehead to reduce temperature discomfort."
-        ];
-        seekHelpAdvice = "Consult a doctor if the fever exceeds 103°F (39.4°C), lasts more than 3 days, or is accompanied by a stiff neck, severe headache, confusion, or difficulty breathing.";
-      } else if (text.includes("head") || text.includes("migraine") || text.includes("headache") || text.includes("tension")) {
-        selfCareSteps = [
-          "Rest in a quiet, dark room away from screens and bright lights.",
-          "Place a cold washcloth or ice pack on your forehead or temples.",
-          "Stay hydrated by drinking a full glass of water immediately.",
-          "Massage neck and shoulder muscles to relieve built-up tension."
-        ];
-        seekHelpAdvice = "Seek emergency medical help immediately if you experience a sudden, severe 'thunderclap' headache, or if it is accompanied by fever, stiff neck, confusion, double vision, or weakness.";
-      } else if (text.includes("burn") || text.includes("scald") || text.includes("sunburn")) {
-        selfCareSteps = [
-          "Cool the area under gentle, running cool tap water for 10-15 minutes.",
-          "Cover the burn loosely with a clean, sterile, non-stick bandage.",
-          "Avoid breaking any blisters to prevent introducing bacteria.",
-          "Apply pure aloe vera gel or a light moisturizer after the burn has cooled."
-        ];
-        seekHelpAdvice = "Seek professional medical help if the burn is larger than 3 inches, covers the face, hands, feet, or major joints, or shows signs of infection (increased pain, redness, swelling, pus).";
-      } else if (text.includes("chest") || text.includes("breath") || text.includes("heart") || text.includes("lungs")) {
-        selfCareSteps = [
-          "Stop all physical activity and rest immediately.",
-          "Sit upright to help expand your lungs and ease breathing.",
-          "Loosen tight collars, ties, or belts to facilitate open airways."
-        ];
-        seekHelpAdvice = "🚨 CALL EMERGENCY SERVICES (108 / 911) IMMEDIATELY if you experience chest pain, pressure, tightness, or shortness of breath, especially if it spreads to your arm, neck, jaw, or back.";
-      } else if (text.includes("stomach") || text.includes("belly") || text.includes("nausea") || text.includes("vomit") || text.includes("diarrhea") || text.includes("cramp")) {
-        selfCareSteps = [
-          "Sip clear fluids or Oral Rehydration Salts (ORS) slowly to avoid stomach spasms.",
-          "Follow the BRAT diet (Bananas, Rice, Applesauce, Toast) once nausea subsides.",
-          "Avoid dairy, alcohol, caffeine, and greasy or spicy foods for 24-48 hours.",
-          "Apply a warm hot-water bag to your abdomen to relieve cramps."
-        ];
-        seekHelpAdvice = "Seek clinical care if you cannot retain liquids for over 24 hours, notice blood in your stool or vomit, show signs of severe dehydration, or have severe, constant abdominal pain.";
-      } else {
-        selfCareSteps = [
-          "Prioritize rest and avoid strenuous physical activities.",
-          "Ensure you stay hydrated by drinking water or clear fluids.",
-          "Monitor your symptoms closely and note changes in severity over time."
-        ];
-        seekHelpAdvice = "Consult a healthcare professional if symptoms worsen, persist for more than 48 hours, or interfere significantly with your daily activities.";
-      }
+      const match = lookupSymptom(queryVal);
 
       setSymptomContext({
         symptom: queryVal.trim(),
-        selfCare: selfCareSteps,
-        seekHelp: seekHelpAdvice
+        disease: match.disease,
+        explanation: match.explanation,
+        selfCare: match.selfCare,
+        whatToEat: match.whatToEat,
+        whatToAvoid: match.whatToAvoid,
+        seekHelp: match.seekHelp
       });
       setIsSearching(false);
     }, 1000);
@@ -156,13 +111,21 @@ const SymptomsChecker = () => {
           >
             {/* Context-aware Self-Care & Severity Guidance Card */}
             <div className="symptom-guidance-card glass shadow-md">
-              <div className="guidance-header">
-                <Activity size={24} className="guidance-header-icon" />
-                <h2>AI Care Guidance for "{symptomContext.symptom}"</h2>
+              <div className="guidance-header-block">
+                <div className="guidance-header">
+                  <Activity size={24} className="guidance-header-icon" />
+                  <h2>AI Care Guidance for &ldquo;{symptomContext.symptom}&rdquo;</h2>
+                </div>
+                {symptomContext.disease && (
+                  <div className="disease-info-header glass">
+                    <h3 className="disease-title">Possible Condition: {symptomContext.disease}</h3>
+                    <p className="disease-explanation">{symptomContext.explanation}</p>
+                  </div>
+                )}
               </div>
               
               <div className="guidance-content-grid">
-                <div className="guidance-selfcare">
+                <div className="guidance-col guidance-selfcare">
                   <h3>Home Self-Care Steps</h3>
                   <ul className="guidance-selfcare-list">
                     {symptomContext.selfCare.map((step, idx) => (
@@ -173,11 +136,37 @@ const SymptomsChecker = () => {
                     ))}
                   </ul>
                 </div>
+
+                <div className="guidance-col guidance-dietary">
+                  <div className="dietary-section eat-section">
+                    <h3>🍏 What to Eat</h3>
+                    <ul className="guidance-eat-list">
+                      {symptomContext.whatToEat.map((food, idx) => (
+                        <li key={idx}>
+                          <span className="eat-check">✓</span>
+                          <span>{food}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="dietary-section avoid-section">
+                    <h3>🚫 What to Avoid</h3>
+                    <ul className="guidance-avoid-list">
+                      {symptomContext.whatToAvoid.map((food, idx) => (
+                        <li key={idx}>
+                          <span className="avoid-cross">✕</span>
+                          <span>{food}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
                 
-                <div className="guidance-seekhelp">
+                <div className="guidance-col guidance-seekhelp">
                   <h3>When to Seek Medical Help</h3>
                   <div className="guidance-seekhelp-box">
-                    <ShieldAlert size={20} className="guidance-alert-icon" />
+                    <ShieldAlert size={22} className="guidance-alert-icon" />
                     <p>{symptomContext.seekHelp}</p>
                   </div>
                 </div>
