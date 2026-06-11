@@ -52,7 +52,8 @@ const SymptomsChecker = () => {
         });
 
         if (!response.ok) {
-          throw new Error(`Gemini API returned status: ${response.status}`);
+          const errBody = await response.text().catch(() => '');
+          throw new Error(`Gemini API returned status: ${response.status} - ${errBody}`);
         }
 
         const data = await response.json();

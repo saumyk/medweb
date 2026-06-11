@@ -116,6 +116,9 @@ const AIAssistant = () => {
           setMessages(prev => [...prev, botMessage]);
           setIsTyping(false);
           return;
+        } else {
+          const errBody = await response.text().catch(() => '');
+          throw new Error(`Gemini API returned status: ${response.status} - ${errBody}`);
         }
       } catch (err) {
         console.error("Gemini API call failed, falling back to local database:", err);
