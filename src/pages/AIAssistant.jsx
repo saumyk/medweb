@@ -1,14 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Bot, Send, Key } from 'lucide-react';
+import { Bot, Send } from 'lucide-react';
 import { lookupSymptom } from '../utils/symptomDatabase';
 import './AIAssistant.css';
 
 const AIAssistant = () => {
   const [query, setQuery] = useState('');
-  const [geminiKey, setGeminiKey] = useState(
-    (typeof window !== 'undefined' && (import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key'))) || ''
-  );
 
   const [messages, setMessages] = useState([
     {
@@ -196,34 +193,9 @@ ${match.seekHelp}`;
 
   return (
     <div className="ai-assistant-container container">
-      <div className="ai-assistant-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2.5rem' }}>
-        <div>
-          <h1 className="page-title" style={{ margin: 0 }}>AI Health Assistant</h1>
-          <p className="page-subtitle" style={{ margin: '0.5rem 0 0 0', textAlign: 'left' }}>Consult our medical chatbot to receive immediate self-care recommendations and severity warnings.</p>
-        </div>
-        <button 
-          type="button" 
-          className="btn btn-outline btn-sm settings-btn" 
-          title="Configure Gemini API Key"
-          onClick={() => {
-            const key = prompt("Enter your Gemini API Key (leaves blank to use offline database):", localStorage.getItem('gemini_api_key') || '');
-            if (key !== null) {
-              if (key.trim()) {
-                localStorage.setItem('gemini_api_key', key.trim());
-                setGeminiKey(key.trim());
-                alert("Gemini API Key configured successfully!");
-              } else {
-                localStorage.removeItem('gemini_api_key');
-                setGeminiKey('');
-                alert("Gemini API Key cleared. Using local database.");
-              }
-            }
-          }}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.8rem' }}
-        >
-          <Key size={16} />
-          <span>{geminiKey ? 'Active Key' : 'Setup AI Key'}</span>
-        </button>
+      <div className="ai-assistant-header">
+        <h1 className="page-title">AI Health Assistant</h1>
+        <p className="page-subtitle">Consult our medical chatbot to receive immediate self-care recommendations and severity warnings.</p>
       </div>
 
       <div className="chat-interface-wrapper glass shadow-md">

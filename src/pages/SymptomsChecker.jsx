@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, Search, Loader2, ShieldAlert, Key } from 'lucide-react';
+import { Activity, Search, Loader2, ShieldAlert } from 'lucide-react';
 import { lookupSymptom } from '../utils/symptomDatabase';
 import './SymptomsChecker.css';
 
@@ -10,9 +10,7 @@ const SymptomsChecker = () => {
   const [symptoms, setSymptoms] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [symptomContext, setSymptomContext] = useState(null);
-  const [geminiKey, setGeminiKey] = useState(
-    (typeof window !== 'undefined' && (import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key'))) || ''
-  );
+
 
   const handleSearch = async (e, overrideQuery) => {
     if (e) e.preventDefault();
@@ -108,37 +106,12 @@ const SymptomsChecker = () => {
 
   return (
     <div className="symptoms-container container">
-      <div className="symptoms-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2.5rem' }}>
-        <div>
-          <div className="title-wrapper" style={{ justifyContent: 'flex-start' }}>
-            <Activity size={32} className="header-icon" color="var(--primary)" />
-            <h1 className="page-title" style={{ margin: 0 }}>Symptom Care Center</h1>
-          </div>
-          <p className="page-subtitle" style={{ margin: '0.5rem 0 0 0', textAlign: 'left' }}>Search a symptom to view instant, structured home care instructions and emergency severity criteria.</p>
+      <div className="symptoms-header">
+        <div className="title-wrapper">
+          <Activity size={32} className="header-icon" color="var(--primary)" />
+          <h1 className="page-title">Symptom Care Center</h1>
         </div>
-        <button 
-          type="button" 
-          className="btn btn-outline btn-sm settings-btn" 
-          title="Configure Gemini API Key"
-          onClick={() => {
-            const key = prompt("Enter your Gemini API Key (leaves blank to use offline database):", localStorage.getItem('gemini_api_key') || '');
-            if (key !== null) {
-              if (key.trim()) {
-                localStorage.setItem('gemini_api_key', key.trim());
-                setGeminiKey(key.trim());
-                alert("Gemini API Key configured successfully!");
-              } else {
-                localStorage.removeItem('gemini_api_key');
-                setGeminiKey('');
-                alert("Gemini API Key cleared. Using local database.");
-              }
-            }
-          }}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.8rem' }}
-        >
-          <Key size={16} />
-          <span>{geminiKey ? 'Active Key' : 'Setup AI Key'}</span>
-        </button>
+        <p className="page-subtitle">Search a symptom to view instant, structured home care instructions and emergency severity criteria.</p>
       </div>
 
       <div className="disclaimer-alert glass shadow-sm">
