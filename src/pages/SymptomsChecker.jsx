@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, Search, Loader2, ShieldAlert } from 'lucide-react';
+import { Activity, Search, Loader2, ShieldAlert, Key } from 'lucide-react';
 import { lookupSymptom } from '../utils/symptomDatabase';
 import './SymptomsChecker.css';
 
@@ -10,8 +10,11 @@ const SymptomsChecker = () => {
   const [symptoms, setSymptoms] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [symptomContext, setSymptomContext] = useState(null);
+  const [geminiKey, setGeminiKey] = useState(
+    (typeof window !== 'undefined' && (import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key'))) || ''
+  );
 
-  const handleSearch = (e, overrideQuery) => {
+  const handleSearch = async (e, overrideQuery) => {
     if (e) e.preventDefault();
     const queryVal = overrideQuery !== undefined ? overrideQuery : symptoms;
     if (!queryVal.trim()) return;
@@ -19,7 +22,62 @@ const SymptomsChecker = () => {
     setIsSearching(true);
     setSymptomContext(null);
 
-    // Simulate search delay for medical AI processing
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || '';
+
+    if (apiKey) {
+      try {
+        const promptText = `You are a professional medical assistant. Analyze these symptoms: "${queryVal}".
+        Return a JSON object containing:
+        {
+          "disease": "Likely disease/condition name",
+          "explanation": "Brief description of the condition and why it happens",
+          "selfCare": ["4-5 home care steps"],
+          "whatToEat": ["4-5 recommended foods/drinks"],
+          "whatToAvoid": ["4-5 foods/items to avoid"],
+          "seekHelp": "Specific warning symptoms that require clinical attention"
+        }
+        Do not include markdown wrappers (like \`\`\`json). Just return the raw JSON object string.`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: promptText }]
+            }],
+            generationConfig: {
+              responseMimeType: "application/json"
+            }
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Gemini API returned status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const text = data.candidates[0].content.parts[0].text;
+        const parsed = JSON.parse(text);
+
+        setSymptomContext({
+          symptom: queryVal.trim(),
+          disease: parsed.disease,
+          explanation: parsed.explanation,
+          selfCare: parsed.selfCare || [],
+          whatToEat: parsed.whatToEat || [],
+          whatToAvoid: parsed.whatToAvoid || [],
+          seekHelp: parsed.seekHelp
+        });
+        setIsSearching(false);
+        return;
+      } catch (err) {
+        console.error("Gemini API call failed, falling back to local database:", err);
+      }
+    }
+
+    // Fallback to local database response
     setTimeout(() => {
       const match = lookupSymptom(queryVal);
 
@@ -50,12 +108,37 @@ const SymptomsChecker = () => {
 
   return (
     <div className="symptoms-container container">
-      <div className="symptoms-header">
-        <div className="title-wrapper">
-          <Activity size={32} className="header-icon" color="var(--primary)" />
-          <h1 className="page-title">Symptom Care Center</h1>
+      <div className="symptoms-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2.5rem' }}>
+        <div>
+          <div className="title-wrapper" style={{ justifyContent: 'flex-start' }}>
+            <Activity size={32} className="header-icon" color="var(--primary)" />
+            <h1 className="page-title" style={{ margin: 0 }}>Symptom Care Center</h1>
+          </div>
+          <p className="page-subtitle" style={{ margin: '0.5rem 0 0 0', textAlign: 'left' }}>Search a symptom to view instant, structured home care instructions and emergency severity criteria.</p>
         </div>
-        <p className="page-subtitle">Search a symptom to view instant, structured home care instructions and emergency severity criteria.</p>
+        <button 
+          type="button" 
+          className="btn btn-outline btn-sm settings-btn" 
+          title="Configure Gemini API Key"
+          onClick={() => {
+            const key = prompt("Enter your Gemini API Key (leaves blank to use offline database):", localStorage.getItem('gemini_api_key') || '');
+            if (key !== null) {
+              if (key.trim()) {
+                localStorage.setItem('gemini_api_key', key.trim());
+                setGeminiKey(key.trim());
+                alert("Gemini API Key configured successfully!");
+              } else {
+                localStorage.removeItem('gemini_api_key');
+                setGeminiKey('');
+                alert("Gemini API Key cleared. Using local database.");
+              }
+            }
+          }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.8rem' }}
+        >
+          <Key size={16} />
+          <span>{geminiKey ? 'Active Key' : 'Setup AI Key'}</span>
+        </button>
       </div>
 
       <div className="disclaimer-alert glass shadow-sm">

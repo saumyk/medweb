@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Bot, Send } from 'lucide-react';
+import { Bot, Send, Key } from 'lucide-react';
 import { lookupSymptom } from '../utils/symptomDatabase';
 import './AIAssistant.css';
 
 const AIAssistant = () => {
   const [query, setQuery] = useState('');
+  const [geminiKey, setGeminiKey] = useState(
+    (typeof window !== 'undefined' && (import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key'))) || ''
+  );
 
   const [messages, setMessages] = useState([
     {
@@ -30,7 +33,7 @@ const AIAssistant = () => {
     { label: 'Hydration in food poisoning', query: 'How to manage stomach flu and dehydration at home?' }
   ];
 
-  const handleSend = (textToSend) => {
+  const handleSend = async (textToSend) => {
     const userQuery = textToSend || query;
     if (!userQuery.trim()) return;
 
@@ -49,7 +52,80 @@ const AIAssistant = () => {
     setQuery('');
     setIsTyping(true);
 
-    // Mock AI response delay
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || '';
+
+    if (apiKey) {
+      try {
+        // Construct conversation history context for Gemini (last 6 messages)
+        const historyContext = messages.slice(-6).map(msg => {
+          return `${msg.sender === 'user' ? 'User' : 'Assistant'}: ${msg.text}`;
+        }).join('\n');
+
+        const promptText = `You are a supportive and professional Medical AI Health Assistant on the MedWeb portal.
+        
+        Recent Conversation History:
+        ${historyContext}
+        
+        Current User Inquiry: "${userQuery}"
+        
+        Provide a detailed response. When recommending for symptoms or diseases, structure your response using these exact section headers:
+        🔍 **What is it?**
+        (Explain the condition/issue)
+
+        📋 **Take Care Steps:**
+        1. (Step 1)
+        2. (Step 2)
+        ...
+
+        🍏 **What to Eat:**
+        - (Food 1)
+        - (Food 2)
+        ...
+
+        🚫 **What to Avoid:**
+        - (Avoid 1)
+        - (Avoid 2)
+        ...
+
+        🚨 **Seek Help If:**
+        (When to consult a doctor or go to emergency)
+
+        Keep the formatting clean, clear, and highly structured so the web UI can parse it.`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: promptText }]
+            }]
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const responseText = data.candidates[0].content.parts[0].text;
+
+          messageIdCounter.current += 1;
+          const botMsgId = `bot-msg-${messageIdCounter.current}`;
+
+          const botMessage = {
+            id: botMsgId,
+            sender: 'bot',
+            text: responseText
+          };
+          setMessages(prev => [...prev, botMessage]);
+          setIsTyping(false);
+          return;
+        }
+      } catch (err) {
+        console.error("Gemini API call failed, falling back to local database:", err);
+      }
+    }
+
+    // Fallback to local database response
     setTimeout(() => {
       const responseText = generateMockAIResponse(userQuery);
       
@@ -120,9 +196,34 @@ ${match.seekHelp}`;
 
   return (
     <div className="ai-assistant-container container">
-      <div className="ai-assistant-header">
-        <h1 className="page-title">AI Health Assistant</h1>
-        <p className="page-subtitle">Consult our medical chatbot to receive immediate self-care recommendations and severity warnings.</p>
+      <div className="ai-assistant-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2.5rem' }}>
+        <div>
+          <h1 className="page-title" style={{ margin: 0 }}>AI Health Assistant</h1>
+          <p className="page-subtitle" style={{ margin: '0.5rem 0 0 0', textAlign: 'left' }}>Consult our medical chatbot to receive immediate self-care recommendations and severity warnings.</p>
+        </div>
+        <button 
+          type="button" 
+          className="btn btn-outline btn-sm settings-btn" 
+          title="Configure Gemini API Key"
+          onClick={() => {
+            const key = prompt("Enter your Gemini API Key (leaves blank to use offline database):", localStorage.getItem('gemini_api_key') || '');
+            if (key !== null) {
+              if (key.trim()) {
+                localStorage.setItem('gemini_api_key', key.trim());
+                setGeminiKey(key.trim());
+                alert("Gemini API Key configured successfully!");
+              } else {
+                localStorage.removeItem('gemini_api_key');
+                setGeminiKey('');
+                alert("Gemini API Key cleared. Using local database.");
+              }
+            }
+          }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.8rem' }}
+        >
+          <Key size={16} />
+          <span>{geminiKey ? 'Active Key' : 'Setup AI Key'}</span>
+        </button>
       </div>
 
       <div className="chat-interface-wrapper glass shadow-md">
