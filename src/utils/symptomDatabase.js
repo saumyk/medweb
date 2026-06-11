@@ -2,7 +2,7 @@
 
 export const symptomDb = [
   {
-    keys: ["appendix", "appendicitis", "right lower stomach", "rupture appendix"],
+    keys: ["appendix", "appendicitis", "right lower stomach", "rupture appendix", "appendicular", "appendix pain", "belly button pain"],
     disease: "Appendicitis (Acute Abdomen)",
     explanation: "Appendicitis is an acute inflammation of the appendix. It is a critical medical emergency that requires prompt surgical removal (appendectomy) before the organ ruptures.",
     selfCare: [
@@ -22,7 +22,7 @@ export const symptomDb = [
     seekHelp: "🚨 EMERGENCY. Go to the nearest emergency room immediately. A ruptured appendix can cause life-threatening abdominal infections (peritonitis)."
   },
   {
-    keys: ["chest", "heart", "breath", "lungs", "stroke", "numb", "cardiac", "dizzy", "unconscious", "collapse"],
+    keys: ["chest", "heart", "breath", "lungs", "stroke", "numb", "cardiac", "dizzy", "unconscious", "collapse", "chest pain", "chest tightness", "chest pressure", "shortness of breath", "breathing difficulty"],
     disease: "Chest Distress / Shortness of Breath (Emergency Risk)",
     explanation: "Severe chest pain, tightness, or extreme breathing difficulties can indicate life-threatening cardiac or pulmonary emergencies like a heart attack, blood clot, or severe asthma attack.",
     selfCare: [
@@ -42,7 +42,7 @@ export const symptomDb = [
     seekHelp: "🚨 CALL EMERGENCY SERVICES IMMEDIATELY. This is a critical situation. Do not delay under any circumstances."
   },
   {
-    keys: ["diabetes", "diabetic", "sugar", "insulin", "high blood sugar", "hyperglycemia"],
+    keys: ["diabetes", "diabetic", "sugar", "insulin", "high blood sugar", "hyperglycemia", "diabetic ketoacidosis", "frequent urination", "excessive thirst"],
     disease: "Diabetes Mellitus (High Blood Sugar)",
     explanation: "Diabetes is a chronic metabolic disorder where the body either cannot produce enough insulin or cannot effectively use it, leading to elevated glucose levels in the blood stream.",
     selfCare: [
@@ -68,7 +68,7 @@ export const symptomDb = [
     seekHelp: "Seek emergency care if blood sugar exceeds 240 mg/dL accompanied by ketones, severe confusion, persistent vomiting, extreme thirst, rapid breathing, or a fruity odor to your breath (signs of Diabetic Ketoacidosis)."
   },
   {
-    keys: ["hypertension", "blood pressure", "high bp", "bp high"],
+    keys: ["hypertension", "blood pressure", "high bp", "bp high", "hypertensive"],
     disease: "Hypertension (High Blood Pressure)",
     explanation: "Hypertension is a condition where the blood pressure exerted against your arterial walls is consistently too high, forcing the heart to work harder and increasing cardiovascular risks.",
     selfCare: [
@@ -93,7 +93,7 @@ export const symptomDb = [
     seekHelp: "Seek urgent emergency care if your blood pressure reading is 180/120 mmHg or higher, or if it is accompanied by chest pain, a severe headache, blurred vision, shortness of breath, or numbness/weakness."
   },
   {
-    keys: ["asthma", "wheezing", "breathless", "inhaler", "bronchospasm"],
+    keys: ["asthma", "wheezing", "breathless", "inhaler", "bronchospasm", "wheeze", "asthmatic"],
     disease: "Bronchial Asthma / Wheezing",
     explanation: "Asthma is a chronic inflammation of the airways that causes them to swell, narrow, and produce excess mucus, triggering chest tightness, coughing, and whistling wheezes during exhalation.",
     selfCare: [
@@ -116,7 +116,7 @@ export const symptomDb = [
     seekHelp: "Seek emergency medical help if your rescue inhaler does not ease breathing within 15 minutes, you struggle to speak in full sentences, your chest and ribs pull inward deeply when breathing, or your lips turn blue."
   },
   {
-    keys: ["malaria", "dengue", "typhoid", "mosquito", "viral fever", "chikungunya"],
+    keys: ["malaria", "dengue", "typhoid", "mosquito", "viral fever", "chikungunya", "papaya leaf", "high fever joint pain"],
     disease: "Tropical Infections (Dengue, Malaria, Typhoid)",
     explanation: "Tropical febrile illnesses are caused by mosquito-borne parasites/viruses (Malaria, Dengue) or bacterial contamination in food/water (Typhoid), causing persistent high fevers.",
     selfCare: [
@@ -140,7 +140,7 @@ export const symptomDb = [
     seekHelp: "Seek immediate hospitalization if you experience bleeding from the nose, gums, or skin, persistent vomiting, severe abdominal pain, sudden extreme weakness, or confusion."
   },
   {
-    keys: ["constipation", "hard stool", "straining", "bowel movement"],
+    keys: ["constipation", "hard stool", "straining", "bowel movement", "constipated", "irregular bowel"],
     disease: "Constipation",
     explanation: "Constipation occurs when bowel movements become infrequent or difficult, usually due to a lack of dietary fiber, inadequate hydration, or low physical activity.",
     selfCare: [
@@ -166,7 +166,7 @@ export const symptomDb = [
     seekHelp: "Consult your doctor if constipation lasts more than 2 weeks, is accompanied by severe abdominal cramps, vomiting, fever, blood in stool, or unexplained weight loss."
   },
   {
-    keys: ["arthritis", "joint pain", "knee pain", "joint stiffness", "gout", "rheumatoid"],
+    keys: ["arthritis", "joint pain", "knee pain", "joint stiffness", "gout", "rheumatoid", "osteoarthritis", "joint swelling"],
     disease: "Arthritis & Joint Inflammation",
     explanation: "Arthritis is an inflammatory or degenerative condition of the joints (like Osteoarthritis, Rheumatoid Arthritis, or Gout) causing cartilage breakdown, swelling, stiffness, and pain.",
     selfCare: [
@@ -191,7 +191,7 @@ export const symptomDb = [
     seekHelp: "See a clinician if joint pain is accompanied by high fever, rapid joint swelling with extreme redness, severe pain that prevents weight-bearing, or joint deformity."
   },
   {
-    keys: ["fever", "temp", "cold", "cough", "flu", "throat", "bronchitis", "shiver", "congestion"],
+    keys: ["fever", "temp", "cold", "cough", "flu", "throat", "bronchitis", "shiver", "congestion", "sneezing", "runny nose", "sore throat", "coughing", "sneeze"],
     disease: "Fever, Cold & Flu (Respiratory Infection)",
     explanation: "A temporary rise in body temperature, coughing, or throat irritation is typically the body's immune response fighting off viral or bacterial infections like the common cold or influenza.",
     selfCare: [
@@ -218,7 +218,7 @@ export const symptomDb = [
     seekHelp: "Seek immediate medical consultation if your fever exceeds 103°F (39.4°C), persists for more than 3 days, or is accompanied by difficulty breathing, a stiff neck, persistent vomiting, or severe chest pain."
   },
   {
-    keys: ["headache", "migraine", "tension", "head ache", "temple pain"],
+    keys: ["headache", "migraine", "tension", "head ache", "temple pain", "head pain", "throbbing head"],
     disease: "Tension Headache or Migraine",
     explanation: "Headaches are commonly caused by muscle tension in the neck, fatigue, stress, dehydration, or vascular fluctuations (as seen in migraines, which are also triggered by bright lights or foods).",
     selfCare: [
@@ -245,7 +245,7 @@ export const symptomDb = [
     seekHelp: "Seek emergency medical help immediately if you experience a sudden, explosive 'thunderclap' headache, or if it is accompanied by fever, a stiff neck, confusion, double vision, numbness, or difficulty speaking."
   },
   {
-    keys: ["stomach", "belly", "nausea", "vomit", "diarrhea", "cramp", "poisoning", "gastroenteritis", "loose motion"],
+    keys: ["stomach", "belly", "nausea", "vomit", "diarrhea", "cramp", "poisoning", "gastroenteritis", "loose motion", "stomach pain", "stomach ache", "vomiting", "nauseous", "belly pain"],
     disease: "Stomach Distress, Food Poisoning & Gastroenteritis",
     explanation: "Inflammation of the stomach and intestines (commonly known as stomach flu or food poisoning) is caused by consuming contaminated food/water or viral/bacterial pathogens.",
     selfCare: [
@@ -271,7 +271,7 @@ export const symptomDb = [
     seekHelp: "Consult a doctor if you cannot retain liquids for more than 24 hours, notice blood in your vomit or stool, run a high fever, or show signs of severe dehydration (dry mouth, dark urine, extreme dizziness)."
   },
   {
-    keys: ["acidity", "heartburn", "gerd", "acid reflux", "gas"],
+    keys: ["acidity", "heartburn", "gerd", "acid reflux", "gas", "bloating", "acid burning"],
     disease: "Acid Reflux & Heartburn (Acidity)",
     explanation: "Acidity occurs when stomach acid flows back up into the esophagus (acid reflux), irritating the sensitive lining and causing a burning sensation behind the breastbone.",
     selfCare: [
@@ -297,7 +297,7 @@ export const symptomDb = [
     seekHelp: "Seek immediate care if heartburn is accompanied by difficulty swallowing, vomiting blood, unexplained weight loss, or if the burning sensation feels like pressure spreading to the arm, neck, or jaw (signs of cardiac distress)."
   },
   {
-    keys: ["burn", "scald", "sunburn", "blister", "hot water"],
+    keys: ["burn", "scald", "sunburn", "blister", "hot water", "minor burn", "skin burn"],
     disease: "Minor Burn, Sunburn or Scald",
     explanation: "Skin damage caused by heat, chemicals, friction, or UV rays, leading to pain, redness, and swelling. Safe home care is critical to prevent bacterial infection.",
     selfCare: [
@@ -322,7 +322,7 @@ export const symptomDb = [
     seekHelp: "Go to a clinic if the burn covers a major joint, face, hands, feet, or groin, is larger than 3 inches in diameter, is charred/white (third-degree), or shows signs of infection (increased pain, redness, warmth, or pus)."
   },
   {
-    keys: ["allergy", "rash", "itching", "hives", "eczema", "bite", "sting"],
+    keys: ["allergy", "rash", "itching", "hives", "eczema", "bite", "sting", "allergic", "skin rash", "itchy skin"],
     disease: "Allergic Reaction or Skin Rash",
     explanation: "An immune response to contact allergens, foods, pollens, or insect bites, causing histamine release which leads to inflammation, redness, and itching.",
     selfCare: [
@@ -378,10 +378,44 @@ export function lookupSymptom(query) {
   
   const text = query.toLowerCase().trim();
   
-  // Find a matching symptom category based on keys
-  const match = symptomDb.find(entry => 
-    entry.keys.some(key => text.includes(key))
-  );
+  // We will score each entry in symptomDb
+  const scored = symptomDb.map(entry => {
+    let score = 0;
+    
+    // 1. Check direct matches of key phrases
+    entry.keys.forEach(key => {
+      if (text.includes(key)) {
+        // High score for exact phrase match
+        score += 10;
+      }
+    });
+
+    // 2. Split query into words to catch variations, stems, and abbreviations
+    const words = text.split(/[\s,?.!]+/);
+    const stopWords = ["i", "have", "a", "and", "the", "feel", "with", "in", "of", "to", "my", "is", "for", "am", "some", "any", "me", "you"];
+    
+    words.forEach(word => {
+      if (word.length < 3 || stopWords.includes(word)) return;
+      
+      entry.keys.forEach(key => {
+        // Substring checks to align word stems (e.g. "nauseous" matches "nausea" via stem "naus")
+        if (key.includes(word) || word.includes(key) || (word.length >= 4 && key.substring(0, 4) === word.substring(0, 4))) {
+          score += 3;
+        }
+      });
+    });
+
+    return { entry, score };
+  });
+
+  // Sort by score in descending order
+  const sorted = scored.sort((a, b) => b.score - a.score);
+  const bestMatch = sorted[0];
+
+  // If the best match has a valid matching score, return it
+  if (bestMatch && bestMatch.score >= 2) {
+    return bestMatch.entry;
+  }
   
-  return match || fallbackSymptom;
+  return fallbackSymptom;
 }
