@@ -128,19 +128,7 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Floating Bottom Toggle Button ("three lines like home button") */}
-      <div className="floating-bottom-toggle-wrapper">
-        <button 
-          className={`floating-bottom-toggle-btn ${isHubOpen ? 'open' : ''}`}
-          onClick={() => setIsHubOpen(!isHubOpen)}
-          title="Toggle Features Hub"
-        >
-          <div className="toggle-btn-icon-wrapper">
-            {isHubOpen ? <X size={24} color="white" /> : <Menu size={24} color="white" />}
-          </div>
-          <span className="pulse-ring"></span>
-        </button>
-      </div>
+
 
       {/* Fullscreen Hub Menu Overlay */}
       <AnimatePresence>
