@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MapPin, Navigation, Loader2 } from 'lucide-react';
+import { MapPin, Navigation, Loader2, AlertOctagon, Phone, ShieldAlert, HeartPulse } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import './Nearby.css';
 
@@ -82,7 +82,7 @@ const generateMockFacilities = (lat) => {
 };
 
 const Nearby = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [searchParams] = useSearchParams();
   const [filter, setFilter] = useState('all');
   const [locations, setLocations] = useState([]);
@@ -443,27 +443,58 @@ const Nearby = () => {
   return (
     <div className="nearby-container container">
       {showEmergencyModal && (
-        <div className="emergency-sos-overlay">
-          <div className="emergency-sos-modal glass animate-scale-up">
-            <div className="sos-badge pulsing-sos">{t('emergencyAlert')}</div>
-            <h2>{t('emergencyAlert')}</h2>
+        <div className="emergency-sos-overlay" onClick={() => setShowEmergencyModal(false)}>
+          <div className="emergency-sos-modal glass animate-scale-up" onClick={(e) => e.stopPropagation()}>
+            <div className="sos-badge pulsing-sos">
+              <AlertOctagon size={16} />
+              <span>{t('emergencyAlert')}</span>
+            </div>
+            
+            <h2 className="sos-title">{t('emergencyAlert')}</h2>
             <p className="sos-desc">{t('emergencyGuidelines')}</p>
-            <div className="sos-instructions">
-              <div className="sos-step">
-                <span className="step-num">1</span>
-                <span>{t('sosStep1')}</span>
+            
+            {/* Direct Call Ambulance Button */}
+            <a href="tel:108" className="sos-call-btn">
+              <Phone size={22} className="phone-icon-pulse" />
+              <div className="sos-call-text-wrapper">
+                <span className="call-title">{t('sosEmergencyServices')}</span>
+                <span className="call-number">DIAL 108 / 911 IMMEDIATELY</span>
               </div>
-              <div className="sos-step">
-                <span className="step-num">2</span>
-                <span>{t('sosStep2')}</span>
+            </a>
+
+            {/* Steps */}
+            <div className="sos-instructions-grid">
+              <div className="sos-step-card glass">
+                <div className="step-header">
+                  <span className="step-badge">STEP 1</span>
+                  <HeartPulse size={18} className="step-icon text-rose" />
+                </div>
+                <p className="step-text">{t('sosStep1').replace(/^\d+\.\s*/, '')}</p>
               </div>
-              <div className="sos-step">
-                <span className="step-num">3</span>
-                <span>{t('sosStep3')}</span>
+              
+              <div className="sos-step-card glass">
+                <div className="step-header">
+                  <span className="step-badge">STEP 2</span>
+                  <ShieldAlert size={18} className="step-icon text-amber" />
+                </div>
+                <p className="step-text">{t('sosStep2').replace(/^\d+\.\s*/, '')}</p>
+              </div>
+              
+              <div className="sos-step-card glass">
+                <div className="step-header">
+                  <span className="step-badge">STEP 3</span>
+                  <Phone size={18} className="step-icon text-emerald" />
+                </div>
+                <p className="step-text">{t('sosStep3').replace(/^\d+\.\s*/, '')}</p>
               </div>
             </div>
-            <button className="btn btn-primary btn-lg sos-close-btn" onClick={() => setShowEmergencyModal(false)}>
-              Close and view nearest hospitals
+
+            {/* Close Button / View Map */}
+            <button 
+              className="btn sos-close-btn" 
+              onClick={() => setShowEmergencyModal(false)}
+            >
+              {language === 'en' ? 'Close & View Nearby Hospitals' : 'बंद करें और आस-पास के अस्पताल देखें'}
             </button>
           </div>
         </div>

@@ -311,134 +311,229 @@
 }
 
 /* Emergency SOS Overlay & Modal Styles */
+/* Emergency SOS Overlay & Modal Styles */
 .emergency-sos-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
   padding: 1.5rem;
-  animation: overlay-fade-in 0.3s ease;
+  animation: overlay-fade-in 0.35s ease-out;
 }
 
 .emergency-sos-modal {
-  background: rgba(239, 68, 68, 0.08) !important;
+  background: rgba(239, 68, 68, 0.04) !important;
   border: 2px solid rgba(239, 68, 68, 0.3) !important;
   box-shadow: 0 25px 50px -12px rgba(239, 68, 68, 0.25) !important;
-  border-radius: 1.5rem;
+  border-radius: 1.75rem;
   width: 100%;
-  max-width: 520px;
+  max-width: 540px;
   padding: 2.25rem;
   text-align: center;
   color: var(--text-main);
-  animation: modal-slide-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modal-slide-up 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 [data-theme='dark'] .emergency-sos-modal {
-  background: rgba(239, 68, 68, 0.15) !important;
+  background: rgba(239, 68, 68, 0.08) !important;
 }
 
 .sos-badge {
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   padding: 0.5rem 1.25rem;
   background: #EF4444;
   color: white;
-  font-weight: 700;
+  font-weight: 750;
   border-radius: 2rem;
-  font-size: 0.85rem;
-  letter-spacing: 0.05em;
-  margin-bottom: 1.25rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  margin: 0 auto;
+  width: fit-content;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
 }
 
 .pulsing-sos {
-  animation: sos-pulse-glow 1.5s infinite ease-in-out;
+  animation: sos-pulse-glow 1.6s infinite ease-in-out;
 }
 
 @keyframes sos-pulse-glow {
   0% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
   }
   100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
   }
 }
 
-.emergency-sos-modal h2 {
-  font-size: 1.8rem;
+.sos-title {
+  font-size: 1.85rem;
   font-weight: 800;
-  color: #DC2626;
-  margin-bottom: 0.75rem;
+  color: #DC2626 !important;
   font-family: var(--font-heading);
+  margin: 0;
 }
 
-[data-theme='dark'] .emergency-sos-modal h2 {
-  color: #EF4444;
+[data-theme='dark'] .sos-title {
+  color: #EF4444 !important;
 }
 
 .sos-desc {
   font-size: 0.95rem;
   color: var(--text-muted);
-  margin-bottom: 1.75rem;
-}
-
-.sos-instructions {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  text-align: left;
-  margin-bottom: 2rem;
-}
-
-.sos-step {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-start;
-  font-size: 0.92rem;
   line-height: 1.4;
+  margin: 0;
 }
 
-.step-num {
-  width: 24px;
-  height: 24px;
-  background: rgba(239, 68, 68, 0.15);
-  color: #DC2626;
-  border-radius: 50%;
+/* Call Emergency Button */
+.sos-call-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  flex-shrink: 0;
-  font-size: 0.8rem;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  gap: 1rem;
+  width: 100%;
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  color: white !important;
+  text-decoration: none;
+  padding: 1.1rem;
+  border-radius: 1.1rem;
+  font-weight: 800;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  animation: sos-call-pulse 1.8s infinite ease-in-out;
 }
 
-[data-theme='dark'] .step-num {
-  color: #EF4444;
-  background: rgba(239, 68, 68, 0.25);
+.sos-call-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.55);
 }
 
+.sos-call-btn:active {
+  transform: scale(0.97);
+}
+
+.sos-call-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.sos-call-text-wrapper .call-title {
+  font-size: 1.05rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.sos-call-text-wrapper .call-number {
+  font-size: 0.72rem;
+  opacity: 0.85;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.phone-icon-pulse {
+  animation: phone-icon-shake 0.5s infinite ease-in-out alternate;
+}
+
+@keyframes phone-icon-shake {
+  from { transform: rotate(-10deg) scale(1.1); }
+  to { transform: rotate(10deg) scale(1.1); }
+}
+
+@keyframes sos-call-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Instructions Cards Grid */
+.sos-instructions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  text-align: left;
+}
+
+.sos-step-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.step-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.step-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+[data-theme='dark'] .step-badge {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.step-icon.text-rose { color: #f43f5e; }
+.step-icon.text-amber { color: #d97706; }
+.step-icon.text-emerald { color: #10b981; }
+
+.step-text {
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--text-main);
+  margin: 0;
+}
+
+/* Close/Secondary Action Button */
 .sos-close-btn {
   width: 100%;
-  background: #DC2626 !important;
-  color: white !important;
-  border: none !important;
-  font-weight: 600;
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4) !important;
+  padding: 0.85rem;
+  border-radius: 0.85rem;
+  border: 1.5px solid var(--border) !important;
+  background: transparent !important;
+  color: var(--text-main) !important;
+  font-weight: 750;
+  box-shadow: none !important;
+  transition: all 0.25s;
+  cursor: pointer;
 }
 
 .sos-close-btn:hover {
-  background: #EF4444 !important;
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5) !important;
+  background: rgba(15, 118, 110, 0.04) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+.sos-close-btn:active {
+  transform: scale(0.98);
 }
 
 @keyframes overlay-fade-in {
