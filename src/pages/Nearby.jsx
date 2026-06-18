@@ -445,9 +445,21 @@ const Nearby = () => {
       {showEmergencyModal && (
         <div className="emergency-sos-overlay" onClick={() => setShowEmergencyModal(false)}>
           <div className="emergency-sos-modal glass animate-scale-up" onClick={(e) => e.stopPropagation()}>
-            <div className="sos-badge pulsing-sos">
-              <AlertOctagon size={16} />
-              <span>{t('emergencyAlert')}</span>
+            
+            {/* GPS Tracker indicator */}
+            <div className="emergency-system-status">
+              <span className="status-indicator-dot pulsing-green"></span>
+              <span className="status-indicator-text">GPS DISPATCH STATUS ACTIVE</span>
+            </div>
+
+            {/* Radar Beacon Animation */}
+            <div className="sos-radar-animation">
+              <div className="radar-wave wave-1"></div>
+              <div className="radar-wave wave-2"></div>
+              <div className="radar-wave wave-3"></div>
+              <div className="radar-core">
+                <AlertOctagon size={28} color="white" />
+              </div>
             </div>
             
             <h2 className="sos-title">{t('emergencyAlert')}</h2>
@@ -458,34 +470,40 @@ const Nearby = () => {
               <Phone size={22} className="phone-icon-pulse" />
               <div className="sos-call-text-wrapper">
                 <span className="call-title">{t('sosEmergencyServices')}</span>
-                <span className="call-number">DIAL 108 / 911 IMMEDIATELY</span>
+                <span className="call-number">TAP TO LAUNCH DIALER (108 / 911)</span>
               </div>
             </a>
 
             {/* Steps */}
             <div className="sos-instructions-grid">
               <div className="sos-step-card glass">
-                <div className="step-header">
-                  <span className="step-badge">STEP 1</span>
-                  <HeartPulse size={18} className="step-icon text-rose" />
+                <div className="step-icon-container text-rose">
+                  <HeartPulse size={20} />
                 </div>
-                <p className="step-text">{t('sosStep1').replace(/^\d+\.\s*/, '')}</p>
+                <div className="step-content">
+                  <span className="step-badge">CRITICAL ACTION 1</span>
+                  <p className="step-text">{t('sosStep1').replace(/^\d+\.\s*/, '')}</p>
+                </div>
               </div>
               
               <div className="sos-step-card glass">
-                <div className="step-header">
-                  <span className="step-badge">STEP 2</span>
-                  <ShieldAlert size={18} className="step-icon text-amber" />
+                <div className="step-icon-container text-amber">
+                  <ShieldAlert size={20} />
                 </div>
-                <p className="step-text">{t('sosStep2').replace(/^\d+\.\s*/, '')}</p>
+                <div className="step-content">
+                  <span className="step-badge">CRITICAL ACTION 2</span>
+                  <p className="step-text">{t('sosStep2').replace(/^\d+\.\s*/, '')}</p>
+                </div>
               </div>
               
               <div className="sos-step-card glass">
-                <div className="step-header">
-                  <span className="step-badge">STEP 3</span>
-                  <Phone size={18} className="step-icon text-emerald" />
+                <div className="step-icon-container text-emerald">
+                  <Phone size={20} />
                 </div>
-                <p className="step-text">{t('sosStep3').replace(/^\d+\.\s*/, '')}</p>
+                <div className="step-content">
+                  <span className="step-badge">CRITICAL ACTION 3</span>
+                  <p className="step-text">{t('sosStep3').replace(/^\d+\.\s*/, '')}</p>
+                </div>
               </div>
             </div>
 
@@ -494,7 +512,7 @@ const Nearby = () => {
               className="btn sos-close-btn" 
               onClick={() => setShowEmergencyModal(false)}
             >
-              {language === 'en' ? 'Close & View Nearby Hospitals' : 'बंद करें और आस-पास के अस्पताल देखें'}
+              {language === 'en' ? 'Proceed to Nearby Hospital Directory →' : 'आस-पास के अस्पताल सूची पर जाएं →'}
             </button>
           </div>
         </div>
