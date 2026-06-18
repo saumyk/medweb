@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Stethoscope, MapPin, Activity, Search, Moon, Sun, Home as HomeIcon, Bot, Camera, HeartPulse, AlertOctagon, Menu, X } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import './Navbar.css';
 
 const Navbar = () => {
-  const location = useLocation();
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
@@ -129,65 +128,18 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Floating Bottom Navigation Dock */}
-      <div className="floating-bottom-dock-wrapper">
-        <div className="floating-bottom-dock glass">
-          {/* Home Tab */}
-          <Link 
-            to="/" 
-            className={`dock-tab ${location.pathname === '/' ? 'active' : ''}`}
-            onClick={() => setIsHubOpen(false)}
-            title={t('home')}
-          >
-            <HomeIcon size={20} />
-            <span className="dock-tab-label">{t('home')}</span>
-          </Link>
-
-          {/* AI Assistant Tab */}
-          <Link 
-            to="/assistant" 
-            className={`dock-tab ${location.pathname === '/assistant' ? 'active' : ''}`}
-            onClick={() => setIsHubOpen(false)}
-            title={t('aiAssistant')}
-          >
-            <Bot size={20} />
-            <span className="dock-tab-label">{language === 'en' ? 'AI Chat' : 'चैट'}</span>
-          </Link>
-
-          {/* Central elevated hamburger menu trigger ("three lines like home button") */}
-          <button 
-            className={`dock-center-toggle-btn ${isHubOpen ? 'open' : ''}`}
-            onClick={() => setIsHubOpen(!isHubOpen)}
-            title="Toggle Features Hub"
-          >
-            <div className="toggle-btn-icon-wrapper">
-              {isHubOpen ? <X size={24} color="white" /> : <Menu size={24} color="white" />}
-            </div>
-            <span className="pulse-ring"></span>
-          </button>
-
-          {/* Health Dashboard Tab */}
-          <Link 
-            to="/dashboard" 
-            className={`dock-tab ${location.pathname === '/dashboard' ? 'active' : ''}`}
-            onClick={() => setIsHubOpen(false)}
-            title={t('dashboard')}
-          >
-            <HeartPulse size={20} />
-            <span className="dock-tab-label">{language === 'en' ? 'Vitals' : 'विटल्स'}</span>
-          </Link>
-
-          {/* Nearby Tab */}
-          <Link 
-            to="/nearby" 
-            className={`dock-tab ${location.pathname === '/nearby' ? 'active' : ''}`}
-            onClick={() => setIsHubOpen(false)}
-            title={t('nearby')}
-          >
-            <MapPin size={20} />
-            <span className="dock-tab-label">{language === 'en' ? 'Nearby' : 'आस-पास'}</span>
-          </Link>
-        </div>
+      {/* Floating Bottom Toggle Button ("three lines like home button") */}
+      <div className="floating-bottom-toggle-wrapper">
+        <button 
+          className={`floating-bottom-toggle-btn ${isHubOpen ? 'open' : ''}`}
+          onClick={() => setIsHubOpen(!isHubOpen)}
+          title="Toggle Features Hub"
+        >
+          <div className="toggle-btn-icon-wrapper">
+            {isHubOpen ? <X size={24} color="white" /> : <Menu size={24} color="white" />}
+          </div>
+          <span className="pulse-ring"></span>
+        </button>
       </div>
 
       {/* Fullscreen Hub Menu Overlay */}
