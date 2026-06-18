@@ -440,3 +440,9 @@
   transform: scale(0.97) !important;
   opacity: 0.95;
 }
+
+.feature-card-link {
+  text-decoration: none !important;
+  color: inherit !important;
+  display: block;
+}

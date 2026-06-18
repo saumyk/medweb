@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Loader2, FileWarning, FlaskConical, Factory, ShieldAlert } from 'lucide-react';
+import { useLanguage } from '../components/LanguageContext';
 import './MedicineInfo.css';
 
 const getMedCareInstructions = (query) => {
@@ -76,6 +77,7 @@ const fetchWithTimeout = (url, timeoutMs) => {
 };
 
 const MedicineInfo = () => {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -276,8 +278,8 @@ const MedicineInfo = () => {
   return (
     <div className="med-info-container container">
       <div className="med-info-header">
-        <h1 className="page-title">Medicine Dictionary</h1>
-        <p className="page-subtitle">Real-time data from trusted sources (FDA/NLM) for dosage, usage, and risks.</p>
+        <h1 className="page-title">{t('medTitle')}</h1>
+        <p className="page-subtitle">{t('medSubtitle')}</p>
       </div>
 
       <div className="search-section glass shadow-sm">
@@ -286,14 +288,14 @@ const MedicineInfo = () => {
             <Search className="search-icon" size={20} />
             <input 
               type="text" 
-              placeholder="Enter medicine name (e.g. Paracetamol, Ibuprofen)..."
+              placeholder={t('medInputPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="search-input"
             />
           </div>
           <button type="submit" className="btn btn-primary" disabled={isSearching || !searchQuery}>
-            {isSearching ? <Loader2 className="spinner" size={20} /> : 'Search'}
+            {isSearching ? <Loader2 className="spinner" size={20} /> : t('search')}
           </button>
         </form>
       </div>
@@ -307,10 +309,11 @@ const MedicineInfo = () => {
             exit={{ opacity: 0 }}
           >
             <Loader2 className="spinner large" size={40} />
-            <p>Fetching real-time trusted medical details...</p>
+            <p>{t('searchingMed')}</p>
           </motion.div>
         )}
       </AnimatePresence>
+
 
       <AnimatePresence>
         {error && !isSearching && (
@@ -341,11 +344,11 @@ const MedicineInfo = () => {
               <div className="formula-box">
                 <div className="formula-item">
                   <FlaskConical size={18} className="text-primary" />
-                  <span><strong>Formula:</strong> {result.formula}</span>
+                  <span><strong>{t('medFormula')}</strong> {result.formula}</span>
                 </div>
                 <div className="formula-item">
                   <Factory size={18} className="text-primary" />
-                  <span><strong>Manufacturer:</strong> {result.manufacturer}</span>
+                  <span><strong>{t('medManufacturer')}</strong> {result.manufacturer}</span>
                 </div>
               </div>
               
@@ -368,11 +371,12 @@ const MedicineInfo = () => {
               )}
             </div>
 
+
             <div className="details-stack">
               
               {/* Uses */}
               <div className="info-section">
-                <h3 className="info-section-title">Key Uses of {result.name}</h3>
+                <h3 className="info-section-title">{t('medDescription')}</h3>
                 {Array.isArray(result.description) ? (
                   <ul className="uses-list">
                     {result.description.map((use, idx) => (
@@ -388,7 +392,7 @@ const MedicineInfo = () => {
 
               {/* Side Effects */}
               <div className="info-section">
-                <h3 className="info-section-title">Side Effects of {result.name}</h3>
+                <h3 className="info-section-title">{t('medRisks')}</h3>
                 <p className="side-effects-intro">
                   Most side effects do not require any medical attention and disappear as your body adjusts to the medicine. Consult your doctor if they persist or if you're worried about them.
                 </p>
@@ -406,7 +410,7 @@ const MedicineInfo = () => {
 
               {/* How to use */}
               <div className="info-section">
-                <h3 className="info-section-title">How to use {result.name}</h3>
+                <h3 className="info-section-title">{t('medDosage')}</h3>
                 <p className="dosage-text">
                   {result.dosage}
                 </p>
@@ -441,7 +445,7 @@ const MedicineInfo = () => {
 
               {/* When to Seek Help Warning */}
               <div className="info-section">
-                <h3 className="info-section-title danger-header">When to Seek Medical Help</h3>
+                <h3 className="info-section-title danger-header">{t('whenSeekHelp')}</h3>
                 <div className="warning-box-medicine">
                   <ShieldAlert size={20} className="warning-icon-medicine" />
                   <div className="warning-text-medicine">
@@ -455,13 +459,13 @@ const MedicineInfo = () => {
 
               {/* Safety Advice */}
               <div className="info-section">
-                <h3 className="info-section-title">Safety Advice</h3>
+                <h3 className="info-section-title">{t('medSafety')}</h3>
                 
                 <div className="safety-advice-list">
                   <div className="safety-advice-item">
                     <div className="safety-icon-wrapper">🍷</div>
                     <div className="safety-label-wrapper">
-                      <strong className="safety-substance-name">Alcohol</strong>
+                      <strong className="safety-substance-name">{t('alcoholSafety')}</strong>
                       <span className={`safety-status-badge status-${result.safety.alcohol.toLowerCase()}`}>
                         {result.safety.alcohol}
                       </span>
@@ -471,7 +475,7 @@ const MedicineInfo = () => {
                   <div className="safety-advice-item">
                     <div className="safety-icon-wrapper">🤰</div>
                     <div className="safety-label-wrapper">
-                      <strong className="safety-substance-name">Pregnancy</strong>
+                      <strong className="safety-substance-name">{t('pregnancySafety')}</strong>
                       <span className={`safety-status-badge status-${result.safety.pregnancy.toLowerCase()}`}>
                         {result.safety.pregnancy}
                       </span>
@@ -479,6 +483,7 @@ const MedicineInfo = () => {
                   </div>
                 </div>
               </div>
+
 
             </div>
           </motion.div>

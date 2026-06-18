@@ -2,9 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Bot, Send } from 'lucide-react';
 import { lookupSymptom } from '../utils/symptomDatabase';
+import { useLanguage } from '../components/LanguageContext';
 import './AIAssistant.css';
 
 const AIAssistant = () => {
+  const { t } = useLanguage();
   const [query, setQuery] = useState('');
 
   const [messages, setMessages] = useState([
@@ -198,8 +200,8 @@ ${match.seekHelp}`;
   return (
     <div className="ai-assistant-container container">
       <div className="ai-assistant-header">
-        <h1 className="page-title">AI Health Assistant</h1>
-        <p className="page-subtitle">Consult our medical chatbot to receive immediate self-care recommendations and severity warnings.</p>
+        <h1 className="page-title">{t('aiAssistantTitle')}</h1>
+        <p className="page-subtitle">{t('aiAssistantSubtitle')}</p>
       </div>
 
       <div className="chat-interface-wrapper glass shadow-md">
@@ -209,8 +211,8 @@ ${match.seekHelp}`;
               <Bot size={22} color="white" />
             </div>
             <div className="bot-details-status">
-              <h3>Medical AI Assistant</h3>
-              <span className="online-indicator"><span className="indicator-dot"></span>Active & Ready</span>
+              <h3>{t('medicalAiAssistant')}</h3>
+              <span className="online-indicator"><span className="indicator-dot"></span>{t('activeReady')}</span>
             </div>
           </div>
         </div>
@@ -256,7 +258,7 @@ ${match.seekHelp}`;
                     })}
                   </div>
                 ) : (
-                  <p>{msg.text}</p>
+                  <p>{msg.id === 'welcome' ? t('welcomeMsg') : msg.text}</p>
                 )}
               </div>
             </div>
@@ -280,7 +282,7 @@ ${match.seekHelp}`;
         </div>
 
         <div className="chat-presets-bar">
-          <span className="presets-label">Suggested Queries:</span>
+          <span className="presets-label">{t('suggestedQueries')}</span>
           <div className="presets-list">
             {presetPrompts.map((preset, index) => (
               <button 
@@ -304,7 +306,7 @@ ${match.seekHelp}`;
         >
           <input 
             type="text"
-            placeholder="Ask about a symptom, self-care steps, or health concerns..."
+            placeholder={t('askPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="chat-input-field"

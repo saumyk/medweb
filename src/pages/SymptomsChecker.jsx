@@ -3,9 +3,11 @@ import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Search, Loader2, ShieldAlert } from 'lucide-react';
 import { lookupSymptom } from '../utils/symptomDatabase';
+import { useLanguage } from '../components/LanguageContext';
 import './SymptomsChecker.css';
 
 const SymptomsChecker = () => {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const [symptoms, setSymptoms] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -111,28 +113,28 @@ const SymptomsChecker = () => {
       <div className="symptoms-header">
         <div className="title-wrapper">
           <Activity size={32} className="header-icon" color="var(--primary)" />
-          <h1 className="page-title">Symptom Care Center</h1>
+          <h1 className="page-title">{t('symptomTitle')}</h1>
         </div>
-        <p className="page-subtitle">Search a symptom to view instant, structured home care instructions and emergency severity criteria.</p>
+        <p className="page-subtitle">{t('symptomSubtitle')}</p>
       </div>
 
       <div className="disclaimer-alert glass shadow-sm">
         <ShieldAlert size={24} className="alert-icon" />
         <div className="alert-text">
-          <strong>Not Medical Advice</strong>
-          <p>This tool is for informational purposes only. It recommends self-care protocols for symptoms but does not diagnose diseases. Always consult a healthcare professional for clinical advice.</p>
+          <strong>{t('notMedicalAdvice')}</strong>
+          <p>{t('disclaimer')}</p>
         </div>
       </div>
 
       <div className="search-section glass shadow-sm">
         <form onSubmit={handleSearch} className="symptoms-form">
           <div className="input-group">
-            <label htmlFor="symptoms-input">Your Symptoms</label>
+            <label htmlFor="symptoms-input">{t('symptomsInputLabel')}</label>
             <div className="textarea-wrapper">
               <Search className="search-icon" size={20} />
               <textarea 
                 id="symptoms-input"
-                placeholder="E.g., severe headache, nausea, sensitivity to light..."
+                placeholder={t('symptomsInputPlaceholder')}
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
                 className="symptoms-input"
@@ -141,7 +143,7 @@ const SymptomsChecker = () => {
             </div>
           </div>
           <button type="submit" className="btn btn-primary analyze-btn" disabled={isSearching || !symptoms.trim()}>
-            {isSearching ? <Loader2 className="spinner" size={20} /> : 'Analyze Symptoms'}
+            {isSearching ? <Loader2 className="spinner" size={20} /> : t('analyzeBtn')}
           </button>
         </form>
       </div>
@@ -155,7 +157,7 @@ const SymptomsChecker = () => {
             exit={{ opacity: 0 }}
           >
             <Loader2 className="spinner large" size={40} />
-            <p>Analyzing symptoms and preparing care guidelines...</p>
+            <p>{t('analyzingState')}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -172,11 +174,11 @@ const SymptomsChecker = () => {
               <div className="guidance-header-block">
                 <div className="guidance-header">
                   <Activity size={24} className="guidance-header-icon" />
-                  <h2>AI Care Guidance for &ldquo;{symptomContext.symptom}&rdquo;</h2>
+                  <h2>{t('resultsTitle')} &ldquo;{symptomContext.symptom}&rdquo;</h2>
                 </div>
                 {symptomContext.disease && (
                   <div className="disease-info-header glass">
-                    <h3 className="disease-title">Possible Condition: {symptomContext.disease}</h3>
+                    <h3 className="disease-title">{t('possibleCondition')} {symptomContext.disease}</h3>
                     <p className="disease-explanation">{symptomContext.explanation}</p>
                   </div>
                 )}
@@ -184,7 +186,7 @@ const SymptomsChecker = () => {
               
               <div className="guidance-content-grid">
                 <div className="guidance-col guidance-selfcare">
-                  <h3>Home Self-Care Steps</h3>
+                  <h3>{t('homeSelfCare')}</h3>
                   <ul className="guidance-selfcare-list">
                     {symptomContext.selfCare.map((step, idx) => (
                       <li key={idx}>
@@ -197,7 +199,7 @@ const SymptomsChecker = () => {
 
                 <div className="guidance-col guidance-dietary">
                   <div className="dietary-section eat-section">
-                    <h3>🍏 What to Eat</h3>
+                    <h3>🍏 {t('whatToEat')}</h3>
                     <ul className="guidance-eat-list">
                       {symptomContext.whatToEat.map((food, idx) => (
                         <li key={idx}>
@@ -209,7 +211,7 @@ const SymptomsChecker = () => {
                   </div>
 
                   <div className="dietary-section avoid-section">
-                    <h3>🚫 What to Avoid</h3>
+                    <h3>🚫 {t('whatToAvoid')}</h3>
                     <ul className="guidance-avoid-list">
                       {symptomContext.whatToAvoid.map((food, idx) => (
                         <li key={idx}>
@@ -222,7 +224,7 @@ const SymptomsChecker = () => {
                 </div>
                 
                 <div className="guidance-col guidance-seekhelp">
-                  <h3>When to Seek Medical Help</h3>
+                  <h3>{t('whenSeekHelp')}</h3>
                   <div className="guidance-seekhelp-box">
                     <ShieldAlert size={22} className="guidance-alert-icon" />
                     <p>{symptomContext.seekHelp}</p>

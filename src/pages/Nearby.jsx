@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapPin, Navigation, Loader2 } from 'lucide-react';
+import { useLanguage } from '../components/LanguageContext';
 import './Nearby.css';
 
 const fetchWithTimeout = (url, options = {}, timeoutMs = 5000) => {
@@ -81,6 +82,7 @@ const generateMockFacilities = (lat) => {
 };
 
 const Nearby = () => {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const [filter, setFilter] = useState('all');
   const [locations, setLocations] = useState([]);
@@ -442,22 +444,22 @@ const Nearby = () => {
     <div className="nearby-container container">
       {showEmergencyModal && (
         <div className="emergency-sos-overlay">
-          <div className="emergency-sos-modal glass">
-            <div className="sos-badge pulsing-sos">EMERGENCY ALERT</div>
-            <h2>Critical Triage Command</h2>
-            <p className="sos-desc">We have detected an emergency command. Please follow these guidelines immediately:</p>
+          <div className="emergency-sos-modal glass animate-scale-up">
+            <div className="sos-badge pulsing-sos">{t('emergencyAlert')}</div>
+            <h2>{t('emergencyAlert')}</h2>
+            <p className="sos-desc">{t('emergencyGuidelines')}</p>
             <div className="sos-instructions">
               <div className="sos-step">
                 <span className="step-num">1</span>
-                <span><strong>Call Help Immediately:</strong> Dial <strong>108</strong> (India) or <strong>911</strong> (US). Do not drive yourself.</span>
+                <span>{t('sosStep1')}</span>
               </div>
               <div className="sos-step">
                 <span className="step-num">2</span>
-                <span><strong>Navigate to Hospital:</strong> Close this modal and click <strong>"Directions"</strong> on the nearest hospital card below.</span>
+                <span>{t('sosStep2')}</span>
               </div>
               <div className="sos-step">
                 <span className="step-num">3</span>
-                <span><strong>Rest & Air:</strong> Stay sitting upright. Loosen any tight clothing. Do not drink/eat anything.</span>
+                <span>{t('sosStep3')}</span>
               </div>
             </div>
             <button className="btn btn-primary btn-lg sos-close-btn" onClick={() => setShowEmergencyModal(false)}>
@@ -468,8 +470,8 @@ const Nearby = () => {
       )}
 
       <div className="nearby-header">
-        <h1 className="page-title">Nearby Healthcare</h1>
-        <p className="page-subtitle">Real-time data for hospitals, clinics, and pharmacies near your location.</p>
+        <h1 className="page-title">{t('nearbyTitle')}</h1>
+        <p className="page-subtitle">{t('nearbySubtitle')}</p>
         
         {/* Manual Geocoding Location Search */}
         <form onSubmit={handleManualLocationSearch} className="location-search-container">

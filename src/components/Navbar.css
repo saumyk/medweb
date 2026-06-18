@@ -206,3 +206,31 @@
     color: var(--primary);
   }
 }
+
+/* Custom Navbar Button Animations & Styles */
+.lang-toggle:hover {
+  background: rgba(15, 118, 110, 0.15) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+.sos-nav-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.6) !important;
+}
+
+.sos-nav-btn:active {
+  transform: scale(0.95);
+}
+
+@keyframes pulse-sos-btn {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}

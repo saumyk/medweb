@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Bot, Activity, ShieldAlert, Search, Wifi, Battery, Signal } from 'lucide-react';
+import { ArrowRight, Bot, ShieldAlert, Search, Wifi, Battery, Signal, Camera, HeartPulse, Globe } from 'lucide-react';
+import { useLanguage } from '../components/LanguageContext';
 import './Home.css';
 
 const Home = () => {
+  const { t } = useLanguage();
+
   return (
     <div className="home-container">
       {/* Hero Section */}
@@ -15,20 +18,20 @@ const Home = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="badge">AI-Powered Healthcare</div>
+            <div className="badge">{t('heroBadge')}</div>
             <h1 className="hero-title">
-              Your Smart <span className="gradient-text">Medical AI</span> Companion
+              {t('heroTitlePre')}<span className="gradient-text">Medical AI</span>{t('heroTitlePost')}
             </h1>
             <p className="hero-subtitle">
-              Consult our AI Assistant, get step-by-step self-care steps, check medicine details, and know exactly when to seek immediate medical help.
+              {t('heroSubtitle')}
             </p>
             <div className="hero-actions">
               <Link to="/assistant" className="btn btn-primary btn-lg">
                 <Bot size={20} />
-                Consult AI Assistant
+                {t('consultBtn')}
               </Link>
               <Link to="/symptoms" className="btn btn-outline btn-lg">
-                Check Symptoms
+                {t('checkSymptomsBtn')}
                 <ArrowRight size={20} />
               </Link>
             </div>
@@ -101,31 +104,50 @@ const Home = () => {
       {/* Features Section */}
       <section className="features-section">
         <div className="container">
-          <h2 className="section-title">Everything you need</h2>
+          <h2 className="section-title">{t('featuresTitle')}</h2>
           <div className="features-grid">
             <FeatureCard 
               icon={<Bot size={32} />}
-              title="Medical AI Assistant"
-              desc="Ask health questions and get instant, structured medical guidelines and advice."
+              title={t('aiAssistantTitle')}
+              desc={t('aiAssistantSubtitle')}
               delay={0.1}
+              path="/assistant"
             />
             <FeatureCard 
-              icon={<Activity size={32} />}
-              title="Self-Care Guides"
-              desc="Access easy-to-follow instructions and steps for managing minor ailments at home."
+              icon={<Camera size={32} />}
+              title={t('cardOcrTitle')}
+              desc={t('cardOcrDesc')}
               delay={0.2}
+              path="/ocr"
+            />
+            <FeatureCard 
+              icon={<HeartPulse size={32} />}
+              title={t('cardDashboardTitle')}
+              desc={t('cardDashboardDesc')}
+              delay={0.3}
+              path="/dashboard"
             />
             <FeatureCard 
               icon={<ShieldAlert size={32} />}
-              title="Severity Advisor"
-              desc="Understand symptoms and know warning signs that indicate you need emergency help."
-              delay={0.3}
+              title={t('cardSosTitle')}
+              desc={t('cardSosDesc')}
+              delay={0.4}
+              path="/nearby?emergency=true"
             />
             <FeatureCard 
               icon={<Search size={32} />}
-              title="Medicine & Nearby"
-              desc="Check safe dosages, safety advice, pricing, and locate doctors or pharmacies."
-              delay={0.4}
+              title={t('medTitle')}
+              desc={t('medSubtitle')}
+              delay={0.5}
+              path="/medicine"
+            />
+            <FeatureCard 
+              icon={<Globe size={32} />}
+              title={t('cardLangTitle')}
+              desc={t('cardLangDesc')}
+              delay={0.6}
+              path=""
+              isAction={true}
             />
           </div>
         </div>
@@ -134,8 +156,17 @@ const Home = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, desc, delay }) => {
-  return (
+const FeatureCard = ({ icon, title, desc, delay, path, isAction }) => {
+  const { language, setLanguage } = useLanguage();
+  
+  const handleCardClick = (e) => {
+    if (isAction) {
+      e.preventDefault();
+      setLanguage(language === 'en' ? 'hi' : 'en');
+    }
+  };
+
+  const cardContent = (
     <motion.div 
       className="feature-card glass"
       initial={{ opacity: 0, y: 20 }}
@@ -147,6 +178,16 @@ const FeatureCard = ({ icon, title, desc, delay }) => {
       <h3>{title}</h3>
       <p>{desc}</p>
     </motion.div>
+  );
+
+  return path ? (
+    <Link to={path} className="feature-card-link">
+      {cardContent}
+    </Link>
+  ) : (
+    <div onClick={handleCardClick} className="feature-card-link" style={{ cursor: 'pointer' }}>
+      {cardContent}
+    </div>
   );
 };
 
