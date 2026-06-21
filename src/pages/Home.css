@@ -330,8 +330,12 @@
   background: var(--glass-bg);
   border: 1.5px solid var(--border);
   border-radius: 1rem;
-  padding: 2rem;
+  padding: 2.25rem 2rem;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s, box-shadow 0.3s;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
 }
 
 .feature-card:hover {
@@ -372,12 +376,19 @@
 .feature-card.border-blue:hover { border-color: #3b82f6; box-shadow: 0 12px 30px rgba(59, 130, 246, 0.12); }
 
 .feature-card h3 {
-  margin-bottom: 0.5rem;
-  font-size: 1.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.35rem;
+  font-family: var(--font-heading);
+  color: var(--text-main);
+  flex-shrink: 0;
 }
 
 .feature-card p {
   color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+  flex-grow: 1; /* Stretch to fill space, keeping heights identical */
 }
 
 @media (max-width: 768px) {
@@ -463,7 +474,9 @@
 .feature-card-link {
   text-decoration: none !important;
   color: inherit !important;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 
