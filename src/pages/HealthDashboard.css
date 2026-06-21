@@ -475,3 +475,57 @@
     gap: 0;
   }
 }
+
+/* Cloud Sync Status Badge Styles */
+.sync-status-badge-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1rem;
+  border-radius: 1.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.sync-badge.synced {
+  background: rgba(15, 118, 110, 0.03);
+  color: var(--primary);
+  border-color: rgba(15, 118, 110, 0.2);
+}
+
+[data-theme='dark'] .sync-badge.synced {
+  background: rgba(15, 118, 110, 0.1);
+}
+
+.sync-badge.local {
+  background: rgba(0, 0, 0, 0.02);
+  color: var(--text-muted);
+}
+
+[data-theme='dark'] .sync-badge.local {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1.2s linear infinite;
+}
+

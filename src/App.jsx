@@ -9,11 +9,13 @@ import SymptomsChecker from './pages/SymptomsChecker';
 import PrescriptionOCR from './pages/PrescriptionOCR';
 import HealthDashboard from './pages/HealthDashboard';
 import { LanguageProvider } from './components/LanguageContext';
+import { AuthProvider } from './components/AuthContext';
 import './App.css';
 
 function App() {
   return (
-    <LanguageProvider>
+    <AuthProvider>
+      <LanguageProvider>
       <div className="app">
         {/* Global ambient glowing backdrops for rich aesthetics */}
         <div className="ambient-orb orb-1"></div>
@@ -35,6 +37,7 @@ function App() {
         <VoiceAssistant />
       </div>
     </LanguageProvider>
+    </AuthProvider>
   );
 }
 

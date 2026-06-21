@@ -1,10 +1,52 @@
 import { useState, useEffect } from 'react';
-import { Heart, Activity, Thermometer, Trash2, ShieldAlert, BarChart3, Clock, PlusCircle } from 'lucide-react';
+import { Heart, Activity, Thermometer, Trash2, ShieldAlert, BarChart3, Clock, PlusCircle, Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '../components/AuthContext';
+import { supabase } from '../utils/supabaseClient';
 import './HealthDashboard.css';
+
+const mapVitalToDB = (log, userId) => ({
+  id: log.id,
+  user_id: userId,
+  date: log.date,
+  heart_rate: log.heartRate !== null && log.heartRate !== undefined ? parseFloat(log.heartRate) : null,
+  sys_bp: log.sysBP !== null && log.sysBP !== undefined ? parseFloat(log.sysBP) : null,
+  dia_bp: log.diaBP !== null && log.diaBP !== undefined ? parseFloat(log.diaBP) : null,
+  blood_sugar: log.bloodSugar !== null && log.bloodSugar !== undefined ? parseFloat(log.bloodSugar) : null,
+  temp: log.temp !== null && log.temp !== undefined ? parseFloat(log.temp) : null
+});
+
+const mapVitalFromDB = (row) => ({
+  id: row.id,
+  date: row.date,
+  heartRate: row.heart_rate,
+  sysBP: row.sys_bp,
+  diaBP: row.dia_bp,
+  bloodSugar: row.blood_sugar,
+  temp: row.temp
+});
+
+const mapSymptomToDB = (log, userId) => ({
+  id: log.id,
+  user_id: userId,
+  date: log.date,
+  symptom_name: log.symptomName,
+  severity: parseInt(log.severity, 10),
+  notes: log.notes
+});
+
+const mapSymptomFromDB = (row) => ({
+  id: row.id,
+  date: row.date,
+  symptomName: row.symptom_name,
+  severity: row.severity,
+  notes: row.notes
+});
 
 const HealthDashboard = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const [loadingDb, setLoadingDb] = useState(false);
 
   // Logs States
   const [vitalsLogs, setVitalsLogs] = useState(() => {
@@ -32,17 +74,63 @@ const HealthDashboard = () => {
   // Active Tab for chart display ('heartRate' | 'bloodSugar' | 'temp')
   const [activeChartTab, setActiveChartTab] = useState('heartRate');
 
-  // Persist logs
+  // Persist local logs ONLY if not logged in
   useEffect(() => {
-    localStorage.setItem('medweb_vitals_logs', JSON.stringify(vitalsLogs));
-  }, [vitalsLogs]);
+    if (!user) {
+      localStorage.setItem('medweb_vitals_logs', JSON.stringify(vitalsLogs));
+    }
+  }, [vitalsLogs, user]);
 
   useEffect(() => {
-    localStorage.setItem('medweb_symptoms_logs', JSON.stringify(symptomsLogs));
-  }, [symptomsLogs]);
+    if (!user) {
+      localStorage.setItem('medweb_symptoms_logs', JSON.stringify(symptomsLogs));
+    }
+  }, [symptomsLogs, user]);
+
+  // Sync / Load logs from Supabase when user changes
+  useEffect(() => {
+    const fetchLogs = async () => {
+      if (!user || !supabase) {
+        // Fall back to localStorage
+        const savedVitals = localStorage.getItem('medweb_vitals_logs');
+        setVitalsLogs(savedVitals ? JSON.parse(savedVitals) : []);
+        const savedSymptoms = localStorage.getItem('medweb_symptoms_logs');
+        setSymptomsLogs(savedSymptoms ? JSON.parse(savedSymptoms) : []);
+        return;
+      }
+
+      setLoadingDb(true);
+      try {
+        const { data: vitalsData, error: vitalsError } = await supabase
+          .from('vitals_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true });
+
+        if (vitalsError) throw vitalsError;
+
+        const { data: symptomsData, error: symptomsError } = await supabase
+          .from('symptom_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true });
+
+        if (symptomsError) throw symptomsError;
+
+        setVitalsLogs(vitalsData.map(mapVitalFromDB));
+        setSymptomsLogs(symptomsData.map(mapSymptomFromDB));
+      } catch (err) {
+        console.error('Error fetching logs from Supabase:', err.message);
+      } finally {
+        setLoadingDb(false);
+      }
+    };
+
+    fetchLogs();
+  }, [user]);
 
   // Form Handlers
-  const handleAddVitals = (e) => {
+  const handleAddVitals = async (e) => {
     e.preventDefault();
     if (!heartRate && !sysBP && !diaBP && !bloodSugar && !temp) return;
 
@@ -56,6 +144,24 @@ const HealthDashboard = () => {
       temp: temp ? parseFloat(temp) : null,
     };
 
+    if (user && supabase) {
+      setLoadingDb(true);
+      try {
+        const { error } = await supabase
+          .from('vitals_logs')
+          .insert([mapVitalToDB(newLog, user.id)]);
+        
+        if (error) throw error;
+      } catch (err) {
+        console.error('Error inserting vital log to Supabase:', err.message);
+        alert(`Failed to save to cloud: ${err.message}`);
+        setLoadingDb(false);
+        return;
+      } finally {
+        setLoadingDb(false);
+      }
+    }
+
     setVitalsLogs(prev => [...prev, newLog]);
     setHeartRate('');
     setSysBP('');
@@ -64,7 +170,7 @@ const HealthDashboard = () => {
     setTemp('');
   };
 
-  const handleAddSymptom = (e) => {
+  const handleAddSymptom = async (e) => {
     e.preventDefault();
     if (!symptomName.trim()) return;
 
@@ -76,22 +182,103 @@ const HealthDashboard = () => {
       notes: notes.trim(),
     };
 
+    if (user && supabase) {
+      setLoadingDb(true);
+      try {
+        const { error } = await supabase
+          .from('symptom_logs')
+          .insert([mapSymptomToDB(newLog, user.id)]);
+        
+        if (error) throw error;
+      } catch (err) {
+        console.error('Error inserting symptom log to Supabase:', err.message);
+        alert(`Failed to save to cloud: ${err.message}`);
+        setLoadingDb(false);
+        return;
+      } finally {
+        setLoadingDb(false);
+      }
+    }
+
     setSymptomsLogs(prev => [...prev, newLog]);
     setSymptomName('');
     setSeverity(5);
     setNotes('');
   };
 
-  const deleteVitalLog = (id) => {
+  const deleteVitalLog = async (id) => {
+    if (user && supabase) {
+      setLoadingDb(true);
+      try {
+        const { error } = await supabase
+          .from('vitals_logs')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+      } catch (err) {
+        console.error('Error deleting vital log from Supabase:', err.message);
+        alert(`Failed to delete: ${err.message}`);
+        setLoadingDb(false);
+        return;
+      } finally {
+        setLoadingDb(false);
+      }
+    }
     setVitalsLogs(prev => prev.filter(log => log.id !== id));
   };
 
-  const deleteSymptomLog = (id) => {
+  const deleteSymptomLog = async (id) => {
+    if (user && supabase) {
+      setLoadingDb(true);
+      try {
+        const { error } = await supabase
+          .from('symptom_logs')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+      } catch (err) {
+        console.error('Error deleting symptom log from Supabase:', err.message);
+        alert(`Failed to delete: ${err.message}`);
+        setLoadingDb(false);
+        return;
+      } finally {
+        setLoadingDb(false);
+      }
+    }
     setSymptomsLogs(prev => prev.filter(log => log.id !== id));
   };
 
-  const clearAllLogs = () => {
+  const clearAllLogs = async () => {
     if (window.confirm("Are you sure you want to clear all your logged data history?")) {
+      if (user && supabase) {
+        setLoadingDb(true);
+        try {
+          const { error: vError } = await supabase
+            .from('vitals_logs')
+            .delete()
+            .eq('user_id', user.id);
+          
+          if (vError) throw vError;
+
+          const { error: sError } = await supabase
+            .from('symptom_logs')
+            .delete()
+            .eq('user_id', user.id);
+
+          if (sError) throw sError;
+        } catch (err) {
+          console.error('Error clearing logs in Supabase:', err.message);
+          alert(`Failed to clear logs: ${err.message}`);
+          setLoadingDb(false);
+          return;
+        } finally {
+          setLoadingDb(false);
+        }
+      }
       setVitalsLogs([]);
       setSymptomsLogs([]);
     }
@@ -187,6 +374,30 @@ const HealthDashboard = () => {
       <div className="dashboard-header text-center">
         <h1 className="page-title">{t('dashTitle')}</h1>
         <p className="page-subtitle">{t('dashSubtitle')}</p>
+        
+        {/* Cloud Sync Status Badge */}
+        <div className="sync-status-badge-container">
+          {user ? (
+            <div className="sync-badge synced glass">
+              {loadingDb ? (
+                <>
+                  <RefreshCw size={14} className="animate-spin text-primary" />
+                  <span>Syncing with Cloud...</span>
+                </>
+              ) : (
+                <>
+                  <Cloud size={14} className="text-primary" />
+                  <span>Cloud Connected ({user.email})</span>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="sync-badge local glass">
+              <CloudOff size={14} className="text-muted" />
+              <span>Offline Cache Mode (Local Storage Only)</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Critical Warnings Bar */}
