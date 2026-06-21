@@ -68,28 +68,30 @@ const AIAssistant = () => {
         
         Current User Inquiry: "${userQuery}"
         
-        Provide a detailed response. When recommending for symptoms or diseases, structure your response using these exact section headers:
-        🔍 **What is it?**
+        Provide a detailed response. When recommending for symptoms or diseases, structure your response using these exact section headers (WITHOUT any asterisks around them):
+        🔍 What is it?
         (Explain the condition/issue)
 
-        📋 **Take Care Steps:**
+        📋 Take Care Steps:
         1. (Step 1)
         2. (Step 2)
         ...
 
-        🍏 **What to Eat:**
+        🍏 What to Eat:
         - (Food 1)
         - (Food 2)
         ...
 
-        🚫 **What to Avoid:**
+        🚫 What to Avoid:
         - (Avoid 1)
         - (Avoid 2)
         ...
 
-        🚨 **Seek Help If:**
+        🚨 Seek Help If:
         (When to consult a doctor or go to emergency)
 
+        IMPORTANT: Do not use any asterisks (*) or markdown bold formatting (like **text**) anywhere in your response. Write all headings, subheadings, and lists in plain text without asterisk characters.
+        
         Keep the formatting clean, clear, and highly structured so the web UI can parse it.`;
 
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
@@ -106,7 +108,7 @@ const AIAssistant = () => {
 
         if (response.ok) {
           const data = await response.json();
-          const responseText = data.candidates[0].content.parts[0].text;
+          const responseText = data.candidates[0].content.parts[0].text.replace(/\*/g, '');
 
           messageIdCounter.current += 1;
           const botMsgId = `bot-msg-${messageIdCounter.current}`;
@@ -130,7 +132,7 @@ const AIAssistant = () => {
 
     // Fallback to local database response
     setTimeout(() => {
-      const responseText = generateMockAIResponse(userQuery);
+      const responseText = generateMockAIResponse(userQuery).replace(/\*/g, '');
       
       // Increment counter for bot message ID
       messageIdCounter.current += 1;
@@ -164,21 +166,21 @@ const AIAssistant = () => {
     const eatText = match.whatToEat.map(food => `- ${food}`).join('\n');
     const avoidText = match.whatToAvoid.map(food => `- ${food}`).join('\n');
 
-    let response = `${emojiHeader} **AI Guidance: ${match.disease}**
+    let response = `${emojiHeader} AI Guidance: ${match.disease}
 
-🔍 **What is it?**
+🔍 What is it?
 ${match.explanation}
 
-📋 **Take Care Steps:**
+📋 Take Care Steps:
 ${careStepsText}
 
-🍏 **What to Eat:**
+🍏 What to Eat:
 ${eatText}
 
-🚫 **What to Avoid:**
+🚫 What to Avoid:
 ${avoidText}
 
-🚨 **Seek Help If:**
+🚨 Seek Help If:
 ${match.seekHelp}`;
 
     return response;
