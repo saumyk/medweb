@@ -180,6 +180,7 @@ const PrescriptionOCR = () => {
             <div className="preview-scan-zone">
               <div className="preview-image-wrapper glass">
                 <img src={previewUrl} alt="Prescription preview" className="prescription-preview-img" />
+                {isProcessing && <div className="scanner-laser-line"></div>}
               </div>
               
               <div className="scan-actions-panel">

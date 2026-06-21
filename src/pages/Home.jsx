@@ -112,6 +112,7 @@ const Home = () => {
               desc={t('aiAssistantSubtitle')}
               delay={0.1}
               path="/assistant"
+              colorClass="teal"
             />
             <FeatureCard 
               icon={<Camera size={32} />}
@@ -119,6 +120,7 @@ const Home = () => {
               desc={t('cardOcrDesc')}
               delay={0.2}
               path="/ocr"
+              colorClass="purple"
             />
             <FeatureCard 
               icon={<HeartPulse size={32} />}
@@ -126,6 +128,7 @@ const Home = () => {
               desc={t('cardDashboardDesc')}
               delay={0.3}
               path="/dashboard"
+              colorClass="rose"
             />
             <FeatureCard 
               icon={<ShieldAlert size={32} />}
@@ -133,6 +136,7 @@ const Home = () => {
               desc={t('cardSosDesc')}
               delay={0.4}
               path="/nearby?emergency=true"
+              colorClass="red"
             />
             <FeatureCard 
               icon={<Search size={32} />}
@@ -140,6 +144,7 @@ const Home = () => {
               desc={t('medSubtitle')}
               delay={0.5}
               path="/medicine"
+              colorClass="amber"
             />
             <FeatureCard 
               icon={<Globe size={32} />}
@@ -148,6 +153,7 @@ const Home = () => {
               delay={0.6}
               path=""
               isAction={true}
+              colorClass="blue"
             />
           </div>
         </div>
@@ -156,7 +162,7 @@ const Home = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, desc, delay, path, isAction }) => {
+const FeatureCard = ({ icon, title, desc, delay, path, isAction, colorClass }) => {
   const { language, setLanguage } = useLanguage();
   
   const handleCardClick = (e) => {
@@ -168,13 +174,14 @@ const FeatureCard = ({ icon, title, desc, delay, path, isAction }) => {
 
   const cardContent = (
     <motion.div 
-      className="feature-card glass"
+      className={`feature-card glass border-${colorClass}`}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay }}
+      whileHover={{ y: -8, scale: 1.03 }}
     >
-      <div className="feature-icon">{icon}</div>
+      <div className={`feature-icon gradient-${colorClass}`}>{icon}</div>
       <h3>{title}</h3>
       <p>{desc}</p>
     </motion.div>

@@ -15,6 +15,11 @@ function App() {
   return (
     <LanguageProvider>
       <div className="app">
+        {/* Global ambient glowing backdrops for rich aesthetics */}
+        <div className="ambient-orb orb-1"></div>
+        <div className="ambient-orb orb-2"></div>
+        <div className="ambient-orb orb-3"></div>
+
         <Navbar />
         <main className="main-content">
           <Routes>
