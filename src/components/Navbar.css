@@ -379,21 +379,23 @@
 
 /* Direct Navbar Profile & Login Styles */
 .hamburger-menu-btn.profile-active {
-  padding: 0;
-  border-color: var(--primary-light);
-  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.2);
+  padding: 2px;
+  border: 2px solid var(--primary-light);
+  background: var(--surface);
+  box-shadow: 0 0 10px rgba(15, 118, 110, 0.2);
   overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hamburger-menu-btn.profile-active:hover {
   border-color: var(--primary);
-  box-shadow: 0 0 12px rgba(15, 118, 110, 0.4);
-  transform: scale(1.05);
+  box-shadow: 0 0 16px rgba(15, 118, 110, 0.5);
+  transform: scale(1.06);
 }
 
 .nav-menu-profile-avatar {
-  width: 38px;
-  height: 38px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
   display: block;
