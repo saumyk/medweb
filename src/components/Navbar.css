@@ -378,32 +378,25 @@
 }
 
 /* Direct Navbar Profile & Login Styles */
-.nav-profile-wrapper {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.25s ease;
+.hamburger-menu-btn.profile-active {
+  padding: 0;
+  border-color: var(--primary-light);
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.2);
+  overflow: hidden;
 }
 
-.nav-profile-wrapper:hover {
-  transform: scale(1.06);
-}
-
-.nav-profile-avatar {
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  border: 1.5px solid var(--primary-light);
-  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.25);
-  object-fit: cover;
-  transition: all 0.25s ease;
-}
-
-.nav-profile-wrapper:hover .nav-profile-avatar {
+.hamburger-menu-btn.profile-active:hover {
   border-color: var(--primary);
-  box-shadow: 0 0 12px rgba(15, 118, 110, 0.5);
+  box-shadow: 0 0 12px rgba(15, 118, 110, 0.4);
+  transform: scale(1.05);
+}
+
+.nav-menu-profile-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
 }
 
 .nav-direct-login-btn {

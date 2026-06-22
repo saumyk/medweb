@@ -118,21 +118,8 @@ const Navbar = () => {
               <span>SOS</span>
             </button>
 
-            {/* Direct Login / Profile Option */}
-            {user ? (
-              <div 
-                className="nav-profile-wrapper"
-                onClick={() => setIsHubOpen(true)}
-                title={user.user_metadata?.full_name || user.email}
-              >
-                <img 
-                  src={user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
-                  alt="Profile" 
-                  className="nav-profile-avatar"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-            ) : (
+            {/* Direct Login Button (only when logged out) */}
+            {!user && (
               <button 
                 className="nav-direct-login-btn"
                 onClick={loginWithGoogle}
@@ -148,13 +135,24 @@ const Navbar = () => {
               </button>
             )}
 
-            {/* Top right Hamburger Menu Button (synchronized with bottom bar toggle) */}
+            {/* Merged Menu / Profile Trigger Button */}
             <button 
-              className={`hamburger-menu-btn btn-icon ${isHubOpen ? 'active' : ''}`}
+              className={`hamburger-menu-btn ${user && !isHubOpen ? 'profile-active' : 'btn-icon'} ${isHubOpen ? 'active' : ''}`}
               onClick={() => setIsHubOpen(!isHubOpen)}
-              title={isHubOpen ? "Close Menu" : "Open Menu"}
+              title={isHubOpen ? "Close Menu" : (user ? "User Menu" : "Open Menu")}
             >
-              {isHubOpen ? <X size={22} /> : <Menu size={22} />}
+              {isHubOpen ? (
+                <X size={22} />
+              ) : user ? (
+                <img 
+                  src={user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+                  alt="Profile" 
+                  className="nav-menu-profile-avatar"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <Menu size={22} />
+              )}
             </button>
           </div>
         </div>
