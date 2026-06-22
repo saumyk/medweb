@@ -1,17 +1,64 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, Search, Loader2, ShieldAlert } from 'lucide-react';
+import { Activity, Search, Loader2, ShieldAlert, Volume2, VolumeX } from 'lucide-react';
 import { lookupSymptom } from '../utils/symptomDatabase';
 import { useLanguage } from '../components/LanguageContext';
 import './SymptomsChecker.css';
 
 const SymptomsChecker = () => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [searchParams] = useSearchParams();
   const [symptoms, setSymptoms] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [symptomContext, setSymptomContext] = useState(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const toggleSpeak = () => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      alert("Text-to-speech is not supported in this browser.");
+      return;
+    }
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const textToSpeak = `
+      For symptoms: ${symptomContext.symptom}.
+      Likely condition is: ${symptomContext.disease || 'unknown'}.
+      Explanation: ${symptomContext.explanation || ''}
+      Here are some self care steps: ${symptomContext.selfCare.join('. ')}.
+      Seek help immediately if you experience: ${symptomContext.seekHelp || ''}
+    `;
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
+
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+    };
+
+    setIsSpeaking(true);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Stop speaking on unmount or query change
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
 
   const handleSearch = async (e, overrideQuery) => {
@@ -173,8 +220,18 @@ const SymptomsChecker = () => {
             <div className="symptom-guidance-card glass shadow-md">
               <div className="guidance-header-block">
                 <div className="guidance-header">
-                  <Activity size={24} className="guidance-header-icon" />
-                  <h2>{t('resultsTitle')} &ldquo;{symptomContext.symptom}&rdquo;</h2>
+                  <div className="guidance-header-title-left">
+                    <Activity size={24} className="guidance-header-icon" />
+                    <h2>{t('resultsTitle')} &ldquo;{symptomContext.symptom}&rdquo;</h2>
+                  </div>
+                  <button 
+                    className={`btn-speak-results glass-btn ${isSpeaking ? 'active-speaking' : ''}`}
+                    onClick={toggleSpeak}
+                    title={isSpeaking ? "Stop speaking" : "Read aloud"}
+                  >
+                    {isSpeaking ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                    <span>{isSpeaking ? (language === 'en' ? 'Stop' : 'रोकें') : (language === 'en' ? 'Listen' : 'सुनें')}</span>
+                  </button>
                 </div>
                 {symptomContext.disease && (
                   <div className="disease-info-header glass">

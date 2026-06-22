@@ -174,10 +174,18 @@
 .guidance-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
+  gap: 1rem;
   border-bottom: 1.5px solid var(--border);
   padding-bottom: 1rem;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.guidance-header-title-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .guidance-header h2 {
@@ -189,6 +197,46 @@
 
 .guidance-header-icon {
   color: var(--primary);
+}
+
+.btn-speak-results {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1rem;
+  border-radius: 2rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-speak-results:hover {
+  background: var(--background);
+  border-color: var(--primary-light);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 118, 110, 0.15);
+}
+
+.btn-speak-results:active {
+  transform: translateY(0);
+}
+
+.btn-speak-results.active-speaking {
+  background: rgba(15, 118, 110, 0.08);
+  border-color: var(--primary);
+  color: var(--primary);
+  animation: pulse-speaking 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-speaking {
+  0% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.3); }
+  70% { box-shadow: 0 0 0 5px rgba(15, 118, 110, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0); }
 }
 
 .guidance-content-grid {
