@@ -28,7 +28,7 @@ const Footer = () => {
             <strong>⚠️ {t('notMedicalAdvice')}:</strong> {t('disclaimer')}
           </p>
           <p className="footer-copy">
-            &copy; {currentYear} MedWeb. Built for Health Hackathon.
+            &copy; {currentYear} MedWeb. All rights reserved.
           </p>
         </div>
       </div>
