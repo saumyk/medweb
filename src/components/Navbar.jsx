@@ -249,8 +249,8 @@ const Navbar = () => {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.04 }}
-                      whileHover={{ y: -6, scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      whileHover={{ y: -3, scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
                     >
                       <div className={`feature-card-icon-box gradient-${feat.colorClass}`}>
                         {feat.icon}

@@ -145,7 +145,7 @@
   flex-direction: column;
   gap: 1.5rem;
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .hub-content.glass:hover {
@@ -197,7 +197,26 @@
 .hub-body {
   flex: 1;
   overflow-y: auto;
-  padding-right: 4px;
+  padding: 10px 2rem 20px 2rem;
+  margin: -10px -2rem -20px -2rem;
+}
+
+/* Premium Custom Scrollbar for Hub Body */
+.hub-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.hub-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hub-body::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.25);
+  border-radius: 10px;
+}
+
+.hub-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.45);
 }
 
 /* Feature Cards Grid */
@@ -230,7 +249,7 @@
   background: var(--background);
   border: 1.5px solid var(--border);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: left;
   overflow: hidden;
 }
@@ -244,7 +263,7 @@
   bottom: 0;
   background: linear-gradient(135deg, var(--card-theme-hover-bg, rgba(255, 255, 255, 0)) 0%, rgba(255, 255, 255, 0) 100%);
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease;
   z-index: 0;
   pointer-events: none;
 }
@@ -259,8 +278,8 @@
 .hub-feature-card:hover {
   background: var(--surface);
   border-color: var(--card-theme-color, var(--primary));
-  box-shadow: 0 12px 30px -8px var(--card-theme-glow, rgba(15, 118, 110, 0.2)),
-              0 4px 12px -2px var(--card-theme-glow, rgba(15, 118, 110, 0.1));
+  box-shadow: 0 6px 16px -4px var(--card-theme-glow, rgba(15, 118, 110, 0.15)),
+              0 2px 6px -1px var(--card-theme-glow, rgba(15, 118, 110, 0.08));
 }
 
 .hub-feature-card:hover::before {
@@ -270,85 +289,85 @@
 /* Border Glow Themes & Variables */
 .hub-feature-card.border-blue {
   --card-theme-color: #3b82f6;
-  --card-theme-glow: rgba(59, 130, 246, 0.28);
-  --card-theme-hover-bg: rgba(59, 130, 246, 0.05);
+  --card-theme-glow: rgba(59, 130, 246, 0.22);
+  --card-theme-hover-bg: rgba(59, 130, 246, 0.04);
 }
 .hub-feature-card.border-teal {
   --card-theme-color: #14b8a6;
-  --card-theme-glow: rgba(20, 184, 166, 0.28);
-  --card-theme-hover-bg: rgba(20, 184, 166, 0.05);
+  --card-theme-glow: rgba(20, 184, 166, 0.22);
+  --card-theme-hover-bg: rgba(20, 184, 166, 0.04);
 }
 .hub-feature-card.border-purple {
   --card-theme-color: #8b5cf6;
-  --card-theme-glow: rgba(139, 92, 246, 0.28);
-  --card-theme-hover-bg: rgba(139, 92, 246, 0.05);
+  --card-theme-glow: rgba(139, 92, 246, 0.22);
+  --card-theme-hover-bg: rgba(139, 92, 246, 0.04);
 }
 .hub-feature-card.border-rose {
   --card-theme-color: #f43f5e;
-  --card-theme-glow: rgba(244, 63, 94, 0.28);
-  --card-theme-hover-bg: rgba(244, 63, 94, 0.05);
+  --card-theme-glow: rgba(244, 63, 94, 0.22);
+  --card-theme-hover-bg: rgba(244, 63, 94, 0.04);
 }
 .hub-feature-card.border-amber {
   --card-theme-color: #d97706;
-  --card-theme-glow: rgba(245, 158, 11, 0.28);
-  --card-theme-hover-bg: rgba(245, 158, 11, 0.05);
+  --card-theme-glow: rgba(245, 158, 11, 0.22);
+  --card-theme-hover-bg: rgba(245, 158, 11, 0.04);
 }
 .hub-feature-card.border-cyan {
   --card-theme-color: #0891b2;
-  --card-theme-glow: rgba(6, 182, 212, 0.28);
-  --card-theme-hover-bg: rgba(6, 182, 212, 0.05);
+  --card-theme-glow: rgba(6, 182, 212, 0.22);
+  --card-theme-hover-bg: rgba(6, 182, 212, 0.04);
 }
 .hub-feature-card.border-emerald {
   --card-theme-color: #059669;
-  --card-theme-glow: rgba(16, 185, 129, 0.28);
-  --card-theme-hover-bg: rgba(16, 185, 129, 0.05);
+  --card-theme-glow: rgba(16, 185, 129, 0.22);
+  --card-theme-hover-bg: rgba(16, 185, 129, 0.04);
 }
 .hub-feature-card.border-red {
   --card-theme-color: #ef4444;
-  --card-theme-glow: rgba(239, 68, 68, 0.35);
-  --card-theme-hover-bg: rgba(239, 68, 68, 0.06);
+  --card-theme-glow: rgba(239, 68, 68, 0.25);
+  --card-theme-hover-bg: rgba(239, 68, 68, 0.05);
 }
 
 /* Dark theme overrides for even more vibrant and glowing colors */
 [data-theme='dark'] .hub-feature-card.border-blue {
   --card-theme-color: #60a5fa;
-  --card-theme-glow: rgba(96, 165, 250, 0.25);
-  --card-theme-hover-bg: rgba(96, 165, 250, 0.05);
+  --card-theme-glow: rgba(96, 165, 250, 0.18);
+  --card-theme-hover-bg: rgba(96, 165, 250, 0.04);
 }
 [data-theme='dark'] .hub-feature-card.border-teal {
   --card-theme-color: #2dd4bf;
-  --card-theme-glow: rgba(45, 212, 191, 0.25);
-  --card-theme-hover-bg: rgba(45, 212, 191, 0.05);
+  --card-theme-glow: rgba(45, 212, 191, 0.18);
+  --card-theme-hover-bg: rgba(45, 212, 191, 0.04);
 }
 [data-theme='dark'] .hub-feature-card.border-purple {
   --card-theme-color: #a78bfa;
-  --card-theme-glow: rgba(167, 139, 250, 0.25);
-  --card-theme-hover-bg: rgba(167, 139, 250, 0.05);
+  --card-theme-glow: rgba(167, 139, 250, 0.18);
+  --card-theme-hover-bg: rgba(167, 139, 250, 0.04);
 }
 [data-theme='dark'] .hub-feature-card.border-rose {
   --card-theme-color: #fb7185;
-  --card-theme-glow: rgba(251, 113, 133, 0.25);
-  --card-theme-hover-bg: rgba(251, 113, 133, 0.05);
+  --card-theme-glow: rgba(251, 113, 133, 0.18);
+  --card-theme-hover-bg: rgba(251, 113, 133, 0.04);
 }
 [data-theme='dark'] .hub-feature-card.border-amber {
   --card-theme-color: #fbbf24;
-  --card-theme-glow: rgba(251, 191, 36, 0.25);
-  --card-theme-hover-bg: rgba(251, 191, 36, 0.05);
+  --card-theme-glow: rgba(251, 191, 36, 0.18);
+  --card-theme-hover-bg: rgba(251, 191, 36, 0.04);
 }
 [data-theme='dark'] .hub-feature-card.border-cyan {
   --card-theme-color: #22d3ee;
-  --card-theme-glow: rgba(34, 211, 238, 0.25);
-  --card-theme-hover-bg: rgba(34, 211, 238, 0.05);
+  --card-theme-glow: rgba(34, 211, 238, 0.18);
+  --card-theme-hover-bg: rgba(34, 211, 238, 0.04);
 }
 [data-theme='dark'] .hub-feature-card.border-emerald {
   --card-theme-color: #34d399;
-  --card-theme-glow: rgba(52, 211, 153, 0.25);
-  --card-theme-hover-bg: rgba(52, 211, 153, 0.05);
+  --card-theme-glow: rgba(52, 211, 153, 0.18);
+  --card-theme-hover-bg: rgba(52, 211, 153, 0.04);
 }
 [data-theme='dark'] .hub-feature-card.border-red {
   --card-theme-color: #f87171;
-  --card-theme-glow: rgba(248, 113, 113, 0.3);
-  --card-theme-hover-bg: rgba(248, 113, 113, 0.06);
+  --card-theme-glow: rgba(248, 113, 113, 0.22);
+  --card-theme-hover-bg: rgba(248, 113, 113, 0.05);
 }
 
 .feature-card-icon-box {
@@ -359,13 +378,13 @@
   align-items: center;
   justify-content: center;
   color: white;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .hub-feature-card:hover .feature-card-icon-box {
-  transform: scale(1.12) rotate(4deg);
-  box-shadow: 0 6px 16px var(--card-theme-glow, rgba(15, 118, 110, 0.3));
+  transform: scale(1.06) rotate(2deg);
+  box-shadow: 0 4px 10px var(--card-theme-glow, rgba(15, 118, 110, 0.2));
 }
 
 /* Gradients */
@@ -383,7 +402,7 @@
   font-weight: 700;
   color: var(--text-main);
   margin-bottom: 0.25rem;
-  transition: color 0.25s ease;
+  transition: color 0.2s ease;
 }
 
 .hub-feature-card:hover .feature-card-details h4 {
@@ -394,7 +413,7 @@
   font-size: 0.82rem;
   color: var(--text-muted);
   line-height: 1.35;
-  transition: color 0.25s ease;
+  transition: color 0.2s ease;
 }
 
 .hub-feature-card:hover .feature-card-details p {
@@ -761,6 +780,11 @@
     border-top-right-radius: 1.8rem;
   }
 
+  .hub-body {
+    padding: 10px 1.5rem 20px 1.5rem;
+    margin: -10px -1.5rem -20px -1.5rem;
+  }
+
   .hub-controls-row {
     flex-direction: column;
     align-items: stretch;
@@ -778,6 +802,11 @@
     padding: 1.25rem 1rem;
     height: 92vh;
     gap: 1rem;
+  }
+
+  .hub-body {
+    padding: 8px 1rem 16px 1rem;
+    margin: -8px -1rem -16px -1rem;
   }
 
   .hub-header {
@@ -902,8 +931,8 @@
   }
 
   .hub-feature-card:hover .feature-card-icon-box {
-    transform: scale(1.08) rotate(3deg);
-    box-shadow: 0 4px 10px var(--card-theme-glow, rgba(15, 118, 110, 0.2));
+    transform: scale(1.04) rotate(1.5deg);
+    box-shadow: 0 3px 6px var(--card-theme-glow, rgba(15, 118, 110, 0.15));
   }
 
   /* Controls Side-by-Side */
