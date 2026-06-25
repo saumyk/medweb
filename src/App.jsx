@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import VoiceAssistant from './components/VoiceAssistant';
 import Home from './pages/Home';
 import AIAssistant from './pages/AIAssistant';
@@ -34,6 +35,7 @@ function App() {
             <Route path="/dashboard" element={<HealthDashboard />} />
           </Routes>
         </main>
+        <Footer />
         <VoiceAssistant />
       </div>
     </LanguageProvider>
