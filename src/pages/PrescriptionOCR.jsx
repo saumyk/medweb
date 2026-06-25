@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Camera, FileText, CheckCircle, AlertCircle, ArrowRight, RefreshCw, Loader2 } from 'lucide-react';
+import { Upload, Camera, FileText, CheckCircle, AlertCircle, Search, RefreshCw, Loader2 } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 import { useLanguage } from '../components/LanguageContext';
 import './PrescriptionOCR.css';
@@ -126,9 +126,7 @@ const PrescriptionOCR = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('');
-  const [rawText, setRawText] = useState('');
   const [identifiedMeds, setIdentifiedMeds] = useState([]);
-  const [unverifiedMeds, setUnverifiedMeds] = useState([]);
   const [hasScanned, setHasScanned] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   
@@ -167,9 +165,7 @@ const PrescriptionOCR = () => {
     }
     setImage(file);
     setPreviewUrl(URL.createObjectURL(file));
-    setRawText('');
     setIdentifiedMeds([]);
-    setUnverifiedMeds([]);
     setHasScanned(false);
     setProgress(0);
   };
@@ -206,12 +202,10 @@ const PrescriptionOCR = () => {
       );
 
       const text = result.data.text;
-      setRawText(text);
       
       // Parse medicines from text
-      const { identified, unverified } = parseMedicines(text);
-      setIdentifiedMeds(identified);
-      setUnverifiedMeds(unverified);
+      const parsedMeds = parseMedicines(text);
+      setIdentifiedMeds(parsedMeds);
       setHasScanned(true);
       setProgress(100);
       setStatusText(t('ocrSuccess'));
@@ -225,9 +219,8 @@ const PrescriptionOCR = () => {
 
   const parseMedicines = (text) => {
     const identified = new Set();
-    const otherDetected = new Set();
     
-    // 1. Identify known drugs using fuzzy Levenshtein matching
+    // Identify known drugs using fuzzy Levenshtein matching
     const words = text.toLowerCase().split(/[^a-z0-9-]+/);
     words.forEach(word => {
       let cleanWord = word.trim().replace(/^-+|-+$/g, '');
@@ -251,56 +244,15 @@ const PrescriptionOCR = () => {
       });
     });
 
-    // 2. Identify other potential drug names using line patterns & capital letter words
-    const lines = text.split('\n');
-    lines.forEach(line => {
-      // Look for capitalized words (e.g. "Tab Dolo", "Rx Amoxicillin")
-      const matches = line.match(/\b(Tab|Cap|Syr|Inj|Rx)?\.?\s*([A-Z][a-zA-Z0-9-]{3,15})\b/g);
-      if (matches) {
-        matches.forEach(match => {
-          const namePart = match.replace(/^(?:Tab|Cap|Syr|Inj|Rx)?\.?\s*/i, '').trim();
-          if (namePart.length >= 4) {
-            let cleanedName = namePart.replace(/(?:500|650|100|250|50|20|10|5|mg|ml|mcg|g)$/i, '').replace(/-$/, '');
-            if (cleanedName.length >= 4) {
-              const lowerClean = cleanedName.toLowerCase();
-              let isKnown = false;
-              identified.forEach(known => {
-                if (lowerClean.includes(known) || known.includes(lowerClean)) {
-                  isKnown = true;
-                }
-              });
-              
-              // Filter out common instructions, headers, or metadata words
-              const commonWords = [
-                "tab", "tablet", "cap", "capsule", "syr", "syrup", "daily", "twice", "thrice", "morning", "noon",
-                "night", "after", "food", "before", "take", "dose", "days", "weeks", "patient", "doctor", "name",
-                "date", "signature", "hospital", "clinic", "medical", "prescription", "pharmacy", "history"
-              ];
-              if (!isKnown && !commonWords.includes(lowerClean)) {
-                otherDetected.add(cleanedName);
-              }
-            }
-          }
-        });
-      }
+    return Array.from(identified).map(drugName => {
+      return drugName.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('-');
     });
-
-    return {
-      identified: Array.from(identified).map(drugName => {
-        return drugName.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('-');
-      }),
-      unverified: Array.from(otherDetected).map(name => {
-        return name.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('-');
-      })
-    };
   };
 
   const resetScanner = () => {
     setImage(null);
     setPreviewUrl(null);
-    setRawText('');
     setIdentifiedMeds([]);
-    setUnverifiedMeds([]);
     setHasScanned(false);
     setProgress(0);
     setStatusText('');
@@ -425,85 +377,36 @@ const PrescriptionOCR = () => {
                 <div className="ocr-results-card glass shadow-md">
                   <h2>{t('ocrMedsFound')}</h2>
                   
-                  {identifiedMeds.length === 0 && unverifiedMeds.length === 0 ? (
+                  {identifiedMeds.length === 0 ? (
                     <div className="no-meds-alert">
                       <AlertCircle className="text-warning" size={24} />
                       <p>{t('ocrNoMeds')}</p>
                     </div>
                   ) : (
-                    <div className="ocr-results-lists-wrapper">
-                      {identifiedMeds.length > 0 && (
-                        <div className="results-section">
-                          <h3 className="section-subtitle">Verified Drug Matches</h3>
-                          <div className="meds-list-grid">
-                            {identifiedMeds.map((med, idx) => (
-                              <motion.div 
-                                key={med}
-                                className="med-match-chip glass verified"
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: idx * 0.05 }}
-                              >
-                                <div className="med-match-info">
-                                  <span className="pill-dot">💊</span>
-                                  <h4>{med}</h4>
-                                </div>
-                                <button 
-                                  className="btn btn-primary btn-sm view-info-btn"
-                                  onClick={() => navigate(`/medicine?search=${encodeURIComponent(med)}`)}
-                                >
-                                  <span>{t('ocrViewClinicalInfo')}</span>
-                                  <ArrowRight size={14} />
-                                </button>
-                              </motion.div>
-                            ))}
+                    <div className="meds-list-grid">
+                      {identifiedMeds.map((med, idx) => (
+                        <motion.div 
+                          key={med}
+                          className="med-match-chip glass verified"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: idx * 0.05 }}
+                        >
+                          <div className="med-match-info">
+                            <span className="pill-dot">💊</span>
+                            <h4>{med}</h4>
                           </div>
-                        </div>
-                      )}
-                      
-                      {unverifiedMeds.length > 0 && (
-                        <div className="results-section" style={{ marginTop: '1.5rem' }}>
-                          <h3 className="section-subtitle">Other Extracted Terms</h3>
-                          <p className="section-help-text" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                            These terms were detected in the prescription but didn't match our database. You can still search for them.
-                          </p>
-                          <div className="meds-list-grid">
-                            {unverifiedMeds.map((med, idx) => (
-                              <motion.div 
-                                key={med}
-                                className="med-match-chip glass unverified"
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: (identifiedMeds.length + idx) * 0.05 }}
-                              >
-                                <div className="med-match-info">
-                                  <span className="pill-dot">❓</span>
-                                  <h4>{med}</h4>
-                                </div>
-                                <button 
-                                  className="btn btn-outline btn-sm view-info-btn"
-                                  onClick={() => navigate(`/medicine?search=${encodeURIComponent(med)}`)}
-                                >
-                                  <span>Search Info</span>
-                                  <ArrowRight size={14} />
-                                </button>
-                              </motion.div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                          <button 
+                            className="btn btn-primary btn-sm view-info-btn"
+                            onClick={() => navigate(`/medicine?search=${encodeURIComponent(med)}`)}
+                          >
+                            <Search size={14} />
+                            <span>Search</span>
+                          </button>
+                        </motion.div>
+                      ))}
                     </div>
                   )}
-                </div>
-
-                {/* Raw Text Inspector */}
-                <div className="raw-text-card glass shadow-md">
-                  <h3>🔍 {t('rawText')}</h3>
-                  <div className="raw-text-display">
-                    {rawText.split('\n').map((line, i) => (
-                      <p key={i}>{line || '\u00A0'}</p>
-                    ))}
-                  </div>
                 </div>
               </motion.div>
             )}
