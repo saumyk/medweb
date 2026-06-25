@@ -106,15 +106,33 @@ const MedicineInfo = () => {
     // Mapping common Indian/International names to FDA recognized names
     const nameMapping = {
       "paracetamol": "acetaminophen",
+      "pcm": "acetaminophen",
       "crocin": "acetaminophen",
       "dolo": "acetaminophen",
       "calpol": "acetaminophen",
+      "combiflam": "ibuprofen",
+      "saridon": "acetaminophen",
+      "disprin": "aspirin",
       "cetirizine": "cetirizine",
       "citirizine": "cetirizine",
+      "okacet": "cetirizine",
       "allegra": "fexofenadine",
       "augmentin": "amoxicillin",
       "pantop": "pantoprazole",
-      "pan": "pantoprazole"
+      "pantocid": "pantoprazole",
+      "pan": "pantoprazole",
+      "pan-d": "pantoprazole",
+      "omez": "omeprazole",
+      "aciloc": "ranitidine",
+      "ranitidine": "ranitidine",
+      "zantac": "ranitidine",
+      "digene": "antacid",
+      "lipitor": "atorvastatin",
+      "atorva": "atorvastatin",
+      "crestor": "rosuvastatin",
+      "thyronorm": "levothyroxine",
+      "synthroid": "levothyroxine",
+      "viagra": "sildenafil"
     };
 
     const normalizedQuery = query.toLowerCase().trim();

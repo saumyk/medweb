@@ -7,13 +7,69 @@ import { useLanguage } from '../components/LanguageContext';
 import './PrescriptionOCR.css';
 
 const KNOWN_DRUGS = [
-  "paracetamol", "dolo", "crocin", "calpol", "cetirizine", "allegra", "augmentin",
-  "pantop", "pan", "ibuprofen", "amoxicillin", "fexofenadine", "pantoprazole", "omeprazole",
-  "aspirin", "acetaminophen", "penicillin", "metformin", "atorvastatin", "albuterol",
-  "lisinopril", "gabapentin", "sildenafil", "levothyroxine", "losartan", "lipitor",
-  "xanax", "vicodin", "zithromax", "synthroid", "nexium", "plavix", "singulair",
-  "crestor", "advil", "tylenol", "insulin", "combiflam", "becosules", "saridon"
+  // Painkillers & Anti-inflammatories
+  "paracetamol", "dolo", "crocin", "calpol", "acetaminophen", "ibuprofen", "aspirin", 
+  "combiflam", "saridon", "disprin", "naproxen", "diclofenac", "aceclofenac", "voveran", 
+  "ultramcet", "vicodin", "advil", "tylenol", "pcm",
+  
+  // Antibiotics, Antivirals & Antifungals
+  "amoxicillin", "augmentin", "azithromycin", "zithromax", "ciprofloxacin", "ciplox", 
+  "levofloxacin", "doxycycline", "cephalexin", "metronidazole", "flagyl", "ofloxacin", 
+  "cefixime", "taxim", "penicillin", "amox",
+  
+  // Anti-allergies, Cough & Cold
+  "cetirizine", "okacet", "allegra", "fexofenadine", "levocetirizine", "montelukast", 
+  "montair", "loratadine", "claritin", "avil", "pheniramine", "cheston", "singulair",
+  
+  // Gastrointestinal & Acidity
+  "pantoprazole", "pantocid", "pantop", "pan-d", "pan", "omeprazole", "omez", "ranitidine", 
+  "aciloc", "zantac", "famotidine", "rabeprazole", "rabicip", "esomeprazole", "nexium", "digene", "sucrafil",
+  
+  // Heart, BP & Cholesterol
+  "lisinopril", "amlodipine", "amtas", "stamlo", "losartan", "telmisartan", "telma", "concor",
+  "atorvastatin", "lipitor", "atorva", "rosuvastatin", "crestor", "clopidogrel", "metoprolol", "propranolol",
+  "plavix",
+  
+  // Diabetes
+  "metformin", "glycomet", "glimepiride", "insulin", "sitagliptin", "januvia", "gliclazide",
+  
+  // Vitamins & Supplements
+  "becosules", "cobadex", "zincovit", "limcee", "calcium", "neurobion", "folic acid",
+  
+  // Hormones & Thyroid
+  "levothyroxine", "thyronorm", "synthroid", "progesterone",
+  
+  // Central Nervous System & Anxiety
+  "gabapentin", "xanax", "alprazolam", "diazepam", "valium", "clonazepam", "clonotril", "sertraline",
+  
+  // Respiratory
+  "albuterol", "salbutamol", "asthelin", "seroflo", "duolin",
+  
+  // Steroids & Misc
+  "prednisolone", "dexona", "dexamethasone", "sildenafil", "viagra", "deflazacort"
 ];
+
+const levenshteinDistance = (s, t) => {
+  if (!s || !t) return 99;
+  const m = s.length;
+  const n = t.length;
+  const d = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  
+  for (let i = 0; i <= m; i++) d[i][0] = i;
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = s[i - 1] === t[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(
+        d[i - 1][j] + 1, // deletion
+        d[i][j - 1] + 1, // insertion
+        d[i - 1][j - 1] + cost // substitution
+      );
+    }
+  }
+  return d[m][n];
+};
 
 const PrescriptionOCR = () => {
   const navigate = useNavigate();
@@ -116,23 +172,39 @@ const PrescriptionOCR = () => {
   };
 
   const parseMedicines = (text) => {
-    const words = text.toLowerCase().split(/[\s,?.!\n()[\]]+/);
+    // Split text by non-alphabetic/alphanumeric characters, and also preserve dashes to support e.g. "pan-d" or "dolo-650"
+    const words = text.toLowerCase().split(/[^a-z0-9-]+/);
     const found = new Set();
     
     words.forEach(word => {
-      if (word.length < 3) return;
+      // Clean word to remove trailing/leading dashes or numbers if they are just dosage details
+      let cleanWord = word.trim().replace(/^-+|-+$/g, '');
+      if (cleanWord.length < 3) return;
       
+      // Let's strip trailing numbers or dose indicators like "500mg", "650", "100mg", "250mg", "50mg", "20mg", "10mg", "5mg"
+      cleanWord = cleanWord.replace(/(?:500|650|100|250|50|20|10|5|mg|ml|mcg|g)$/, '').replace(/-$/, '');
+      if (cleanWord.length < 3) return;
+
       KNOWN_DRUGS.forEach(drug => {
-        // Direct matching or exact substring matching to capture common forms (e.g. Dolo-650 matches Dolo)
-        if (word.includes(drug) || drug.includes(word)) {
+        // 1. Direct contains check (case-insensitive substring)
+        if (cleanWord.includes(drug) || drug.includes(cleanWord)) {
+          found.add(drug);
+          return;
+        }
+        
+        // 2. Levenshtein fuzzy distance matching
+        const distance = levenshteinDistance(cleanWord, drug);
+        const threshold = drug.length <= 5 ? 1 : (drug.length <= 8 ? 2 : 3);
+        
+        if (distance <= threshold) {
           found.add(drug);
         }
       });
     });
 
     return Array.from(found).map(drugName => {
-      // Capitalize first letter
-      return drugName.charAt(0).toUpperCase() + drugName.slice(1);
+      // Capitalize first letter (and handle dashes, e.g. Pan-d)
+      return drugName.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('-');
     });
   };
 
