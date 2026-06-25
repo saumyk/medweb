@@ -71,6 +71,52 @@ const levenshteinDistance = (s, t) => {
   return d[m][n];
 };
 
+const preprocessImage = (imageFile) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = URL.createObjectURL(imageFile);
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      // Draw image
+      ctx.drawImage(img, 0, 0);
+      
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imgData.data;
+      
+      // Convert to grayscale and boost contrast
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        
+        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+        
+        // Boost contrast by stretching values
+        const factor = 1.35;
+        let finalVal = factor * (gray - 128) + 128;
+        finalVal = Math.max(0, Math.min(255, finalVal));
+        
+        data[i] = finalVal;
+        data[i + 1] = finalVal;
+        data[i + 2] = finalVal;
+      }
+      
+      ctx.putImageData(imgData, 0, 0);
+      
+      canvas.toBlob((blob) => {
+        resolve(blob || imageFile);
+      }, 'image/jpeg', 0.9);
+    };
+    img.onerror = () => {
+      resolve(imageFile);
+    };
+  });
+};
+
 const PrescriptionOCR = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -82,6 +128,7 @@ const PrescriptionOCR = () => {
   const [statusText, setStatusText] = useState('');
   const [rawText, setRawText] = useState('');
   const [identifiedMeds, setIdentifiedMeds] = useState([]);
+  const [unverifiedMeds, setUnverifiedMeds] = useState([]);
   const [hasScanned, setHasScanned] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   
@@ -122,6 +169,7 @@ const PrescriptionOCR = () => {
     setPreviewUrl(URL.createObjectURL(file));
     setRawText('');
     setIdentifiedMeds([]);
+    setUnverifiedMeds([]);
     setHasScanned(false);
     setProgress(0);
   };
@@ -135,12 +183,15 @@ const PrescriptionOCR = () => {
     
     setIsProcessing(true);
     setProgress(0);
-    setStatusText(t('ocrInit'));
+    setStatusText("Preprocessing image for better accuracy...");
     setHasScanned(false);
 
     try {
+      const preprocessedBlob = await preprocessImage(image);
+      setStatusText(t('ocrInit'));
+      
       const result = await Tesseract.recognize(
-        image,
+        preprocessedBlob,
         'eng',
         {
           logger: (m) => {
@@ -158,8 +209,9 @@ const PrescriptionOCR = () => {
       setRawText(text);
       
       // Parse medicines from text
-      const parsedMeds = parseMedicines(text);
-      setIdentifiedMeds(parsedMeds);
+      const { identified, unverified } = parseMedicines(text);
+      setIdentifiedMeds(identified);
+      setUnverifiedMeds(unverified);
       setHasScanned(true);
       setProgress(100);
       setStatusText(t('ocrSuccess'));
@@ -172,40 +224,75 @@ const PrescriptionOCR = () => {
   };
 
   const parseMedicines = (text) => {
-    // Split text by non-alphabetic/alphanumeric characters, and also preserve dashes to support e.g. "pan-d" or "dolo-650"
-    const words = text.toLowerCase().split(/[^a-z0-9-]+/);
-    const found = new Set();
+    const identified = new Set();
+    const otherDetected = new Set();
     
+    // 1. Identify known drugs using fuzzy Levenshtein matching
+    const words = text.toLowerCase().split(/[^a-z0-9-]+/);
     words.forEach(word => {
-      // Clean word to remove trailing/leading dashes or numbers if they are just dosage details
       let cleanWord = word.trim().replace(/^-+|-+$/g, '');
       if (cleanWord.length < 3) return;
       
-      // Let's strip trailing numbers or dose indicators like "500mg", "650", "100mg", "250mg", "50mg", "20mg", "10mg", "5mg"
       cleanWord = cleanWord.replace(/(?:500|650|100|250|50|20|10|5|mg|ml|mcg|g)$/, '').replace(/-$/, '');
       if (cleanWord.length < 3) return;
 
       KNOWN_DRUGS.forEach(drug => {
-        // 1. Direct contains check (case-insensitive substring)
         if (cleanWord.includes(drug) || drug.includes(cleanWord)) {
-          found.add(drug);
+          identified.add(drug);
           return;
         }
         
-        // 2. Levenshtein fuzzy distance matching
         const distance = levenshteinDistance(cleanWord, drug);
         const threshold = drug.length <= 5 ? 1 : (drug.length <= 8 ? 2 : 3);
         
         if (distance <= threshold) {
-          found.add(drug);
+          identified.add(drug);
         }
       });
     });
 
-    return Array.from(found).map(drugName => {
-      // Capitalize first letter (and handle dashes, e.g. Pan-d)
-      return drugName.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('-');
+    // 2. Identify other potential drug names using line patterns & capital letter words
+    const lines = text.split('\n');
+    lines.forEach(line => {
+      // Look for capitalized words (e.g. "Tab Dolo", "Rx Amoxicillin")
+      const matches = line.match(/\b(Tab|Cap|Syr|Inj|Rx)?\.?\s*([A-Z][a-zA-Z0-9-]{3,15})\b/g);
+      if (matches) {
+        matches.forEach(match => {
+          const namePart = match.replace(/^(?:Tab|Cap|Syr|Inj|Rx)?\.?\s*/i, '').trim();
+          if (namePart.length >= 4) {
+            let cleanedName = namePart.replace(/(?:500|650|100|250|50|20|10|5|mg|ml|mcg|g)$/i, '').replace(/-$/, '');
+            if (cleanedName.length >= 4) {
+              const lowerClean = cleanedName.toLowerCase();
+              let isKnown = false;
+              identified.forEach(known => {
+                if (lowerClean.includes(known) || known.includes(lowerClean)) {
+                  isKnown = true;
+                }
+              });
+              
+              // Filter out common instructions, headers, or metadata words
+              const commonWords = [
+                "tab", "tablet", "cap", "capsule", "syr", "syrup", "daily", "twice", "thrice", "morning", "noon",
+                "night", "after", "food", "before", "take", "dose", "days", "weeks", "patient", "doctor", "name",
+                "date", "signature", "hospital", "clinic", "medical", "prescription", "pharmacy", "history"
+              ];
+              if (!isKnown && !commonWords.includes(lowerClean)) {
+                otherDetected.add(cleanedName);
+              }
+            }
+          }
+        });
+      }
     });
+
+    return {
+      identified: Array.from(identified).map(drugName => {
+        return drugName.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('-');
+      }),
+      unverified: Array.from(otherDetected).map(name => {
+        return name.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('-');
+      })
+    };
   };
 
   const resetScanner = () => {
@@ -213,6 +300,7 @@ const PrescriptionOCR = () => {
     setPreviewUrl(null);
     setRawText('');
     setIdentifiedMeds([]);
+    setUnverifiedMeds([]);
     setHasScanned(false);
     setProgress(0);
     setStatusText('');
@@ -337,34 +425,73 @@ const PrescriptionOCR = () => {
                 <div className="ocr-results-card glass shadow-md">
                   <h2>{t('ocrMedsFound')}</h2>
                   
-                  {identifiedMeds.length === 0 ? (
+                  {identifiedMeds.length === 0 && unverifiedMeds.length === 0 ? (
                     <div className="no-meds-alert">
                       <AlertCircle className="text-warning" size={24} />
                       <p>{t('ocrNoMeds')}</p>
                     </div>
                   ) : (
-                    <div className="meds-list-grid">
-                      {identifiedMeds.map((med, idx) => (
-                        <motion.div 
-                          key={med}
-                          className="med-match-chip glass"
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: idx * 0.08 }}
-                        >
-                          <div className="med-match-info">
-                            <span className="pill-dot">💊</span>
-                            <h4>{med}</h4>
+                    <div className="ocr-results-lists-wrapper">
+                      {identifiedMeds.length > 0 && (
+                        <div className="results-section">
+                          <h3 className="section-subtitle">Verified Drug Matches</h3>
+                          <div className="meds-list-grid">
+                            {identifiedMeds.map((med, idx) => (
+                              <motion.div 
+                                key={med}
+                                className="med-match-chip glass verified"
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: idx * 0.05 }}
+                              >
+                                <div className="med-match-info">
+                                  <span className="pill-dot">💊</span>
+                                  <h4>{med}</h4>
+                                </div>
+                                <button 
+                                  className="btn btn-primary btn-sm view-info-btn"
+                                  onClick={() => navigate(`/medicine?search=${encodeURIComponent(med)}`)}
+                                >
+                                  <span>{t('ocrViewClinicalInfo')}</span>
+                                  <ArrowRight size={14} />
+                                </button>
+                              </motion.div>
+                            ))}
                           </div>
-                          <button 
-                            className="btn btn-primary btn-sm view-info-btn"
-                            onClick={() => navigate(`/medicine?search=${encodeURIComponent(med)}`)}
-                          >
-                            <span>{t('ocrViewClinicalInfo')}</span>
-                            <ArrowRight size={14} />
-                          </button>
-                        </motion.div>
-                      ))}
+                        </div>
+                      )}
+                      
+                      {unverifiedMeds.length > 0 && (
+                        <div className="results-section" style={{ marginTop: '1.5rem' }}>
+                          <h3 className="section-subtitle">Other Extracted Terms</h3>
+                          <p className="section-help-text" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                            These terms were detected in the prescription but didn't match our database. You can still search for them.
+                          </p>
+                          <div className="meds-list-grid">
+                            {unverifiedMeds.map((med, idx) => (
+                              <motion.div 
+                                key={med}
+                                className="med-match-chip glass unverified"
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: (identifiedMeds.length + idx) * 0.05 }}
+                              >
+                                <div className="med-match-info">
+                                  <span className="pill-dot">❓</span>
+                                  <h4>{med}</h4>
+                                </div>
+                                <button 
+                                  className="btn btn-outline btn-sm view-info-btn"
+                                  onClick={() => navigate(`/medicine?search=${encodeURIComponent(med)}`)}
+                                >
+                                  <span>Search Info</span>
+                                  <ArrowRight size={14} />
+                                </button>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
