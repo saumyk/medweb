@@ -1,6 +1,6 @@
-# 🏥 MedWeb — Smart Voice-Controlled Health Companion
+# 🏥 ArogyaAI — Smart Voice-Controlled Health Companion
 
-**MedWeb** is an accessible, voice-enabled personal healthcare companion and medical directory web application. It is designed to simplify how users search for drug guidelines, check symptoms, locate medical facilities, and get health assistance. 
+**ArogyaAI** is an accessible, voice-enabled personal healthcare companion and medical directory web application. It is designed to simplify how users search for drug guidelines, check symptoms, locate medical facilities, and get health assistance. 
 
 By integrating native browser speech technology with a clean, responsive interface, MedWeb breaks down digital barriers for individuals who struggle with traditional typing and site navigation—such as the elderly, visually impaired, or motor-impaired users.
 
@@ -33,7 +33,7 @@ MedWeb is navigable hands-free. Users can trigger the floating assistant button 
 
 ## 🛠️ Technology Stack
 
-MedWeb is built as a zero-cost, serverless web application that utilizes native browser technologies:
+ArogyaAI is built as a zero-cost, serverless web application that utilizes native browser technologies:
 
 *   **React 19 & Vite 8**: Provides component state reactivity and optimized client-side asset loading.
 *   **Web Speech API**: Uses browser-native speech recognition (`SpeechRecognition`) and text-to-speech engine speech synthesis (`SpeechSynthesis`) at zero cost.
