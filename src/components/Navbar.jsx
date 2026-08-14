@@ -89,6 +89,16 @@ const Navbar = () => {
       desc: language === 'en' ? 'Trigger emergency SOS protocols' : 'आपातकालीन एसओएस प्रोटोकॉल सक्रिय करें',
       colorClass: 'red' 
     },
+    { 
+  name: t('telemedicine'), 
+  path: '/telemedicine', 
+  icon: <Stethoscope size={24} />, 
+  desc: language === 'en' 
+    ? 'Consult doctors via video call'   : 'वीडियो कॉल द्वारा डॉक्टर से परामर्श करें',
+  colorClass: 'indigo' 
+},
+
+
   ];
 
   const handleLinkClick = (path) => {
@@ -105,7 +115,7 @@ const Navbar = () => {
             <div className="logo-icon">
               <Stethoscope size={28} color="white" />
             </div>
-            <span className="logo-text gradient-text">MedWeb</span>
+            <span className="logo-text gradient-text">ArogyaAI</span>
           </Link>
           
           <div className="navbar-right">
