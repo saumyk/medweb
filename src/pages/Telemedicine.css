@@ -1,17 +1,27 @@
-.telemedicine-container {
-  padding: 20px;
+.telemedicine-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.hub-feature-card h2 {
+  margin-bottom: 0.5rem;
+}
+
+.hub-feature-card p {
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
 }
 
 .btn {
-  margin: 10px;
-  padding: 10px 15px;
-  border: none;
+  padding: 0.6rem 1.2rem;
   border-radius: 6px;
-  cursor: pointer;
+  font-weight: 500;
 }
 
 .btn.video {
-  background-color: #007bff;
-  color: white;
+  background: var(--accent-color);
+  color: #fff;
 }
+
 
