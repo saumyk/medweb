@@ -33,7 +33,7 @@ function App() {
             <Route path="/nearby" element={<Nearby />} />
             <Route path="/ocr" element={<PrescriptionOCR />} />
             <Route path="/dashboard" element={<HealthDashboard />} />
-            <Route path="/Telemedicine" element={<Telemedicine />} />
+            <Route path="/telemedicine" element={<Telemedicine />} />
           </Routes>
         </main>
         <Footer />
