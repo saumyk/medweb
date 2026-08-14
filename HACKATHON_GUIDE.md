@@ -1,17 +1,17 @@
-# 🏥 MedWeb: Hackathon Interview & Project Guide
+# 🏥 ArogyaAI: Hackathon Interview & Project Guide
 
 Welcome to the official technical handbook and interview guide for **MedWeb** — your smart, AI-powered health assistant and prescription scanner. This document provides a comprehensive overview of the architecture, tech stack, feature implementations, and key technical talking points designed to help you ace your hackathon presentation and judges' Q&A.
 
 ---
 
 ## 🚀 The Elevator Pitch
-> *"MedWeb is a highly responsive, multi-lingual client-side health companion that bridges the gap between patient understanding and clinical guidelines. By leveraging local browser-based OCR, fuzzy-string algorithms, and AI, MedWeb enables users to digitize prescription photos, query a dual-source drug directory, log personal health vitals, and trigger high-criticality SOS protocols with live GPS tracking — all in their native language (English & Hindi) with absolute privacy."*
+> *"ArogyaAI is a highly responsive, multi-lingual client-side health companion that bridges the gap between patient understanding and clinical guidelines. By leveraging local browser-based OCR, fuzzy-string algorithms, and AI, MedWeb enables users to digitize prescription photos, query a dual-source drug directory, log personal health vitals, and trigger high-criticality SOS protocols with live GPS tracking — all in their native language (English & Hindi) with absolute privacy."*
 
 ---
 
 ## 🛠️ The Tech Stack
 
-MedWeb is built using a modern, lightweight, and performance-oriented web stack:
+ArogyaAI is built using a modern, lightweight, and performance-oriented web stack:
 
 | Technology | Layer | Purpose | Key Benefit |
 | :--- | :--- | :--- | :--- |
