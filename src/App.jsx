@@ -34,6 +34,7 @@ function App() {
             <Route path="/ocr" element={<PrescriptionOCR />} />
             <Route path="/dashboard" element={<HealthDashboard />} />
             <Route path="/telemedicine" element={<Telemedicine />} />
+
           </Routes>
         </main>
         <Footer />
