@@ -9,6 +9,7 @@ import Nearby from './pages/Nearby';
 import SymptomsChecker from './pages/SymptomsChecker';
 import PrescriptionOCR from './pages/PrescriptionOCR';
 import HealthDashboard from './pages/HealthDashboard';
+import Telemedicine from './pages/Telemedicine';
 import { LanguageProvider } from './components/LanguageContext';
 import { AuthProvider } from './components/AuthContext';
 import './App.css';
