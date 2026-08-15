@@ -3,26 +3,60 @@ import './Telemedicine.css';
 
 const Telemedicine = () => {
   const [activeTab, setActiveTab] = useState('doctor'); // 'doctor' | 'lab'
+  const [selectedCity, setSelectedCity] = useState('Delhi NCR');
   const [selectedDoctorCategory, setSelectedDoctorCategory] = useState('All');
   const [selectedLabCategory, setSelectedLabCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
+  const cities = ['Delhi NCR', 'Mumbai', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Jaipur', 'Lucknow'];
+
+  // All Possible Specialties
   const doctorCategories = [
-    { name: 'All', count: 12 },
-    { name: 'General Physician', count: 4 },
-    { name: 'Gynecologists', count: 2 },
-    { name: 'Orthopedists', count: 2 },
-    { name: 'Pediatricians', count: 1 },
-    { name: 'Dentists', count: 3 },
+    { name: 'All', count: 48 },
+    { name: 'General Physician', count: 12 },
+    { name: 'Dermatologists', count: 8 },
+    { name: 'Gynecologists', count: 6 },
+    { name: 'Dentists', count: 5 },
+    { name: 'Pediatricians', count: 4 },
+    { name: 'Orthopedists', count: 3 },
+    { name: 'Cardiologists', count: 3 },
+    { name: 'Neurologists', count: 2 },
+    { name: 'ENT Specialists', count: 3 },
+    { name: 'Psychiatrists', count: 2 },
   ];
 
+  // All Possible Lab Categories
   const labCategories = [
-    { name: 'All', count: 15 },
-    { name: 'Full Body Checkup', count: 3 },
-    { name: 'Blood Test', count: 6 },
-    { name: 'Diabetes Profile', count: 2 },
-    { name: 'Thyroid Care', count: 2 },
-    { name: 'COVID/Flu', count: 2 },
+    { name: 'All', count: 65 },
+    { name: 'Full Body Checkup', count: 10 },
+    { name: 'Blood Test', count: 18 },
+    { name: 'Diabetes Profile', count: 8 },
+    { name: 'Thyroid Care', count: 6 },
+    { name: 'Vitamin Profile', count: 5 },
+    { name: 'Kidney Function (KFT)', count: 4 },
+    { name: 'Liver Function (LFT)', count: 5 },
+    { name: 'Urine Test', count: 4 },
+    { name: 'COVID & Viral', count: 5 },
+  ];
+
+  // 6 Doctors Data
+  const doctorsList = [
+    { id: 1, name: 'Dr. Sarah Sharma', specialty: 'GYNECOLOGIST', exp: '12+ Years Experience', hospital: 'Max Hospital', status: '● Online', statusType: 'online', city: 'Delhi NCR' },
+    { id: 2, name: 'Dr. Rajesh Verma', specialty: 'DENTIST', exp: '8+ Years Experience', hospital: 'Dental Care Clinic', status: 'Available 4 PM', statusType: 'offline', city: 'Delhi NCR' },
+    { id: 3, name: 'Dr. Ananya Roy', specialty: 'DERMATOLOGIST', exp: '10+ Years Experience', hospital: 'Apollo Clinic', status: '● Online', statusType: 'online', city: 'Mumbai' },
+    { id: 4, name: 'Dr. Vikramaditya Singh', specialty: 'CARDIOLOGIST', exp: '15+ Years Experience', hospital: 'Fortis Healthcare', status: 'Available 6 PM', statusType: 'offline', city: 'Bangalore' },
+    { id: 5, name: 'Dr. Priya Nair', specialty: 'PEDIATRICIAN', exp: '7+ Years Experience', hospital: 'Rainbow Children Hospital', status: '● Online', statusType: 'online', city: 'Hyderabad' },
+    { id: 6, name: 'Dr. Amit Patel', specialty: 'GENERAL PHYSICIAN', exp: '11+ Years Experience', hospital: 'Medanta Hospital', status: '● Online', statusType: 'online', city: 'Delhi NCR' },
+  ];
+
+  // 6 Lab Tests Data
+  const labTestsList = [
+    { id: 1, name: 'Full Body Checkup (Advanced)', category: 'LAB TEST', tag: 'POPULAR', desc: 'Includes 63 Tests (CBC, KFT, LFT, Lipid, Thyroid)', oldPrice: '₹1,999', newPrice: '₹799' },
+    { id: 2, name: 'Diabetes Monitoring Profile', category: 'LAB TEST', tag: '', desc: 'Includes HbA1c, Fasting Sugar, Post Prandial, Urine Sugar', oldPrice: '₹999', newPrice: '₹449' },
+    { id: 3, name: 'Complete Blood Count (CBC)', category: 'LAB TEST', tag: 'ESSENTIAL', desc: 'Measures RBC, WBC, Platelets, Hemoglobin & Hematocrit', oldPrice: '₹499', newPrice: '₹299' },
+    { id: 4, name: 'Thyroid Profile (Total T3, T4, TSH)', category: 'LAB TEST', tag: '', desc: 'Complete assessment of thyroid gland hormone levels', oldPrice: '₹750', newPrice: '₹349' },
+    { id: 5, name: 'Vitamin D & B12 Combo', category: 'LAB TEST', tag: 'BESTSELLER', desc: 'Evaluates bone health and nerve function vitamins', oldPrice: '₹2,200', newPrice: '₹899' },
+    { id: 6, name: 'Liver Function Test (LFT)', category: 'LAB TEST', tag: '', desc: 'Includes Bilirubin, SGOT, SGPT, Alkaline Phosphatase', oldPrice: '₹850', newPrice: '₹399' },
   ];
 
   return (
@@ -32,7 +66,7 @@ const Telemedicine = () => {
         {/* Header Section */}
         <div className="telemedicine-header">
           <h1>Medical Services & Consultations</h1>
-          <p>Book online doctor consultations or schedule home sample pickup for lab tests.</p>
+          <p>Book online doctor consultations or schedule home sample pickup for lab tests in your city.</p>
         </div>
 
         {/* Primary Service Selector (Main Pills) */}
@@ -51,19 +85,35 @@ const Telemedicine = () => {
           </button>
         </div>
 
-        {/* Search Bar */}
+        {/* Search Bar & City Selector */}
         <div className="telemedicine-search-box">
-          <input
-            type="text"
-            placeholder={
-              activeTab === 'doctor'
-                ? "Search doctors, specialties..."
-                : "Search lab tests, health packages..."
-            }
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="telemedicine-search-input"
-          />
+          {/* City Selection Dropdown */}
+          <div className="city-selector">
+            <span className="city-icon">📍</span>
+            <select 
+              value={selectedCity} 
+              onChange={(e) => setSelectedCity(e.target.value)}
+              className="city-dropdown"
+            >
+              {cities.map((city) => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="search-input-wrapper">
+            <input
+              type="text"
+              placeholder={
+                activeTab === 'doctor'
+                  ? "Search doctors, specialties (e.g. Dentist, Cardiologist)..."
+                  : "Search lab tests, packages (e.g. Blood Test, Full Body)..."
+              }
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="telemedicine-search-input"
+            />
+          </div>
           <button className="telemedicine-search-btn">Search</button>
         </div>
 
@@ -90,77 +140,51 @@ const Telemedicine = () => {
               ))}
         </div>
 
-        {/* Content Section: Cards */}
+        {/* Cards Grid Section */}
         {activeTab === 'doctor' ? (
-          /* DOCTOR CONSULTATION CARDS */
+          /* 6 DOCTOR CONSULTATION CARDS */
           <div className="cards-grid">
-            <div className="service-card">
-              <div className="card-top">
-                <div>
-                  <h3 className="card-title">Dr. Sarah Sharma</h3>
-                  <span className="badge-category">GYNECOLOGIST</span>
+            {doctorsList.map((doc) => (
+              <div className="service-card" key={doc.id}>
+                <div className="card-top">
+                  <div>
+                    <h3 className="card-title">{doc.name}</h3>
+                    <span className="badge-category">{doc.specialty}</span>
+                  </div>
+                  <span className={`badge-status ${doc.statusType}`}>{doc.status}</span>
                 </div>
-                <span className="badge-status online">● Online</span>
-              </div>
-              <p className="card-subtitle">12+ Years Experience • Max Hospital</p>
-              <div className="card-actions">
-                <button className="btn-primary">Book Appointment</button>
-                <button className="btn-secondary">Start Call</button>
-              </div>
-            </div>
-
-            <div className="service-card">
-              <div className="card-top">
-                <div>
-                  <h3 className="card-title">Dr. Rajesh Verma</h3>
-                  <span className="badge-category">DENTIST</span>
+                <p className="card-subtitle">{doc.exp} • {doc.hospital}</p>
+                <div className="card-location">📍 {doc.city}</div>
+                <div className="card-actions">
+                  <button className="btn-primary">Book Appointment</button>
+                  <button className="btn-secondary">Start Call</button>
                 </div>
-                <span className="badge-status offline">Available 4 PM</span>
               </div>
-              <p className="card-subtitle">8+ Years Experience • Dental Care Clinic</p>
-              <div className="card-actions">
-                <button className="btn-primary">Book Appointment</button>
-                <button className="btn-secondary">Start Call</button>
-              </div>
-            </div>
+            ))}
           </div>
         ) : (
-          /* LAB TEST BOOKING CARDS */
+          /* 6 LAB TEST BOOKING CARDS */
           <div className="cards-grid">
-            <div className="service-card">
-              <div className="card-top">
-                <div>
-                  <h3 className="card-title">Full Body Checkup (Advanced)</h3>
-                  <span className="badge-category">LAB TEST</span>
+            {labTestsList.map((lab) => (
+              <div className="service-card" key={lab.id}>
+                <div className="card-top">
+                  <div>
+                    <h3 className="card-title">{lab.name}</h3>
+                    <span className="badge-category">{lab.category}</span>
+                  </div>
+                  {lab.tag && <span className="badge-tag">{lab.tag}</span>}
                 </div>
-                <span className="badge-tag">POPULAR</span>
-              </div>
-              <p className="card-subtitle">Includes 63 Tests (CBC, Kidney, Liver, Lipid, Thyroid)</p>
-              <div className="card-footer">
-                <div className="price-tag">
-                  <span className="old-price">₹1,999</span>
-                  <span className="new-price">₹799</span>
-                </div>
-                <button className="btn-primary">Book Home Pickup</button>
-              </div>
-            </div>
-
-            <div className="service-card">
-              <div className="card-top">
-                <div>
-                  <h3 className="card-title">Diabetes Profile</h3>
-                  <span className="badge-category">LAB TEST</span>
+                <p className="card-subtitle">{lab.desc}</p>
+                <div className="card-location">📍 Home Collection available in {selectedCity}</div>
+                <div className="card-footer">
+                  <div className="price-tag">
+                    <span className="old-price">{lab.oldPrice}</span>
+                    <span className="new-price">{lab.newPrice}</span>
+                  </div>
+                  <button className="btn-primary">Book Home Pickup</button>
                 </div>
               </div>
-              <p className="card-subtitle">Includes HbA1c, Fasting Blood Sugar, Urine Sugar</p>
-              <div className="card-footer">
-                <div className="price-tag">
-                  <span className="old-price">₹999</span>
-                  <span className="new-price">₹449</span>
-                </div>
-                <button className="btn-primary">Book Home Pickup</button>
-              </div>
-            </div>
+            ))}
           </div>
         )}
 
