@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Bot, ShieldAlert, Search, Wifi, Battery, Signal, Camera, HeartPulse, Globe } from 'lucide-react';
+import { ArrowRight, Bot, ShieldAlert, Search, Wifi, Battery, Signal, Camera, HeartPulse, Globe, Stethoscope } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import './Home.css';
 
@@ -114,6 +114,16 @@ const Home = () => {
               path="/assistant"
               colorClass="teal"
             />
+
+            <FeatureCard 
+  icon={<Stethoscope size={32} />}
+  title="Telemedicine"
+  desc="Consult doctors via video call or book lab tests"
+  delay={0.2}
+  path="/telemedicine"
+  colorClass="teal"
+/>
+            
             <FeatureCard 
               icon={<Camera size={32} />}
               title={t('cardOcrTitle')}
