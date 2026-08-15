@@ -2,13 +2,16 @@
 .telemedicine-container {
   min-height: calc(100vh - 80px);
   background-color: #f2f7f7;
-  padding: 24px 16px 48px;
+  padding: 24px 24px 60px;
   font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .telemedicine-content {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
+  width: 100%;
 }
 
 /* Header Styling */
@@ -17,10 +20,10 @@
 }
 
 .telemedicine-header h1 {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
   color: #111827;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .telemedicine-header p {
@@ -33,10 +36,11 @@
   display: flex;
   gap: 12px;
   margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
 .main-tab-btn {
-  padding: 10px 20px;
+  padding: 10px 22px;
   border-radius: 9999px;
   font-size: 14px;
   font-weight: 600;
@@ -51,28 +55,57 @@
   background-color: #0f9f8e;
   color: #ffffff;
   border-color: #0f9f8e;
-  box-shadow: 0 2px 4px rgba(15, 159, 142, 0.2);
+  box-shadow: 0 2px 6px rgba(15, 159, 142, 0.25);
 }
 
 .main-tab-btn:hover:not(.active) {
   background-color: #f9fafb;
 }
 
-/* Search Box */
+/* Search Box & City Selector */
 .telemedicine-search-box {
   background-color: #ffffff;
   padding: 8px 12px;
   border-radius: 16px;
   border: 1px solid #e5e7eb;
   display: flex;
+  align-items: center;
   gap: 12px;
-  max-width: 650px;
+  max-width: 850px;
   margin-bottom: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.telemedicine-search-input {
+.city-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: #f3f4f6;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.city-icon {
+  font-size: 14px;
+}
+
+.city-dropdown {
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  outline: none;
+  cursor: pointer;
+}
+
+.search-input-wrapper {
   flex: 1;
+}
+
+.telemedicine-search-input {
+  width: 100%;
   border: none;
   background-color: #f9fafb;
   padding: 10px 14px;
@@ -80,6 +113,7 @@
   font-size: 14px;
   outline: none;
   color: #1f2937;
+  box-sizing: border-box;
 }
 
 .telemedicine-search-btn {
@@ -92,23 +126,25 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  white-space: nowrap;
 }
 
 .telemedicine-search-btn:hover {
   background-color: #0c8577;
 }
 
-/* Filter Pills Scroll Row */
+/* Horizontal Filter Pills Scroll */
 .filter-pills-scroll {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
   margin-bottom: 24px;
+  scrollbar-width: thin;
 }
 
 .sub-pill-btn {
-  padding: 6px 16px;
+  padding: 7px 18px;
   border-radius: 9999px;
   font-size: 13px;
   font-weight: 500;
@@ -128,22 +164,23 @@
 
 .sub-pill-btn:hover:not(.active) {
   border-color: #d1d5db;
+  background-color: #f9fafb;
 }
 
-/* Cards Grid Layout */
+/* Cards Grid Layout (Supports 6 Cards Grid Seamlessly) */
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 24px;
 }
 
-/* Individual Card Styling */
+/* Service Cards */
 .service-card {
   background-color: #ffffff;
   padding: 20px;
-  border-radius: 16px;
+  border-radius: 18px;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -151,8 +188,8 @@
 }
 
 .service-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
 .card-top {
@@ -184,16 +221,16 @@
   font-size: 12px;
   color: #059669;
   background-color: #ecfdf5;
-  padding: 2px 10px;
+  padding: 3px 10px;
   border-radius: 9999px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .badge-status.offline {
   font-size: 12px;
   color: #6b7280;
   background-color: #f3f4f6;
-  padding: 2px 10px;
+  padding: 3px 10px;
   border-radius: 9999px;
 }
 
@@ -210,11 +247,18 @@
 .card-subtitle {
   font-size: 13px;
   color: #6b7280;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   line-height: 1.4;
 }
 
-/* Buttons inside Cards */
+.card-location {
+  font-size: 12px;
+  color: #4b5563;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+/* Actions & Buttons */
 .card-actions {
   display: flex;
   gap: 10px;
@@ -252,7 +296,7 @@
   background-color: #f9fafb;
 }
 
-/* Card Footer with Pricing */
+/* Card Pricing Footer */
 .card-footer {
   display: flex;
   justify-content: space-between;
