@@ -64,7 +64,7 @@ const Home = () => {
                     <Bot size={20} color="white" />
                   </div>
                   <div className="chat-status-info">
-                    <span className="chat-bot-name">MedWeb AI</span>
+                    <span className="chat-bot-name">ArogyaAI</span>
                     <span className="chat-status-text"><span className="status-dot-active"></span>Online</span>
                   </div>
                 </div>
@@ -87,7 +87,7 @@ const Home = () => {
                 </div>
 
                 <div className="mockup-input-chat">
-                  <span className="input-placeholder">Message MedWeb AI...</span>
+                  <span className="input-placeholder">Message ArogyaAI...</span>
                   <div className="input-actions">
                     <span className="input-action-icon">🎙️</span>
                     <span className="input-send-btn">➔</span>
