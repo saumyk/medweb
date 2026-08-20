@@ -11,7 +11,7 @@ const Footer = () => {
       <div className="container footer-container">
         <div className="footer-top">
           <Link to="/" className="footer-logo">
-            <span className="logo-text gradient-text">MedWeb</span>
+            <span className="logo-text gradient-text">ArogyaAI</span>
           </Link>
           <div className="footer-links">
             <Link to="/assistant">{t('aiAssistant')}</Link>
@@ -28,7 +28,7 @@ const Footer = () => {
             <strong>⚠️ {t('notMedicalAdvice')}:</strong> {t('disclaimer')}
           </p>
           <p className="footer-copy">
-            &copy; {currentYear} MedWeb. All rights reserved.
+            &copy; {currentYear} ArogyaAI. All rights reserved.
           </p>
         </div>
       </div>
