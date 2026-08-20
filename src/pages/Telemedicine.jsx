@@ -40,26 +40,44 @@ const Telemedicine = () => {
   ];
 
   // 6 Doctors Data
-  const [doctorsList, setDoctorsList] = useState([]);
-
+ // Doctor Fetch with Transformation
 useEffect(() => {
-  fetch("https://hapi.fhir.org/baseR4/Appointment")
-    .then(res => res.json())
-    .then(data => setDoctorsList(data.entry || []));
-}, []);
+  fetch("https://hapi.fhir.org/baseR4/Appointment?_count=6")
+    .then((res) => res.json())
+    .then((data) => {
+      const formattedDocs = (data.entry || []).map((item, idx) => ({
+        id: item.resource?.id || idx,
+        name: item.resource?.description || `Appointment #${idx + 1}`,
+        specialty: item.resource?.serviceType?.[0]?.text || 'General',
+        status: item.resource?.status || 'booked',
+        statusType: 'online',
+        exp: 'Verified Doctor',
+        hospital: 'FHIR Medical Center',
+        city: selectedCity,
+      }));
+      setDoctorsList(formattedDocs);
+    })
+    .catch((err) => console.error("Doctor API Error:", err));
+}, [selectedCity]);
 
-
-  // 6 Lab Tests Data
- const [labTestsList, setLabTestsList] = useState([]);
-
+// Lab Tests Fetch with Fallback Parsing
 useEffect(() => {
-  fetch("https://demo.openmrs.org/openmrs/ws/rest/v1/order")   // OpenMRS demo API
-    .then(res => res.json())
-    .then(data => {
-      setLabTestsList(data.results || []);   // lab tests को state में डालो
-    });
+  fetch("https://demo.openmrs.org/openmrs/ws/rest/v1/order?v=default")
+    .then((res) => res.json())
+    .then((data) => {
+      const formattedLabs = (data.results || []).map((item, idx) => ({
+        id: item.uuid || idx,
+        name: item.display || "Diagnostic Test",
+        category: item.orderType?.display || "General Test",
+        desc: item.instructions || "Includes standard home sample collection",
+        tag: "Verified",
+        oldPrice: "₹999",
+        newPrice: "₹499",
+      }));
+      setLabTestsList(formattedLabs);
+    })
+    .catch((err) => console.error("Lab API Error:", err));
 }, []);
-
 
   return (
     <div className="telemedicine-container">
