@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Telemedicine.css';
 
 const Telemedicine = () => {
-  const [activeTab, setActiveTab] = useState('doctor'); // 'doctor' | 'lab'
+  const [activeTab, setActiveTab] = useState('doctor'); // 'doctor' | 'lab' | 'medicine'
   const [selectedCity, setSelectedCity] = useState('Delhi NCR');
   const [selectedDoctorCategory, setSelectedDoctorCategory] = useState('All');
   const [selectedLabCategory, setSelectedLabCategory] = useState('All');
+  const [selectedMedicineCategory, setSelectedMedicineCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const cities = ['Delhi NCR', 'Mumbai', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Jaipur', 'Lucknow'];
+  // States for dynamic data
+  const [doctorsList, setDoctorsList] = useState([]);
+  const [labTestsList, setLabTestsList] = useState([]);
 
-  // All Possible Specialties
+  const cities = ['Delhi NCR', 'Mumbai', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Jaipur', 'Lucknow',Kanpur,Noida];
+
+  // Doctor Categories
   const doctorCategories = [
     { name: 'All', count: 48 },
     { name: 'General Physician', count: 12 },
@@ -25,7 +30,7 @@ const Telemedicine = () => {
     { name: 'Psychiatrists', count: 2 },
   ];
 
-  // All Possible Lab Categories
+  // Lab Categories
   const labCategories = [
     { name: 'All', count: 65 },
     { name: 'Full Body Checkup', count: 10 },
@@ -39,45 +44,102 @@ const Telemedicine = () => {
     { name: 'COVID & Viral', count: 5 },
   ];
 
-  // 6 Doctors Data
- // Doctor Fetch with Transformation
-useEffect(() => {
-  fetch("https://hapi.fhir.org/baseR4/Appointment?_count=6")
-    .then((res) => res.json())
-    .then((data) => {
-      const formattedDocs = (data.entry || []).map((item, idx) => ({
-        id: item.resource?.id || idx,
-        name: item.resource?.description || `Appointment #${idx + 1}`,
-        specialty: item.resource?.serviceType?.[0]?.text || 'General',
-        status: item.resource?.status || 'booked',
-        statusType: 'online',
-        exp: 'Verified Doctor',
-        hospital: 'FHIR Medical Center',
-        city: selectedCity,
-      }));
-      setDoctorsList(formattedDocs);
-    })
-    .catch((err) => console.error("Doctor API Error:", err));
-}, [selectedCity]);
+  // Medicine Categories
+  const medicineCategories = [
+    { name: 'All', count: 120 },
+    { name: 'Prescription Drugs', count: 45 },
+    { name: 'OTC & Wellness', count: 35 },
+    { name: 'Diabetes Care', count: 15 },
+    { name: 'Ayurveda & Herbal', count: 12 },
+    { name: 'Personal Care', count: 13 },
+  ];
 
-// Lab Tests Fetch with Fallback Parsing
-useEffect(() => {
-  fetch("https://demo.openmrs.org/openmrs/ws/rest/v1/order?v=default")
-    .then((res) => res.json())
-    .then((data) => {
-      const formattedLabs = (data.results || []).map((item, idx) => ({
-        id: item.uuid || idx,
-        name: item.display || "Diagnostic Test",
-        category: item.orderType?.display || "General Test",
-        desc: item.instructions || "Includes standard home sample collection",
-        tag: "Verified",
-        oldPrice: "₹999",
-        newPrice: "₹499",
-      }));
-      setLabTestsList(formattedLabs);
-    })
-    .catch((err) => console.error("Lab API Error:", err));
-}, []);
+  // Medicine Sample Data
+  const medicinesList = [
+    {
+      id: 101,
+      name: 'Dolo 650mg Tablet',
+      category: 'Prescription Drugs',
+      desc: 'Strip of 15 tablets • Paracetamol',
+      oldPrice: '₹34',
+      newPrice: '₹28',
+      discount: '18% OFF',
+      rxRequired: true,
+      deliveryTime: 'Express Delivery (2 Hours)'
+    },
+    {
+      id: 102,
+      name: 'Revital H Daily Health Supplement',
+      category: 'OTC & Wellness',
+      desc: 'Bottle of 30 capsules • Multivitamins',
+      oldPrice: '₹310',
+      newPrice: '₹248',
+      discount: '20% OFF',
+      rxRequired: false,
+      deliveryTime: 'Delivered Tomorrow'
+    },
+    {
+      id: 103,
+      name: 'Accu-Chek Active Test Strips',
+      category: 'Diabetes Care',
+      desc: 'Box of 50 Strips',
+      oldPrice: '₹1,049',
+      newPrice: '₹899',
+      discount: '14% OFF',
+      rxRequired: false,
+      deliveryTime: 'Express Delivery (2 Hours)'
+    },
+    {
+      id: 104,
+      name: 'Dabur Chyawanprash 1kg',
+      category: 'Ayurveda & Herbal',
+      desc: 'Immunity Booster with 41 Herbs',
+      oldPrice: '₹395',
+      newPrice: '₹345',
+      discount: '12% OFF',
+      rxRequired: false,
+      deliveryTime: 'Delivered Tomorrow'
+    }
+  ];
+
+  // Doctor Fetch API
+  useEffect(() => {
+    fetch("https://hapi.fhir.org/baseR4/Appointment?_count=6")
+      .then((res) => res.json())
+      .then((data) => {
+        const formattedDocs = (data.entry || []).map((item, idx) => ({
+          id: item.resource?.id || idx,
+          name: item.resource?.description || `Appointment #${idx + 1}`,
+          specialty: item.resource?.serviceType?.[0]?.text || 'General Physician',
+          status: item.resource?.status || 'available',
+          statusType: 'online',
+          exp: 'Verified Doctor',
+          hospital: 'FHIR Medical Center',
+          city: selectedCity,
+        }));
+        setDoctorsList(formattedDocs);
+      })
+      .catch((err) => console.error("Doctor API Error:", err));
+  }, [selectedCity]);
+
+  // Lab Tests Fetch API
+  useEffect(() => {
+    fetch("https://demo.openmrs.org/openmrs/ws/rest/v1/order?v=default")
+      .then((res) => res.json())
+      .then((data) => {
+        const formattedLabs = (data.results || []).map((item, idx) => ({
+          id: item.uuid || idx,
+          name: item.display || "Diagnostic Test",
+          category: item.orderType?.display || "General Test",
+          desc: item.instructions || "Includes standard home sample collection",
+          tag: "Verified",
+          oldPrice: "₹999",
+          newPrice: "₹499",
+        }));
+        setLabTestsList(formattedLabs);
+      })
+      .catch((err) => console.error("Lab API Error:", err));
+  }, []);
 
   return (
     <div className="telemedicine-container">
@@ -85,8 +147,8 @@ useEffect(() => {
         
         {/* Header Section */}
         <div className="telemedicine-header">
-          <h1>Medical Services & Consultations</h1>
-          <p>Book online doctor consultations or schedule home sample pickup for lab tests in your city.</p>
+          <h1>Medical Services, Consultations & Delivery</h1>
+          <p>Book doctor consultations, home sample pickup for lab tests, or order medicines to your doorstep.</p>
         </div>
 
         {/* Primary Service Selector (Main Pills) */}
@@ -101,13 +163,18 @@ useEffect(() => {
             onClick={() => setActiveTab('lab')}
             className={`main-tab-btn ${activeTab === 'lab' ? 'active' : ''}`}
           >
-            Lab Test Booking (Home Collection)
+            Lab Test Booking
+          </button>
+          <button
+            onClick={() => setActiveTab('medicine')}
+            className={`main-tab-btn ${activeTab === 'medicine' ? 'active' : ''}`}
+          >
+            Medicine Delivery 🚚
           </button>
         </div>
 
         {/* Search Bar & City Selector */}
         <div className="telemedicine-search-box">
-          {/* City Selection Dropdown */}
           <div className="city-selector">
             <span className="city-icon">📍</span>
             <select 
@@ -127,7 +194,9 @@ useEffect(() => {
               placeholder={
                 activeTab === 'doctor'
                   ? "Search doctors, specialties (e.g. Dentist, Cardiologist)..."
-                  : "Search lab tests, packages (e.g. Blood Test, Full Body)..."
+                  : activeTab === 'lab'
+                  ? "Search lab tests, packages (e.g. Blood Test, Full Body)..."
+                  : "Search medicines, healthcare products..."
               }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -137,32 +206,78 @@ useEffect(() => {
           <button className="telemedicine-search-btn">Search</button>
         </div>
 
-        {/* Secondary Category Filter Pills */}
+        {/* Category Filter Pills */}
         <div className="filter-pills-scroll">
-          {activeTab === 'doctor'
-            ? doctorCategories.map((cat) => (
-                <button
-                  key={cat.name}
-                  onClick={() => setSelectedDoctorCategory(cat.name)}
-                  className={`sub-pill-btn ${selectedDoctorCategory === cat.name ? 'active' : ''}`}
-                >
-                  {cat.name} ({cat.count})
-                </button>
-              ))
-            : labCategories.map((cat) => (
-                <button
-                  key={cat.name}
-                  onClick={() => setSelectedLabCategory(cat.name)}
-                  className={`sub-pill-btn ${selectedLabCategory === cat.name ? 'active' : ''}`}
-                >
-                  {cat.name} ({cat.count})
-                </button>
-              ))}
+          {activeTab === 'doctor' &&
+            doctorCategories.map((cat) => (
+              <button
+                key={cat.name}
+                onClick={() => setSelectedDoctorCategory(cat.name)}
+                className={`sub-pill-btn ${selectedDoctorCategory === cat.name ? 'active' : ''}`}
+              >
+                {cat.name} ({cat.count})
+              </button>
+            ))}
+
+          {activeTab === 'lab' &&
+            labCategories.map((cat) => (
+              <button
+                key={cat.name}
+                onClick={() => setSelectedLabCategory(cat.name)}
+                className={`sub-pill-btn ${selectedLabCategory === cat.name ? 'active' : ''}`}
+              >
+                {cat.name} ({cat.count})
+              </button>
+            ))}
+
+          {activeTab === 'medicine' &&
+            medicineCategories.map((cat) => (
+              <button
+                key={cat.name}
+                onClick={() => setSelectedMedicineCategory(cat.name)}
+                className={`sub-pill-btn ${selectedMedicineCategory === cat.name ? 'active' : ''}`}
+              >
+                {cat.name} ({cat.count})
+              </button>
+            ))}
         </div>
 
+        {/* Prescription Upload Banner (Only inside Medicine Tab) */}
+        {activeTab === 'medicine' && (
+          <div style={{
+            background: '#f0fdf4',
+            border: '1px dashed #16a34a',
+            padding: '16px',
+            borderRadius: '10px',
+            marginBottom: '20px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '10px'
+          }}>
+            <div>
+              <strong style={{ color: '#15803d', fontSize: '16px' }}>Have a Doctor's Prescription?</strong>
+              <p style={{ margin: '4px 0 0', fontSize: '14px', color: '#166534' }}>
+                Upload your prescription and our pharmacist will place the order for you.
+              </p>
+            </div>
+            <button style={{
+              background: '#16a34a',
+              color: '#ffffff',
+              border: 'none',
+              padding: '10px 18px',
+              borderRadius: '6px',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}>
+              Upload Prescription 📄
+            </button>
+          </div>
+        )}
+
         {/* Cards Grid Section */}
-        {activeTab === 'doctor' ? (
-          /* 6 DOCTOR CONSULTATION CARDS */
+        {activeTab === 'doctor' && (
           <div className="cards-grid">
             {doctorsList.map((doc) => (
               <div className="service-card" key={doc.id}>
@@ -182,8 +297,9 @@ useEffect(() => {
               </div>
             ))}
           </div>
-        ) : (
-          /* 6 LAB TEST BOOKING CARDS */
+        )}
+
+        {activeTab === 'lab' && (
           <div className="cards-grid">
             {labTestsList.map((lab) => (
               <div className="service-card" key={lab.id}>
@@ -202,6 +318,36 @@ useEffect(() => {
                     <span className="new-price">{lab.newPrice}</span>
                   </div>
                   <button className="btn-primary">Book Home Pickup</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'medicine' && (
+          <div className="cards-grid">
+            {medicinesList.map((med) => (
+              <div className="service-card" key={med.id}>
+                <div className="card-top">
+                  <div>
+                    <h3 className="card-title">{med.name}</h3>
+                    <span className="badge-category">{med.category}</span>
+                  </div>
+                  {med.rxRequired && (
+                    <span className="badge-tag" style={{ background: '#fee2e2', color: '#dc2626' }}>
+                      Rx Required
+                    </span>
+                  )}
+                </div>
+                <p className="card-subtitle">{med.desc}</p>
+                <div className="card-location">⚡ {med.deliveryTime} in {selectedCity}</div>
+                <div className="card-footer">
+                  <div className="price-tag">
+                    <span className="old-price">{med.oldPrice}</span>
+                    <span className="new-price">{med.newPrice}</span>
+                    <small style={{ color: '#16a34a', marginLeft: '6px', fontWeight: 'bold' }}>{med.discount}</small>
+                  </div>
+                  <button className="btn-primary">Add to Cart 🛒</button>
                 </div>
               </div>
             ))}
