@@ -40,24 +40,26 @@ const Telemedicine = () => {
   ];
 
   // 6 Doctors Data
-  const doctorsList = [
-    { id: 1, name: 'Dr. Sarah Sharma', specialty: 'GYNECOLOGIST', exp: '12+ Years Experience', hospital: 'Max Hospital', status: '● Online', statusType: 'online', city: 'Delhi NCR' },
-    { id: 2, name: 'Dr. Rajesh Verma', specialty: 'DENTIST', exp: '8+ Years Experience', hospital: 'Dental Care Clinic', status: 'Available 4 PM', statusType: 'offline', city: 'Delhi NCR' },
-    { id: 3, name: 'Dr. Ananya Roy', specialty: 'DERMATOLOGIST', exp: '10+ Years Experience', hospital: 'Apollo Clinic', status: '● Online', statusType: 'online', city: 'Mumbai' },
-    { id: 4, name: 'Dr. Vikramaditya Singh', specialty: 'CARDIOLOGIST', exp: '15+ Years Experience', hospital: 'Fortis Healthcare', status: 'Available 6 PM', statusType: 'offline', city: 'Bangalore' },
-    { id: 5, name: 'Dr. Priya Nair', specialty: 'PEDIATRICIAN', exp: '7+ Years Experience', hospital: 'Rainbow Children Hospital', status: '● Online', statusType: 'online', city: 'Hyderabad' },
-    { id: 6, name: 'Dr. Amit Patel', specialty: 'GENERAL PHYSICIAN', exp: '11+ Years Experience', hospital: 'Medanta Hospital', status: '● Online', statusType: 'online', city: 'Delhi NCR' },
-  ];
+  const [doctorsList, setDoctorsList] = useState([]);
+
+useEffect(() => {
+  fetch("https://hapi.fhir.org/baseR4/Appointment")
+    .then(res => res.json())
+    .then(data => setDoctorsList(data.entry || []));
+}, []);
+
 
   // 6 Lab Tests Data
-  const labTestsList = [
-    { id: 1, name: 'Full Body Checkup (Advanced)', category: 'LAB TEST', tag: 'POPULAR', desc: 'Includes 63 Tests (CBC, KFT, LFT, Lipid, Thyroid)', oldPrice: '₹1,999', newPrice: '₹799' },
-    { id: 2, name: 'Diabetes Monitoring Profile', category: 'LAB TEST', tag: '', desc: 'Includes HbA1c, Fasting Sugar, Post Prandial, Urine Sugar', oldPrice: '₹999', newPrice: '₹449' },
-    { id: 3, name: 'Complete Blood Count (CBC)', category: 'LAB TEST', tag: 'ESSENTIAL', desc: 'Measures RBC, WBC, Platelets, Hemoglobin & Hematocrit', oldPrice: '₹499', newPrice: '₹299' },
-    { id: 4, name: 'Thyroid Profile (Total T3, T4, TSH)', category: 'LAB TEST', tag: '', desc: 'Complete assessment of thyroid gland hormone levels', oldPrice: '₹750', newPrice: '₹349' },
-    { id: 5, name: 'Vitamin D & B12 Combo', category: 'LAB TEST', tag: 'BESTSELLER', desc: 'Evaluates bone health and nerve function vitamins', oldPrice: '₹2,200', newPrice: '₹899' },
-    { id: 6, name: 'Liver Function Test (LFT)', category: 'LAB TEST', tag: '', desc: 'Includes Bilirubin, SGOT, SGPT, Alkaline Phosphatase', oldPrice: '₹850', newPrice: '₹399' },
-  ];
+ const [labTestsList, setLabTestsList] = useState([]);
+
+useEffect(() => {
+  fetch("https://demo.openmrs.org/openmrs/ws/rest/v1/order")   // OpenMRS demo API
+    .then(res => res.json())
+    .then(data => {
+      setLabTestsList(data.results || []);   // lab tests को state में डालो
+    });
+}, []);
+
 
   return (
     <div className="telemedicine-container">
