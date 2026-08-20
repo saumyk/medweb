@@ -167,7 +167,48 @@
   background-color: #f9fafb;
 }
 
-/* Cards Grid Layout (Supports 6 Cards Grid Seamlessly) */
+/* Prescription Upload Banner (Medicine Tab) */
+.rx-banner {
+  background-color: #ecfdf5;
+  border: 1px dashed #0f9f8e;
+  padding: 16px 20px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.rx-banner-text strong {
+  color: #047857;
+  font-size: 15px;
+}
+
+.rx-banner-text p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #065f46;
+}
+
+.rx-upload-btn {
+  background-color: #0f9f8e;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.rx-upload-btn:hover {
+  background-color: #0c8577;
+}
+
+/* Cards Grid Layout */
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -244,6 +285,12 @@
   border-radius: 6px;
 }
 
+.badge-tag.rx-required {
+  color: #dc2626;
+  background-color: #fee2e2;
+  border-color: #fca5a5;
+}
+
 .card-subtitle {
   font-size: 13px;
   color: #6b7280;
@@ -305,6 +352,11 @@
   border-top: 1px solid #f3f4f6;
 }
 
+.price-tag {
+  display: flex;
+  align-items: baseline;
+}
+
 .price-tag .old-price {
   font-size: 12px;
   color: #9ca3af;
@@ -316,4 +368,31 @@
   font-size: 18px;
   font-weight: 700;
   color: #111827;
+}
+
+.discount-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: #059669;
+  margin-left: 6px;
+}
+
+/* Responsive Media Queries */
+@media (max-width: 640px) {
+  .telemedicine-search-box {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .city-selector {
+    justify-content: center;
+  }
+
+  .telemedicine-search-btn {
+    width: 100%;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
 }
