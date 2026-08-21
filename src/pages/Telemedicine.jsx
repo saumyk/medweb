@@ -12,10 +12,11 @@ const Telemedicine = () => {
   // States for dynamic data
   const [doctorsList, setDoctorsList] = useState([]);
   const [labTestsList, setLabTestsList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const cities = ['Delhi NCR', 'Mumbai', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Jaipur', 'Lucknow',Kanpur,Noida];
+  // Fixed Syntax Error: Kanpur aur Noida ko quotes mein kiya
+  const cities = ['Delhi NCR', 'Mumbai', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Jaipur', 'Lucknow', 'Kanpur', 'Noida'];
 
-  // Doctor Categories
   const doctorCategories = [
     { name: 'All', count: 48 },
     { name: 'General Physician', count: 12 },
@@ -23,38 +24,22 @@ const Telemedicine = () => {
     { name: 'Gynecologists', count: 6 },
     { name: 'Dentists', count: 5 },
     { name: 'Pediatricians', count: 4 },
-    { name: 'Orthopedists', count: 3 },
-    { name: 'Cardiologists', count: 3 },
-    { name: 'Neurologists', count: 2 },
-    { name: 'ENT Specialists', count: 3 },
-    { name: 'Psychiatrists', count: 2 },
   ];
 
-  // Lab Categories
   const labCategories = [
     { name: 'All', count: 65 },
     { name: 'Full Body Checkup', count: 10 },
     { name: 'Blood Test', count: 18 },
     { name: 'Diabetes Profile', count: 8 },
-    { name: 'Thyroid Care', count: 6 },
-    { name: 'Vitamin Profile', count: 5 },
-    { name: 'Kidney Function (KFT)', count: 4 },
-    { name: 'Liver Function (LFT)', count: 5 },
-    { name: 'Urine Test', count: 4 },
-    { name: 'COVID & Viral', count: 5 },
   ];
 
-  // Medicine Categories
   const medicineCategories = [
     { name: 'All', count: 120 },
     { name: 'Prescription Drugs', count: 45 },
     { name: 'OTC & Wellness', count: 35 },
     { name: 'Diabetes Care', count: 15 },
-    { name: 'Ayurveda & Herbal', count: 12 },
-    { name: 'Personal Care', count: 13 },
   ];
 
-  // Medicine Sample Data
   const medicinesList = [
     {
       id: 101,
@@ -77,55 +62,56 @@ const Telemedicine = () => {
       discount: '20% OFF',
       rxRequired: false,
       deliveryTime: 'Delivered Tomorrow'
-    },
-    {
-      id: 103,
-      name: 'Accu-Chek Active Test Strips',
-      category: 'Diabetes Care',
-      desc: 'Box of 50 Strips',
-      oldPrice: '₹1,049',
-      newPrice: '₹899',
-      discount: '14% OFF',
-      rxRequired: false,
-      deliveryTime: 'Express Delivery (2 Hours)'
-    },
-    {
-      id: 104,
-      name: 'Dabur Chyawanprash 1kg',
-      category: 'Ayurveda & Herbal',
-      desc: 'Immunity Booster with 41 Herbs',
-      oldPrice: '₹395',
-      newPrice: '₹345',
-      discount: '12% OFF',
-      rxRequired: false,
-      deliveryTime: 'Delivered Tomorrow'
     }
   ];
 
-  // Doctor Fetch API
+  // Fallback Doctor Data
+  const fallbackDoctors = [
+    { id: 1, name: 'Dr. Sharma', specialty: 'General Physician', status: 'Available', statusType: 'online', exp: '10+ Yrs Exp', hospital: 'Apollo Hospital', city: selectedCity },
+    { id: 2, name: 'Dr. Anjali Gupta', specialty: 'Dermatologist', status: 'Busy', statusType: 'offline', exp: '8 Yrs Exp', hospital: 'Max Healthcare', city: selectedCity }
+  ];
+
+  // Fallback Lab Data
+  const fallbackLabs = [
+    { id: 101, name: 'Full Body Health Checkup', category: 'Full Body Checkup', desc: 'Includes 60+ parameters with free home sample pickup', tag: 'Popular', oldPrice: '₹1,999', newPrice: '₹799' },
+    { id: 102, name: 'Complete Blood Count (CBC)', category: 'Blood Test', desc: 'Standard blood profile check', tag: 'Verified', oldPrice: '₹499', newPrice: '₹299' }
+  ];
+
+  // Doctor Fetch API with Fallback
   useEffect(() => {
+    setLoading(true);
     fetch("https://hapi.fhir.org/baseR4/Appointment?_count=6")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("API Network Response Failed");
+        return res.json();
+      })
       .then((data) => {
         const formattedDocs = (data.entry || []).map((item, idx) => ({
           id: item.resource?.id || idx,
-          name: item.resource?.description || `Appointment #${idx + 1}`,
+          name: item.resource?.description || `Dr. Consultant #${idx + 1}`,
           specialty: item.resource?.serviceType?.[0]?.text || 'General Physician',
           status: item.resource?.status || 'available',
           statusType: 'online',
           exp: 'Verified Doctor',
-          hospital: 'FHIR Medical Center',
+          hospital: 'City Medical Center',
           city: selectedCity,
         }));
-        setDoctorsList(formattedDocs);
+        setDoctorsList(formattedDocs.length ? formattedDocs : fallbackDoctors);
       })
-      .catch((err) => console.error("Doctor API Error:", err));
+      .catch((err) => {
+        console.error("Doctor API Error, using fallback data:", err);
+        setDoctorsList(fallbackDoctors);
+      })
+      .finally(() => setLoading(false));
   }, [selectedCity]);
 
-  // Lab Tests Fetch API
+  // Lab Tests Fetch API with Fallback
   useEffect(() => {
     fetch("https://demo.openmrs.org/openmrs/ws/rest/v1/order?v=default")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("API Network Response Failed");
+        return res.json();
+      })
       .then((data) => {
         const formattedLabs = (data.results || []).map((item, idx) => ({
           id: item.uuid || idx,
@@ -136,9 +122,12 @@ const Telemedicine = () => {
           oldPrice: "₹999",
           newPrice: "₹499",
         }));
-        setLabTestsList(formattedLabs);
+        setLabTestsList(formattedLabs.length ? formattedLabs : fallbackLabs);
       })
-      .catch((err) => console.error("Lab API Error:", err));
+      .catch((err) => {
+        console.error("Lab API Error, using fallback data:", err);
+        setLabTestsList(fallbackLabs);
+      });
   }, []);
 
   return (
@@ -151,7 +140,7 @@ const Telemedicine = () => {
           <p>Book doctor consultations, home sample pickup for lab tests, or order medicines to your doorstep.</p>
         </div>
 
-        {/* Primary Service Selector (Main Pills) */}
+        {/* Primary Service Selector */}
         <div className="main-tab-group">
           <button
             onClick={() => setActiveTab('doctor')}
@@ -193,9 +182,9 @@ const Telemedicine = () => {
               type="text"
               placeholder={
                 activeTab === 'doctor'
-                  ? "Search doctors, specialties (e.g. Dentist, Cardiologist)..."
+                  ? "Search doctors, specialties..."
                   : activeTab === 'lab'
-                  ? "Search lab tests, packages (e.g. Blood Test, Full Body)..."
+                  ? "Search lab tests, packages..."
                   : "Search medicines, healthcare products..."
               }
               value={searchQuery}
@@ -242,7 +231,7 @@ const Telemedicine = () => {
             ))}
         </div>
 
-        {/* Prescription Upload Banner (Only inside Medicine Tab) */}
+        {/* Prescription Upload Banner */}
         {activeTab === 'medicine' && (
           <div style={{
             background: '#f0fdf4',
@@ -276,7 +265,7 @@ const Telemedicine = () => {
           </div>
         )}
 
-        {/* Cards Grid Section */}
+        {/* Dynamic Cards Grid Section */}
         {activeTab === 'doctor' && (
           <div className="cards-grid">
             {doctorsList.map((doc) => (
