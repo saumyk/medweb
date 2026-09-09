@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Camera, FileText, CheckCircle, AlertCircle, Search, RefreshCw, Loader2 } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 import { useLanguage } from '../components/LanguageContext';
+import { supabase } from '../utils/supabaseClient'; // 🟢 Supabase Client Imported
 import './PrescriptionOCR.css';
 
 const KNOWN_DRUGS = [
@@ -206,6 +207,28 @@ const PrescriptionOCR = () => {
       // Parse medicines from text
       const parsedMeds = parseMedicines(text);
       setIdentifiedMeds(parsedMeds);
+
+      // 🟢 SUPABASE BACKEND INTEGRATION
+      try {
+        const { data, error } = await supabase
+          .from('prescriptions')
+          .insert([
+            {
+              extracted_medicines: parsedMeds,
+              status: 'processed',
+              image_url: image.name || 'prescription_scanned'
+            }
+          ]);
+
+        if (error) {
+          console.error("Supabase Save Error:", error.message);
+        } else {
+          console.log("Prescription saved to Supabase successfully!", data);
+        }
+      } catch (dbErr) {
+        console.error("Database connection failed:", dbErr);
+      }
+
       setHasScanned(true);
       setProgress(100);
       setStatusText(t('ocrSuccess'));
