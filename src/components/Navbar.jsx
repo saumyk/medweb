@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Stethoscope, MapPin, Activity, Search, Moon, Sun, Home as HomeIcon, Bot, Camera, HeartPulse, AlertOctagon, Menu, X, LogOut } from 'lucide-react';
+import { Stethoscope, MapPin, Activity, Search, Moon, Sun, Home as HomeIcon, Bot, Camera, HeartPulse, AlertOctagon, Menu, X, LogOut, Cpu } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { useAuth } from './AuthContext';
 import './Navbar.css';
@@ -30,8 +30,6 @@ const Navbar = () => {
     };
   }, [isHubOpen]);
 
-
-
   const hubFeatures = [
     { 
       name: t('home'), 
@@ -39,6 +37,13 @@ const Navbar = () => {
       icon: <HomeIcon size={24} />, 
       desc: language === 'en' ? 'Return to the landing page & overview' : 'मुख्य पृष्ठ और अवलोकन पर वापस जाएं',
       colorClass: 'blue' 
+    },
+    { 
+      name: 'Agent Engine', 
+      path: '/agent', 
+      icon: <Cpu size={24} />, 
+      desc: language === 'en' ? 'Autonomous Multi-Agent Healthcare Workflows' : 'स्वायत्त मल्टी-एजेंट स्वास्थ्य सेवा वर्कफ़्लो',
+      colorClass: 'emerald' 
     },
     { 
       name: t('aiAssistant'), 
@@ -90,15 +95,12 @@ const Navbar = () => {
       colorClass: 'red' 
     },
     { 
-  name: t('telemedicine'), 
-  path: '/telemedicine', 
-  icon: <Stethoscope size={24} />, 
-  desc: language === 'en' 
-    ? 'Consult doctors via video call'   : 'वीडियो कॉल द्वारा डॉक्टर से परामर्श करें',
-  colorClass: 'indigo' 
-},
-
-
+      name: t('telemedicine'), 
+      path: '/telemedicine', 
+      icon: <Stethoscope size={24} />, 
+      desc: language === 'en' ? 'Consult doctors via video call' : 'वीडियो कॉल द्वारा डॉक्टर से परामर्श करें',
+      colorClass: 'indigo' 
+    },
   ];
 
   const handleLinkClick = (path) => {
@@ -167,8 +169,6 @@ const Navbar = () => {
           </div>
         </div>
       </nav>
-
-
 
       {/* Fullscreen Hub Menu Overlay */}
       <AnimatePresence>
