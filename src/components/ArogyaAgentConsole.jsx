@@ -1,64 +1,70 @@
 import React, { useState } from 'react';
 import { useArogyaOrchestrator } from '../hooks/useArogyaOrchestrator';
-import './ArogyaAgentConsole.css'; // CSS File Import
+import './ArogyaAgentConsole.css';
 
 export default function ArogyaAgentConsole() {
-  const [inputText, setInputText] = useState('');
+  const [prescriptionText, setPrescriptionText] = useState('');
+  const [symptomText, setSymptomText] = useState('');
   const { logs, loading, processPrescriptionFlow, processSymptomFlow } = useArogyaOrchestrator();
+
+  const handlePrescriptionSubmit = (e) => {
+    e.preventDefault();
+    if (!prescriptionText.trim()) return;
+    processPrescriptionFlow(prescriptionText);
+    setPrescriptionText('');
+  };
 
   const handleSymptomSubmit = (e) => {
     e.preventDefault();
-    if (!inputText) return;
-    processSymptomFlow(inputText);
-    setInputText('');
-  };
-
-  const handleMockPrescription = () => {
-    const mockOCRText = "Paracetamol\nCetirizine";
-    processPrescriptionFlow(mockOCRText);
+    if (!symptomText.trim()) return;
+    processSymptomFlow(symptomText);
+    setSymptomText('');
   };
 
   return (
     <div className="agent-console-container">
       <div className="agent-console-header">
         <h2 className="agent-console-title">ArogyaAI Autonomous Multi-Agent Engine</h2>
-        <p className="agent-console-subtitle">Real-time execution across OCR, Inventory & Triage Agents</p>
+        <p className="agent-console-subtitle">Real-time user input validation across OCR, Inventory & Triage Agents</p>
       </div>
 
       <div className="agent-grid">
+        {/* Real User Input Prescription Form */}
         <div className="agent-card">
           <h3 className="agent-card-title">Prescription OCR & Auto-Cart</h3>
-          <button
-            onClick={handleMockPrescription}
-            disabled={loading}
-            className="agent-btn"
-          >
-            Process Prescription
-          </button>
-        </div>
-
-        <div className="agent-card">
-          <h3 className="agent-card-title">Clinical Symptom Triage</h3>
-          <form onSubmit={handleSymptomSubmit} className="agent-form">
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="e.g. Chest pain and fever"
+          <form onSubmit={handlePrescriptionSubmit} className="agent-form-col">
+            <textarea
+              rows="3"
+              value={prescriptionText}
+              onChange={(e) => setPrescriptionText(e.target.value)}
+              placeholder="Type or paste prescription medicines (one per line)..."
               className="agent-input"
             />
-            <button
-              type="submit"
-              disabled={loading}
-              className="agent-btn"
-              style={{ width: 'auto' }}
-            >
-              Analyze
+            <button type="submit" disabled={loading} className="agent-btn">
+              Process User Prescription
+            </button>
+          </form>
+        </div>
+
+        {/* Real User Input Symptom Form */}
+        <div className="agent-card">
+          <h3 className="agent-card-title">Clinical Symptom Triage</h3>
+          <form onSubmit={handleSymptomSubmit} className="agent-form-col">
+            <input
+              type="text"
+              value={symptomText}
+              onChange={(e) => setSymptomText(e.target.value)}
+              placeholder="e.g. Chest pain and high blood pressure"
+              className="agent-input"
+            />
+            <button type="submit" disabled={loading} className="agent-btn">
+              Analyze User Symptoms
             </button>
           </form>
         </div>
       </div>
 
+      {/* Execution Console Logs */}
       <div className="agent-logs-box">
         <div style={{ color: '#64748b' }}>// Live Agent Execution Logs:</div>
         {logs.map((log, idx) => (
