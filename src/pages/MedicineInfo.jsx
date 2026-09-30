@@ -1,80 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Loader2, FileWarning, FlaskConical, Factory, ShieldAlert } from 'lucide-react';
+import {
+  Search,
+  Loader2,
+  FileWarning,
+  FlaskConical,
+  Factory,
+  ShieldAlert,
+  Pill,
+  AlertTriangle,
+  Ban,
+  Activity,
+  BookOpen,
+  HeartPulse,
+  Wine,
+  Baby,
+  ExternalLink,
+  Info,
+  ChevronRight,
+} from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
+import { lookupMedicine } from '../utils/medicineLookup';
 import './MedicineInfo.css';
 
-const getMedCareInstructions = (query) => {
-  const raw = query.toLowerCase().trim();
-  let selfCare;
-  let seekHelp;
-
-  if (raw.includes("acetaminophen") || raw.includes("paracetamol") || raw.includes("dolo") || raw.includes("crocin") || raw.includes("calpol") || raw.includes("ibuprofen")) {
-    selfCare = [
-      "Drink plenty of fluids to avoid dehydration from fever.",
-      "Get adequate bed rest to help your body recover.",
-      "Avoid alcohol as it increases liver risk when combined with acetaminophen.",
-      "Check labels of other cold medications to avoid double-dosing on pain relievers."
-    ];
-    seekHelp = "Consult a doctor immediately if you develop skin rashes, swelling of the face/mouth, yellowing of skin/eyes (jaundice), or severe stomach pain.";
-  } else if (raw.includes("amoxicillin") || raw.includes("augmentin") || raw.includes("antibiotic")) {
-    selfCare = [
-      "Complete the entire prescribed course of antibiotics, even if you feel better.",
-      "Take with food if the medicine causes stomach upset.",
-      "Consider taking probiotics to help replenish healthy gut flora.",
-      "Stay well-hydrated throughout the day."
-    ];
-    seekHelp = "Seek immediate medical help if you experience breathing difficulties, severe hives/itching, facial swelling, or severe watery diarrhea with stomach cramps.";
-  } else if (raw.includes("pantop") || raw.includes("pan") || raw.includes("omeprazole") || raw.includes("acid")) {
-    selfCare = [
-      "Eat smaller, more frequent meals rather than large heavy dishes.",
-      "Avoid eating close to bedtime (within 2-3 hours).",
-      "Limit trigger substances like caffeine, spicy foods, and carbonated beverages.",
-      "Do not lie down immediately after eating."
-    ];
-    seekHelp = "Consult a doctor if you experience difficulty swallowing, unexplained weight loss, vomiting blood, black stools, or severe chest pain.";
-  } else if (raw.includes("cetirizine") || raw.includes("allegra") || raw.includes("allergy") || raw.includes("fexofenadine")) {
-    selfCare = [
-      "Take the medication at night if it causes drowsiness.",
-      "Avoid alcohol or other sedatives while taking antihistamines.",
-      "Use saline nasal sprays for natural congestion relief.",
-      "Keep windows closed during high-pollen seasons."
-    ];
-    seekHelp = "Seek medical help if you develop signs of an allergic reaction (hives, difficulty breathing, swelling of your face, lips, tongue, or throat), or if your symptoms worsen.";
-  } else {
-    selfCare = [
-      "Take the medication exactly as prescribed by your physician.",
-      "Do not skip doses or change the schedule without consulting your doctor.",
-      "Keep a list of all current medications to share with your healthcare provider.",
-      "Store the medication in a cool, dry place away from direct sunlight."
-    ];
-    seekHelp = "Seek medical help if you develop signs of an allergic reaction (hives, difficulty breathing, swelling of your face, lips, tongue, or throat), or if your underlying symptoms worsen.";
-  }
-
-  return { selfCare, seekHelp };
-};
-
-// Helper function to fetch with a timeout using AbortController
-const fetchWithTimeout = (url, timeoutMs) => {
-  return new Promise((resolve, reject) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      controller.abort();
-      reject(new Error("Timeout"));
-    }, timeoutMs);
-
-    fetch(url, { signal: controller.signal })
-      .then(res => {
-        clearTimeout(timer);
-        resolve(res);
-      })
-      .catch(err => {
-        clearTimeout(timer);
-        reject(err);
-      });
-  });
-};
+const QUICK_SEARCHES = ['Dolo 650', 'Combiflam', 'Amoxicillin', 'Cetirizine', 'Pantoprazole', 'Lipitor'];
 
 const MedicineInfo = () => {
   const { t } = useLanguage();
@@ -83,14 +33,8 @@ const MedicineInfo = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-
-  const cleanText = (text, maxSentences = 2) => {
-    if (!text) return "";
-    let clean = text.replace(/\s+/g, ' ').trim();
-    let sentences = clean.split('. ').filter(s => s.length > 0);
-    let result = sentences.slice(0, maxSentences).join('. ');
-    return result + (result.endsWith('.') ? '' : '.');
-  };
+  const [activeSection, setActiveSection] = useState('');
+  const contentRef = useRef(null);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -102,180 +46,16 @@ const MedicineInfo = () => {
     setIsSearching(true);
     setResult(null);
     setError(null);
-    
-    // Mapping common Indian/International names to FDA recognized names
-    const nameMapping = {
-      "paracetamol": "acetaminophen",
-      "pcm": "acetaminophen",
-      "crocin": "acetaminophen",
-      "dolo": "acetaminophen",
-      "calpol": "acetaminophen",
-      "combiflam": "ibuprofen",
-      "saridon": "acetaminophen",
-      "disprin": "aspirin",
-      "cetirizine": "cetirizine",
-      "citirizine": "cetirizine",
-      "okacet": "cetirizine",
-      "allegra": "fexofenadine",
-      "augmentin": "amoxicillin",
-      "pantop": "pantoprazole",
-      "pantocid": "pantoprazole",
-      "pan": "pantoprazole",
-      "pan-d": "pantoprazole",
-      "omez": "omeprazole",
-      "aciloc": "ranitidine",
-      "ranitidine": "ranitidine",
-      "zantac": "ranitidine",
-      "digene": "antacid",
-      "lipitor": "atorvastatin",
-      "atorva": "atorvastatin",
-      "crestor": "rosuvastatin",
-      "thyronorm": "levothyroxine",
-      "synthroid": "levothyroxine",
-      "viagra": "sildenafil"
-    };
-
-    const normalizedQuery = query.toLowerCase().trim();
-    const fdaQuery = nameMapping[normalizedQuery] || normalizedQuery;
-    const encodedFda = encodeURIComponent(fdaQuery);
+    setActiveSection('');
 
     try {
-      // URLs for parallel fetch
-      const tataUrl = encodeURIComponent(`https://www.1mg.com/api/v1/search/autocomplete?name=${query}`);
-      const tataProxyUrl = `https://api.allorigins.win/get?url=${tataUrl}`;
-
-      const fdaUrls = [
-        `https://api.fda.gov/drug/label.json?search=openfda.generic_name:"${encodedFda}"&limit=1`,
-        `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${encodedFda}"&limit=1`,
-        `https://api.fda.gov/drug/label.json?search=openfda.substance_name:"${encodedFda}"&limit=1`,
-        `https://api.fda.gov/drug/label.json?search="${encodedFda}"&limit=1`
-      ];
-
-      // 1. Fetch Indian Pricing from Tata 1mg (via proxy) in parallel with 1500ms timeout
-      const fetchTataPromise = fetchWithTimeout(tataProxyUrl, 1500)
-        .then(async (res) => {
-          if (res.ok) {
-             const proxyData = await res.json();
-             if (proxyData.contents) {
-               const tataData = JSON.parse(proxyData.contents);
-               const drug = tataData.results?.find(r => r.type === 'drug' && r.price);
-               if (drug) {
-                  return {
-                     price: drug.price,
-                     discountPrice: drug.discounted_price,
-                     packSize: drug.pack_size_label,
-                     manufacturer: drug.manufacturer_name,
-                     name: drug.name.replace(/<[^>]*>?/gm, ''), // Remove HTML bold tags
-                     url: `https://www.1mg.com${drug.url_path}`
-                  };
-               }
-             }
-          }
-          return null;
-        })
-        .catch(err => {
-          console.warn("Tata 1mg fetch failed or timed out:", err);
-          return null;
-        });
-
-      // 2. Fetch FDA configurations in parallel to get first matching category
-      const fetchFdaPromises = fdaUrls.map((url, idx) => 
-        fetch(url)
-          .then(async (res) => {
-            if (res.ok) {
-              const data = await res.json();
-              if (data.results && data.results.length > 0) {
-                return { data: data.results[0], index: idx };
-              }
-            }
-            return null;
-          })
-          .catch(() => null)
-      );
-
-      // Resolve both Tata and FDA requests concurrently
-      const [tataInfo, ...fdaResults] = await Promise.all([
-        fetchTataPromise,
-        ...fetchFdaPromises
-      ]);
-
-      // Prioritize the best matching FDA result based on search index
-      let med = null;
-      for (const fdaRes of fdaResults) {
-        if (fdaRes) {
-          med = fdaRes.data;
-          break;
-        }
-      }
-      
-      if (med) {
-        const care = getMedCareInstructions(fdaQuery);
-        
-        setResult({
-          name: tataInfo?.name || med.openfda?.brand_name?.[0] || med.openfda?.generic_name?.[0] || query,
-          formula: med.openfda?.substance_name?.join(', ') || med.openfda?.generic_name?.[0] || "Unknown Active Ingredient",
-          manufacturer: tataInfo?.manufacturer || med.openfda?.manufacturer_name?.[0] || "Various Manufacturers",
-          category: med.openfda?.pharm_class_epc?.[0] || med.openfda?.product_type?.[0] || "Medication",
-          tataInfo: tataInfo,
-          description: med.indications_and_usage?.[0] || med.purpose?.[0] || med.description?.[0] 
-            ? cleanText(med.indications_and_usage?.[0] || med.purpose?.[0] || med.description?.[0], 4).split('. ').filter(s => s.trim().length > 5)
-            : ["Used for treatment as prescribed by a physician"],
-          dosage: med.dosage_and_administration?.[0] 
-              ? cleanText(med.dosage_and_administration[0], 3)
-              : "Take this medicine in the dose and duration as advised by your doctor. Swallow it as a whole. Do not chew, crush or break it.",
-          risks: (() => {
-            const raw = (med.adverse_reactions?.[0] || med.warnings?.[0] || "").toLowerCase();
-            const known = ["diarrhea", "headache", "vomiting", "nausea", "abdominal discomfort", "dizziness", "fatigue", "rash", "constipation", "drowsiness", "insomnia", "dry mouth", "stomach pain", "sweating"];
-            const found = known.filter(k => raw.includes(k)).map(k => k.charAt(0).toUpperCase() + k.slice(1));
-            return found.length > 0 ? found.slice(0, 6) : ["Consult your doctor for potential side effects"];
-          })(),
-          pharmacokinetics: med.pharmacokinetics?.[0] || med.clinical_pharmacology?.[0] || med.mechanism_of_action?.[0]
-            ? cleanText(med.pharmacokinetics?.[0] || med.clinical_pharmacology?.[0] || med.mechanism_of_action?.[0], 3)
-            : "This medicine works by targeting specific pathways in the body to alleviate symptoms. Consult your doctor for detailed pharmacology.",
-          safety: {
-            pregnancy: (med.pregnancy?.[0] || "").toLowerCase().includes("contraindicated") || (med.pregnancy?.[0] || "").toLowerCase().includes("do not use") ? "UNSAFE" : "CAUTION",
-            alcohol: "UNSAFE" // Defaulting to unsafe for most meds with alcohol as a general safety standard unless specified
-          },
-          selfCare: care.selfCare,
-          seekHelp: care.seekHelp
-        });
-        setIsSearching(false);
-        return;
-      }
-
-      // 3. Ultimate Fallback to Wikipedia API
-      const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
-      if (wikiRes.ok) {
-        const wikiData = await wikiRes.json();
-        if (wikiData.title && wikiData.extract && !wikiData.extract.includes("may refer to")) {
-          const care = getMedCareInstructions(query);
-          
-          setResult({
-            name: tataInfo?.name || wikiData.title,
-            formula: wikiData.title,
-            manufacturer: tataInfo?.manufacturer || "General Information",
-            category: "General Medicine Info",
-            tataInfo: tataInfo,
-            description: cleanText(wikiData.extract, 3).split('. ').filter(s => s.trim().length > 5),
-            dosage: "Take this medicine in the dose and duration as advised by your doctor. Swallow it as a whole.",
-            risks: ["Nausea", "Headache", "Fatigue", "Dizziness"],
-            pharmacokinetics: "Mechanism of action varies based on the specific drug formulation.",
-            safety: {
-              pregnancy: "CAUTION",
-              alcohol: "UNSAFE"
-            },
-            selfCare: care.selfCare,
-            seekHelp: care.seekHelp
-          });
-          setIsSearching(false);
-          return;
-        }
-      }
-
-      throw new Error("Medicine not found");
+      const data = await lookupMedicine(query);
+      setResult(data);
     } catch (err) {
       console.error(err);
-      setError(`We couldn't find detailed trusted information for "${query}". Please check the spelling or consult a healthcare professional.`);
+      setError(
+        `We couldn't find official label information for "${query}". Check the spelling, try the generic (INN) name, or ask a pharmacist.`
+      );
     } finally {
       setIsSearching(false);
     }
@@ -293,220 +73,425 @@ const MedicineInfo = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  const sections = result
+    ? [
+        result.boxedWarning && { id: 'boxed', label: 'Boxed warning', icon: ShieldAlert },
+        result.description?.length > 0 && { id: 'uses', label: 'Uses', icon: BookOpen },
+        result.doNotUse?.length > 0 && { id: 'avoid', label: 'Do not use', icon: Ban },
+        result.precautions?.length > 0 && { id: 'precautions', label: 'Precautions', icon: AlertTriangle },
+        result.interactions?.length > 0 && { id: 'interactions', label: 'Interactions', icon: Activity },
+        result.risks?.length > 0 && { id: 'effects', label: 'Side effects', icon: HeartPulse },
+        result.dosage && { id: 'dosage', label: 'Dosage', icon: Pill },
+        result.pharmacokinetics && { id: 'works', label: 'How it works', icon: FlaskConical },
+        result.seekHelp && { id: 'seek-help', label: 'Seek help', icon: ShieldAlert },
+        { id: 'safety', label: 'Safety', icon: Wine },
+        { id: 'sources', label: 'Sources', icon: Info },
+      ].filter(Boolean)
+    : [];
+
+  useEffect(() => {
+    if (!result || !sections.length) return;
+    setActiveSection(sections[0].id);
+
+    const ids = sections.map((s) => s.id);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]?.target?.id) {
+          setActiveSection(visible[0].target.id.replace('med-sec-', ''));
+        }
+      },
+      { rootMargin: '-20% 0px -55% 0px', threshold: [0.1, 0.4] }
+    );
+
+    ids.forEach((id) => {
+      const el = document.getElementById(`med-sec-${id}`);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result]);
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(`med-sec-${id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActiveSection(id);
+    }
+  };
+
+  const renderTextBlock = (items) => {
+    if (!items || (Array.isArray(items) && items.length === 0)) return null;
+    if (Array.isArray(items)) {
+      return (
+        <ul className="med-bullet-list">
+          {items.map((item, idx) => (
+            <li key={idx}>
+              <ChevronRight size={16} className="med-bullet-icon" aria-hidden />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    return <p className="med-body-text">{items}</p>;
+  };
+
+  const Section = ({ id, title, icon: Icon, tone = 'default', children }) => (
+    <section id={`med-sec-${id}`} className={`med-panel med-panel--${tone}`}>
+      <div className="med-panel-head">
+        <span className={`med-panel-icon med-panel-icon--${tone}`}>
+          <Icon size={18} />
+        </span>
+        <h3>{title}</h3>
+      </div>
+      <div className="med-panel-body">{children}</div>
+    </section>
+  );
+
   return (
-    <div className="med-info-container container">
-      <div className="med-info-header">
-        <h1 className="page-title">{t('medTitle')}</h1>
-        <p className="page-subtitle">{t('medSubtitle')}</p>
+    <div className="med-page">
+      <div className="med-hero">
+        <div className="med-hero-glow" aria-hidden />
+        <div className="med-hero-inner container">
+          <p className="med-eyebrow">Official labels · RxNorm · FDA</p>
+          <h1 className="med-hero-title">{t('medTitle')}</h1>
+          <p className="med-hero-sub">{t('medSubtitle')}</p>
+
+          <form onSubmit={handleSearch} className="med-search-bar">
+            <div className="med-search-field">
+              <Search className="med-search-icon" size={20} aria-hidden />
+              <input
+                type="text"
+                placeholder={t('medInputPlaceholder')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="med-search-input"
+                aria-label="Search medicine"
+              />
+            </div>
+            <button
+              type="submit"
+              className="med-search-btn"
+              disabled={isSearching || !searchQuery.trim()}
+            >
+              {isSearching ? <Loader2 className="spinner" size={18} /> : t('search')}
+            </button>
+          </form>
+
+          {!result && !isSearching && !error && (
+            <div className="med-quick-row">
+              <span className="med-quick-label">Popular</span>
+              {QUICK_SEARCHES.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  className="med-quick-chip"
+                  onClick={() => {
+                    setSearchQuery(name);
+                    fetchMedicineData(name);
+                  }}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="search-section glass shadow-sm">
-        <form onSubmit={handleSearch} className="search-form">
-          <div className="search-input-wrapper">
-            <Search className="search-icon" size={20} />
-            <input 
-              type="text" 
-              placeholder={t('medInputPlaceholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-            />
-          </div>
-          <button type="submit" className="btn btn-primary" disabled={isSearching || !searchQuery}>
-            {isSearching ? <Loader2 className="spinner" size={20} /> : t('search')}
-          </button>
-        </form>
-      </div>
-
-      <AnimatePresence>
-        {isSearching && (
-          <motion.div 
-            className="searching-state"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <Loader2 className="spinner large" size={40} />
-            <p>{t('searchingMed')}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-
-      <AnimatePresence>
-        {error && !isSearching && (
-          <motion.div 
-            className="error-state glass"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <FileWarning size={32} color="var(--warning)" />
-            <p>{error}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {result && !isSearching && (
-          <motion.div 
-            className="result-details"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="result-header glass shadow-md">
-              <div className="title-group">
-                <h2>{result.name}</h2>
-                <span className="category-badge">{result.category}</span>
+      <div className="med-body container" ref={contentRef}>
+        <AnimatePresence mode="wait">
+          {isSearching && (
+            <motion.div
+              key="loading"
+              className="med-state med-state--loading"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+            >
+              <div className="med-loader-ring">
+                <Loader2 className="spinner" size={28} />
               </div>
-              
-              <div className="formula-box">
-                <div className="formula-item">
-                  <FlaskConical size={18} className="text-primary" />
-                  <span><strong>{t('medFormula')}</strong> {result.formula}</span>
-                </div>
-                <div className="formula-item">
-                  <Factory size={18} className="text-primary" />
-                  <span><strong>{t('medManufacturer')}</strong> {result.manufacturer}</span>
-                </div>
-              </div>
-              
-              {result.tataInfo && (
-                <div className="tata-info-badge">
-                  <div className="tata-details-column">
-                    <h4 className="tata-badge-title">Tata 1mg Pricing</h4>
-                    <div className="tata-price-row">
-                      <span className="tata-current-price">₹{result.tataInfo.discountPrice || result.tataInfo.price}</span>
-                      {result.tataInfo.discountPrice && (
-                        <span className="tata-original-price">₹{result.tataInfo.price}</span>
+              <p>{t('searchingMed')}</p>
+              <span className="med-state-hint">Checking RxNorm and FDA labels…</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {error && !isSearching && (
+            <motion.div
+              key="error"
+              className="med-state med-state--error"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <FileWarning size={28} />
+              <p>{error}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {result && !isSearching && (
+            <motion.div
+              key="result"
+              className="med-result"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <article className="med-monograph">
+                <header className="med-mono-header">
+                  <div className="med-mono-main">
+                    <div className="med-mono-badges">
+                      <span className="med-cat-badge">{result.category}</span>
+                      {result.ingredients?.length > 1 && (
+                        <span className="med-combo-badge">Combination</span>
                       )}
-                      <span className="tata-pack-label">{result.tataInfo.packSize}</span>
+                    </div>
+                    <h2 className="med-drug-name">{result.name}</h2>
+                    {result.searchedName &&
+                      result.searchedName.toLowerCase() !== result.name.toLowerCase() && (
+                        <p className="med-resolved-note">
+                          Searched &ldquo;{result.searchedName}&rdquo; · showing resolved
+                          ingredient label
+                        </p>
+                      )}
+
+                    <div className="med-meta-grid">
+                      <div className="med-meta-item">
+                        <FlaskConical size={16} />
+                        <div>
+                          <span className="med-meta-label">Active ingredient(s)</span>
+                          <strong>{result.formula}</strong>
+                        </div>
+                      </div>
+                      <div className="med-meta-item">
+                        <Factory size={16} />
+                        <div>
+                          <span className="med-meta-label">{t('medManufacturer')}</span>
+                          <strong>{result.manufacturer}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {result.ingredients?.length > 1 && (
+                      <div className="med-ingredient-row">
+                        {result.ingredients.map((ing) => (
+                          <span key={ing} className="med-ing-chip">
+                            {ing}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {result.tataInfo && (
+                    <aside className="med-price-card">
+                      <span className="med-price-eyebrow">India retail · 1mg</span>
+                      <div className="med-price-amounts">
+                        <span className="med-price-now">
+                          ₹{result.tataInfo.discountPrice || result.tataInfo.price}
+                        </span>
+                        {result.tataInfo.discountPrice && (
+                          <span className="med-price-was">₹{result.tataInfo.price}</span>
+                        )}
+                      </div>
+                      <span className="med-price-pack">{result.tataInfo.packSize}</span>
+                      <p className="med-price-note">Listing only — not prescribing info</p>
+                      <a
+                        href={result.tataInfo.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="med-price-link"
+                      >
+                        View on 1mg <ExternalLink size={14} />
+                      </a>
+                    </aside>
+                  )}
+                </header>
+
+                <div className="med-safety-strip">
+                  <div className={`med-safety-tile status-${result.safety.alcohol.toLowerCase()}`}>
+                    <Wine size={18} />
+                    <div>
+                      <span>{t('alcoholSafety')}</span>
+                      <strong>{result.safety.alcohol}</strong>
                     </div>
                   </div>
-                  <a href={result.tataInfo.url} target="_blank" rel="noreferrer" className="btn btn-primary tata-view-btn">
-                    View on 1mg
-                  </a>
+                  <div className={`med-safety-tile status-${result.safety.pregnancy.toLowerCase()}`}>
+                    <Baby size={18} />
+                    <div>
+                      <span>{t('pregnancySafety')}</span>
+                      <strong>{result.safety.pregnancy}</strong>
+                    </div>
+                  </div>
+                  {result.lactationDetail && (
+                    <div className="med-safety-tile status-unknown">
+                      <HeartPulse size={18} />
+                      <div>
+                        <span>Lactation</span>
+                        <strong>See label</strong>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </article>
 
-
-            <div className="details-stack">
-              
-              {/* Uses */}
-              <div className="info-section">
-                <h3 className="info-section-title">{t('medDescription')}</h3>
-                {Array.isArray(result.description) ? (
-                  <ul className="uses-list">
-                    {result.description.map((use, idx) => (
-                      <li key={idx}>{use}</li>
+              {sections.length > 0 && (
+                <nav className="med-toc" aria-label="Medicine sections">
+                  <div className="med-toc-track">
+                    {sections.map(({ id, label, icon: Icon }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        className={`med-toc-item${activeSection === id ? ' is-active' : ''}`}
+                        onClick={() => scrollToSection(id)}
+                      >
+                        <Icon size={14} />
+                        {label}
+                      </button>
                     ))}
-                  </ul>
-                ) : (
-                  <p className="uses-text">{result.description}</p>
+                  </div>
+                </nav>
+              )}
+
+              <div className="med-panels">
+                {result.boxedWarning && (
+                  <Section id="boxed" title="Boxed warning" icon={ShieldAlert} tone="danger">
+                    <div className="med-alert med-alert--danger">
+                      <p>{result.boxedWarning}</p>
+                    </div>
+                  </Section>
                 )}
-              </div>
 
-              <hr className="section-divider" />
+                {result.description?.length > 0 && (
+                  <Section id="uses" title={t('medDescription')} icon={BookOpen} tone="teal">
+                    {renderTextBlock(result.description)}
+                  </Section>
+                )}
 
-              {/* Side Effects */}
-              <div className="info-section">
-                <h3 className="info-section-title">{t('medRisks')}</h3>
-                <p className="side-effects-intro">
-                  Most side effects do not require any medical attention and disappear as your body adjusts to the medicine. Consult your doctor if they persist or if you're worried about them.
-                </p>
-                <div className="side-effects-pill">
-                  Common side effects of {result.name}
-                </div>
-                <ul className="side-effects-list">
-                  {result.risks.map((risk, idx) => (
-                    <li key={idx}>{risk}</li>
-                  ))}
-                </ul>
-              </div>
+                {result.doNotUse?.length > 0 && (
+                  <Section id="avoid" title="Do not use / contraindications" icon={Ban} tone="danger">
+                    {renderTextBlock(result.doNotUse)}
+                  </Section>
+                )}
 
-              <hr className="section-divider" />
+                {result.precautions?.length > 0 && (
+                  <Section
+                    id="precautions"
+                    title="Precautions & warnings"
+                    icon={AlertTriangle}
+                    tone="warn"
+                  >
+                    {renderTextBlock(result.precautions)}
+                  </Section>
+                )}
 
-              {/* How to use */}
-              <div className="info-section">
-                <h3 className="info-section-title">{t('medDosage')}</h3>
-                <p className="dosage-text">
-                  {result.dosage}
-                </p>
-              </div>
+                {result.interactions?.length > 0 && (
+                  <Section id="interactions" title="Drug interactions" icon={Activity} tone="blue">
+                    {renderTextBlock(result.interactions)}
+                  </Section>
+                )}
 
-              <hr className="section-divider" />
-
-              {/* How it works */}
-              <div className="info-section">
-                <h3 className="info-section-title">How {result.name} works</h3>
-                <p className="pharmacokinetics-text">
-                  {result.pharmacokinetics}
-                </p>
-              </div>
-
-              <hr className="section-divider" />
-
-              {/* Recovery Self-Care Steps */}
-              <div className="info-section">
-                <h3 className="info-section-title">Self-Care Steps During Treatment</h3>
-                <p className="side-effects-intro">
-                  Follow these healthy habits and precautions to aid your recovery while taking {result.name}:
-                </p>
-                <ul className="uses-list">
-                  {result.selfCare.map((step, idx) => (
-                    <li key={idx} style={{ marginBottom: '0.5rem' }}>{step}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <hr className="section-divider" />
-
-              {/* When to Seek Help Warning */}
-              <div className="info-section">
-                <h3 className="info-section-title danger-header">{t('whenSeekHelp')}</h3>
-                <div className="warning-box-medicine">
-                  <ShieldAlert size={20} className="warning-icon-medicine" />
-                  <div className="warning-text-medicine">
-                    <strong>Critical Warning Signs:</strong>
-                    <p>{result.seekHelp}</p>
-                  </div>
-                </div>
-              </div>
-
-              <hr className="section-divider" />
-
-              {/* Safety Advice */}
-              <div className="info-section">
-                <h3 className="info-section-title">{t('medSafety')}</h3>
-                
-                <div className="safety-advice-list">
-                  <div className="safety-advice-item">
-                    <div className="safety-icon-wrapper">🍷</div>
-                    <div className="safety-label-wrapper">
-                      <strong className="safety-substance-name">{t('alcoholSafety')}</strong>
-                      <span className={`safety-status-badge status-${result.safety.alcohol.toLowerCase()}`}>
-                        {result.safety.alcohol}
-                      </span>
+                {result.risks?.length > 0 && (
+                  <Section id="effects" title={t('medRisks')} icon={HeartPulse} tone="amber">
+                    <p className="med-panel-lead">
+                      From the official label. Ask a doctor if effects persist or worry you.
+                    </p>
+                    <div className="med-effect-grid">
+                      {result.risks.map((risk, idx) => (
+                        <div key={idx} className="med-effect-card">
+                          {risk}
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  </Section>
+                )}
 
-                  <div className="safety-advice-item">
-                    <div className="safety-icon-wrapper">🤰</div>
-                    <div className="safety-label-wrapper">
-                      <strong className="safety-substance-name">{t('pregnancySafety')}</strong>
-                      <span className={`safety-status-badge status-${result.safety.pregnancy.toLowerCase()}`}>
-                        {result.safety.pregnancy}
-                      </span>
+                {result.dosage && (
+                  <Section id="dosage" title={t('medDosage')} icon={Pill} tone="teal">
+                    <p className="med-body-text">{result.dosage}</p>
+                  </Section>
+                )}
+
+                {result.pharmacokinetics && (
+                  <Section id="works" title="How it works" icon={FlaskConical} tone="default">
+                    <p className="med-body-text">{result.pharmacokinetics}</p>
+                  </Section>
+                )}
+
+                {result.seekHelp && (
+                  <Section id="seek-help" title={t('whenSeekHelp')} icon={ShieldAlert} tone="danger">
+                    <div className="med-alert med-alert--danger">
+                      <strong>Stop use / seek help (from label)</strong>
+                      <p>{result.seekHelp}</p>
                     </div>
+                  </Section>
+                )}
+
+                <Section id="safety" title={t('medSafety')} icon={Wine} tone="default">
+                  <div className="med-safety-details">
+                    <div className="med-safety-detail">
+                      <div className="med-safety-detail-top">
+                        <Wine size={16} />
+                        <strong>{t('alcoholSafety')}</strong>
+                        <span
+                          className={`safety-status-badge status-${result.safety.alcohol.toLowerCase()}`}
+                        >
+                          {result.safety.alcohol}
+                        </span>
+                      </div>
+                      {result.safety.alcoholNote && (
+                        <p>{result.safety.alcoholNote}</p>
+                      )}
+                    </div>
+                    <div className="med-safety-detail">
+                      <div className="med-safety-detail-top">
+                        <Baby size={16} />
+                        <strong>{t('pregnancySafety')}</strong>
+                        <span
+                          className={`safety-status-badge status-${result.safety.pregnancy.toLowerCase()}`}
+                        >
+                          {result.safety.pregnancy}
+                        </span>
+                      </div>
+                      {result.safety.pregnancyNote && (
+                        <p>{result.safety.pregnancyNote}</p>
+                      )}
+                    </div>
+                    {result.lactationDetail && (
+                      <div className="med-safety-detail">
+                        <div className="med-safety-detail-top">
+                          <HeartPulse size={16} />
+                          <strong>Lactation</strong>
+                        </div>
+                        <p>{result.lactationDetail}</p>
+                      </div>
+                    )}
                   </div>
-                </div>
+                </Section>
+
+                <Section id="sources" title="Sources" icon={Info} tone="default">
+                  <div className="med-source-chips">
+                    {(result.sources || []).map((src) => (
+                      <span key={src} className="med-source-chip">
+                        {src}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="med-disclaimer">{result.disclaimer}</p>
+                </Section>
               </div>
-
-
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };

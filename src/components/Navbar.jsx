@@ -1,17 +1,50 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Stethoscope, MapPin, Activity, Search, Moon, Sun, Home as HomeIcon, Bot, Camera, HeartPulse, AlertOctagon, Menu, X, LogOut, Cpu } from 'lucide-react';
+import {
+  Stethoscope,
+  MapPin,
+  Activity,
+  Search,
+  Moon,
+  Sun,
+  Home as HomeIcon,
+  Bot,
+  Camera,
+  HeartPulse,
+  AlertOctagon,
+  X,
+  LogOut,
+  Cpu,
+  ChevronRight,
+  User,
+  Shield,
+  Languages,
+  Mail,
+  LockKeyhole,
+  Eye,
+  EyeOff,
+  LoaderCircle,
+} from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { useAuth } from './AuthContext';
 import './Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { language, setLanguage, t } = useLanguage();
-  const { user, loginWithGoogle, logout } = useAuth();
+  const { user, loginWithGoogle, loginWithPassword, signUpWithPassword, sendPasswordReset, logout } = useAuth();
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [isHubOpen, setIsHubOpen] = useState(false);
+  const [navQuery, setNavQuery] = useState('');
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('signin');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [authMessage, setAuthMessage] = useState('');
+  const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -30,299 +63,521 @@ const Navbar = () => {
     };
   }, [isHubOpen]);
 
-  const hubFeatures = [
-    { 
-      name: t('home'), 
-      path: '/', 
-      icon: <HomeIcon size={24} />, 
-      desc: language === 'en' ? 'Return to the landing page & overview' : 'मुख्य पृष्ठ और अवलोकन पर वापस जाएं',
-      colorClass: 'blue' 
-    },
-    { 
-      name: 'Agent Engine', 
-      path: '/agent', 
-      icon: <Cpu size={24} />, 
-      desc: language === 'en' ? 'Autonomous Multi-Agent Healthcare Workflows' : 'स्वायत्त मल्टी-एजेंट स्वास्थ्य सेवा वर्कफ़्लो',
-      colorClass: 'emerald' 
-    },
-    { 
-      name: t('aiAssistant'), 
-      path: '/assistant', 
-      icon: <Bot size={24} />, 
-      desc: language === 'en' ? 'Consult our AI medical assistant' : 'हमारे एआई चिकित्सा सहायक से परामर्श करें',
-      colorClass: 'teal' 
-    },
-    { 
-      name: t('ocr'), 
-      path: '/ocr', 
-      icon: <Camera size={24} />, 
-      desc: language === 'en' ? 'Extract medicines from prescription photo' : 'पर्ची की फोटो से दवाएं निकालें',
-      colorClass: 'purple' 
-    },
-    { 
-      name: t('dashboard'), 
-      path: '/dashboard', 
-      icon: <HeartPulse size={24} />, 
-      desc: language === 'en' ? 'Log and visualize vitals & symptoms' : 'विटल्स और लक्षणों को रिकॉर्ड करें',
-      colorClass: 'rose' 
-    },
-    { 
-      name: t('medicineInfo'), 
-      path: '/medicine', 
-      icon: <Search size={24} />, 
-      desc: language === 'en' ? 'Lookup drug database and safety info' : 'दवा डेटाबेस और सुरक्षा जानकारी खोजें',
-      colorClass: 'amber' 
-    },
-    { 
-      name: t('symptoms'), 
-      path: '/symptoms', 
-      icon: <Activity size={24} />, 
-      desc: language === 'en' ? 'Check symptoms care guidelines' : 'लक्षण देखभाल दिशानिर्देशों की जांच करें',
-      colorClass: 'cyan' 
-    },
-    { 
-      name: t('nearby'), 
-      path: '/nearby', 
-      icon: <MapPin size={24} />, 
-      desc: language === 'en' ? 'Find hospital, doctor, or pharmacy' : 'अस्पताल, डॉक्टर या फार्मेसी खोजें',
-      colorClass: 'emerald' 
-    },
-    { 
-      name: t('emergencyBtn'), 
-      path: '/nearby?emergency=true', 
-      icon: <AlertOctagon size={24} />, 
-      desc: language === 'en' ? 'Trigger emergency SOS protocols' : 'आपातकालीन एसओएस प्रोटोकॉल सक्रिय करें',
-      colorClass: 'red' 
-    },
-    { 
-      name: t('telemedicine'), 
-      path: '/telemedicine', 
-      icon: <Stethoscope size={24} />, 
-      desc: language === 'en' ? 'Consult doctors via video call' : 'वीडियो कॉल द्वारा डॉक्टर से परामर्श करें',
-      colorClass: 'indigo' 
+  useEffect(() => {
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setIsHubOpen(false);
+    };
+
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, []);
+
+  const menuSections = [
+    {
+      id: 'main',
+      items: [
+        { name: t('home'), path: '/', icon: <HomeIcon size={20} /> },
+        { name: t('medicineInfo'), path: '/medicine', icon: <Search size={20} /> },
+        { name: t('dashboard'), path: '/dashboard', icon: <HeartPulse size={20} /> },
+        { name: t('nearby'), path: '/nearby', icon: <MapPin size={20} /> },
+        { name: t('aiAssistant'), path: '/assistant', icon: <Bot size={20} /> },
+        { name: t('symptoms'), path: '/symptoms', icon: <Activity size={20} /> },
+        { name: t('ocr'), path: '/ocr', icon: <Camera size={20} /> },
+        { name: t('telemedicine'), path: '/telemedicine', icon: <Stethoscope size={20} /> },
+        { name: 'Agent Engine', path: '/agent', icon: <Cpu size={20} /> },
+        {
+          name: t('emergencyBtn'),
+          path: '/nearby?emergency=true',
+          icon: <AlertOctagon size={20} />,
+          accent: 'danger',
+        },
+      ],
     },
   ];
 
-  const handleLinkClick = (path) => {
+  const accountSection = {
+    items: user
+      ? [
+          {
+            name: language === 'en' ? 'My Health Dashboard' : 'मेरा हेल्थ डैशबोर्ड',
+            path: '/dashboard',
+            icon: <HeartPulse size={20} />,
+          },
+          {
+            name: language === 'en' ? 'Sign Out' : 'साइन आउट',
+            action: 'logout',
+            icon: <LogOut size={20} />,
+          },
+        ]
+      : [],
+  };
+
+  const handleNavSearch = (e) => {
+    e.preventDefault();
+    const q = navQuery.trim();
     setIsHubOpen(false);
-    navigate(path);
+    navigate(q ? `/medicine?search=${encodeURIComponent(q)}` : '/medicine');
+  };
+
+  const handleMenuItemClick = (item) => {
+    if (item.action === 'logout') {
+      setIsHubOpen(false);
+      logout();
+      return;
+    }
+    if (item.path) {
+      setIsHubOpen(false);
+      navigate(item.path);
+    }
+  };
+
+  const openAuthDialog = () => {
+    setIsHubOpen(false);
+    setAuthMode('signin');
+    setAuthMessage('');
+    setIsAuthOpen(true);
+  };
+
+  const closeAuthDialog = () => {
+    if (!isAuthSubmitting) {
+      setIsAuthOpen(false);
+      setAuthMessage('');
+      setAuthPassword('');
+    }
+  };
+
+  const handlePasswordAuth = async (event) => {
+    event.preventDefault();
+    setAuthMessage('');
+
+    if (!authEmail.trim()) {
+      setAuthMessage('Enter your email address.');
+      return;
+    }
+
+    if (authMode !== 'forgot' && !authPassword) {
+      setAuthMessage('Enter your password.');
+      return;
+    }
+
+    setIsAuthSubmitting(true);
+    const { data, error } = authMode === 'forgot'
+      ? await sendPasswordReset(authEmail.trim())
+      : authMode === 'signin'
+        ? await loginWithPassword(authEmail.trim(), authPassword)
+        : await signUpWithPassword(authEmail.trim(), authPassword);
+    setIsAuthSubmitting(false);
+
+    if (error) {
+      setAuthMessage(error.message);
+      return;
+    }
+
+    if (authMode === 'forgot') {
+      setAuthMessage('If an account exists for this email, a password-reset link has been sent.');
+      return;
+    }
+
+    if (authMode === 'signup' && !data?.session) {
+      setAuthMessage('Account created. Check your email to confirm your address, then sign in.');
+      return;
+    }
+
+    setIsAuthOpen(false);
+    setAuthPassword('');
   };
 
   return (
     <>
-      {/* Top sticky branding bar */}
-      <nav className="navbar glass">
+      <motion.nav
+        className="navbar glass"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 26, delay: 0.05 }}
+      >
         <div className="container navbar-container">
-          <Link to="/" className="navbar-logo" onClick={() => setIsHubOpen(false)}>
-            <div className="logo-icon">
-              <Stethoscope size={28} color="white" />
-            </div>
-            <span className="logo-text gradient-text">ArogyaAI</span>
-          </Link>
-          
-          <div className="navbar-right">
-            <button 
+          <motion.div
+            className="navbar-left"
+            initial={{ x: -12, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.35, delay: 0.14, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <button
+              type="button"
+              className={`hamburger-menu-btn ${isHubOpen ? 'active' : ''}`}
+              onClick={() => {
+                setIsHubOpen((open) => !open);
+              }}
+              aria-expanded={isHubOpen}
+              aria-label={isHubOpen ? 'Close menu' : 'Open menu'}
+              title={language === 'en' ? 'Menu' : 'मेनू'}
+            >
+              <span className="hb-bars" aria-hidden="true">
+                <span className="hb-bar hb-bar--top" />
+                <span className="hb-bar hb-bar--mid" />
+                <span className="hb-bar hb-bar--bot" />
+              </span>
+            </button>
+            <Link to="/" className="navbar-logo" onClick={() => setIsHubOpen(false)}>
+              <motion.div
+                className="logo-icon"
+                whileHover={{ rotate: -8, scale: 1.06 }}
+                whileTap={{ scale: 0.96 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+              >
+                <Stethoscope size={22} color="white" />
+              </motion.div>
+              <span className="logo-text">ArogyaAI</span>
+            </Link>
+          </motion.div>
+
+          <motion.form
+            className="navbar-search"
+            onSubmit={handleNavSearch}
+            role="search"
+            initial={{ y: -8, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.35, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Search size={16} className="navbar-search-icon" />
+            <input
+              type="search"
+              value={navQuery}
+              onChange={(e) => setNavQuery(e.target.value)}
+              placeholder={language === 'en' ? 'Search medicines, symptoms, doctors...' : 'दवाएं, लक्षण, डॉक्टर खोजें...'}
+              aria-label={language === 'en' ? 'Search' : 'खोजें'}
+            />
+          </motion.form>
+
+          <motion.div
+            className="navbar-right"
+            initial={{ x: 12, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.35, delay: 0.26, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <button
+              type="button"
               className="sos-nav-btn"
               onClick={() => navigate('/nearby?emergency=true')}
               title={t('emergencyBtn')}
             >
-              <AlertOctagon size={16} />
+              <AlertOctagon size={15} />
               <span>SOS</span>
             </button>
-
-            {/* Direct Login Button (only when logged out) */}
-            {!user && (
-              <button 
-                className="nav-direct-login-btn"
-                onClick={loginWithGoogle}
-                title="Sign in with Google"
-              >
-                <svg className="google-icon" viewBox="0 0 24 24" width="13" height="13" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                </svg>
-                <span>Login</span>
-              </button>
-            )}
-
-            {/* Merged Menu / Profile Trigger Button */}
-            <button 
-              className={`hamburger-menu-btn ${user && !isHubOpen ? 'profile-active' : 'btn-icon'} ${isHubOpen ? 'active' : ''}`}
-              onClick={() => setIsHubOpen(!isHubOpen)}
-              title={isHubOpen ? "Close Menu" : (user ? "User Menu" : "Open Menu")}
-            >
-              {isHubOpen ? (
-                <X size={22} />
-              ) : user ? (
-                <img 
-                  src={user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
-                  alt="Profile" 
-                  className="nav-menu-profile-avatar"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <Menu size={22} />
-              )}
-            </button>
-          </div>
+          </motion.div>
         </div>
-      </nav>
+      </motion.nav>
 
-      {/* Fullscreen Hub Menu Overlay */}
+      {/* Side drawer menu (Tata 1mg–style) */}
       <AnimatePresence>
         {isHubOpen && (
-          <motion.div 
-            className="hub-overlay"
+          <motion.div
+            className="drawer-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.28, ease: 'easeOut' }}
             onClick={() => setIsHubOpen(false)}
+            role="presentation"
           >
-            <motion.div 
-              className="hub-content glass"
-              initial={{ y: '100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+            <motion.aside
+              className="drawer-panel"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300, mass: 0.8 }}
               onClick={(e) => e.stopPropagation()}
+              aria-label={language === 'en' ? 'Main menu' : 'मुख्य मेनू'}
             >
-              <div className="hub-header">
-                <div className="hub-logo">
-                  <div className="logo-icon">
-                    <Stethoscope size={26} color="white" />
-                  </div>
-                  <span className="logo-text gradient-text">MedWeb Health Hub</span>
-                </div>
-                <button className="hub-close-btn" onClick={() => setIsHubOpen(false)}>
-                  <X size={22} />
+              {/* ── PREMIUM HEADER ── */}
+              <div className="drawer-header">
+                <div className="drawer-header-mesh" aria-hidden="true" />
+                <button
+                  type="button"
+                  className="drawer-header-account"
+                  onClick={() => {
+                    if (user) { handleMenuItemClick({ path: '/dashboard' }); }
+                    else { openAuthDialog(); }
+                  }}
+                >
+                  <span className="drawer-avatar-ring">
+                    {user ? (
+                      <img
+                        src={user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}
+                        alt=""
+                        className="drawer-header-avatar"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <span className="drawer-header-avatar drawer-header-avatar--guest">
+                        <User size={22} />
+                      </span>
+                    )}
+                    {user && <span className="drawer-avatar-online" />}
+                  </span>
+                  <span className="drawer-header-copy">
+                    <span className="drawer-header-hello">
+                      {language === 'en' ? (user ? 'Welcome back,' : 'Hello, Guest') : (user ? 'वापसी पर स्वागत,' : 'नमस्ते, अतिथि')}
+                    </span>
+                    <span className="drawer-header-name">
+                      {user ? (user.user_metadata?.full_name || user.email) : (language === 'en' ? 'Login / Sign up' : 'लॉगिन / साइन अप')}
+                    </span>
+                    {user && (
+                      <span className="drawer-header-badge">
+                        <Shield size={10} />
+                        {language === 'en' ? 'Synced' : 'सिंक'}
+                      </span>
+                    )}
+                  </span>
+                  <ChevronRight size={16} className="drawer-header-chevron" />
+                </button>
+                <button
+                  type="button"
+                  className="drawer-close-btn"
+                  onClick={() => setIsHubOpen(false)}
+                  aria-label="Close menu"
+                >
+                  <span className="drawer-close-x" aria-hidden="true">
+                    <span /><span />
+                  </span>
                 </button>
               </div>
 
-              {/* User Profile / Auth Section */}
-              <div className="hub-profile-section">
-                {user ? (
-                  <div className="hub-profile-card logged-in glass-card">
-                    <div className="profile-info-row">
-                      <img 
-                        src={user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
-                        alt={user.user_metadata?.full_name || 'User'} 
-                        className="profile-avatar"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="profile-meta">
-                        <span className="profile-welcome">{language === 'en' ? 'Welcome back,' : 'आपका स्वागत है,'}</span>
-                        <h3 className="profile-name">{user.user_metadata?.full_name || user.email}</h3>
-                        <div className="profile-badges">
-                          <span className="badge-cloud">☁️ Cloud Connected</span>
-                        </div>
-                      </div>
-                    </div>
-                    <button className="btn btn-outline signout-btn" onClick={logout}>
-                      <LogOut size={16} />
-                      <span>{language === 'en' ? 'Sign Out' : 'साइन आउट'}</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="hub-profile-card logged-out glass-card">
-                    <div className="login-prompt">
-                      <h4>{language === 'en' ? 'Sync Your Dashboard' : 'अपने डैशबोर्ड को सिंक करें'}</h4>
-                      <p>
-                        {language === 'en' 
-                          ? 'Sign in with Google to securely back up and access your health logs across all your devices.' 
-                          : 'अपने हेल्थ लॉग्स को सुरक्षित रूप से बैकअप करने और अपने सभी उपकरणों पर एक्सेस करने के लिए Google के साथ साइन इन करें।'}
-                      </p>
-                    </div>
-                    <button className="google-signin-btn" onClick={loginWithGoogle}>
-                      <svg className="google-icon" viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                      </svg>
-                      <span>{language === 'en' ? 'Continue with Google' : 'Google के साथ आगे बढ़ें'}</span>
-                    </button>
-                  </div>
+              {/* ── SCROLLABLE CONTENT ── */}
+              <div className="drawer-scroll">
+                {menuSections.map((section, si) => (
+                  <motion.div
+                    key={section.id}
+                    className="drawer-section"
+                    initial={{ opacity: 0, x: -18 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 + si * 0.07, duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <ul className="drawer-list">
+                      {section.items.map((item, ii) => {
+                        const isActive = item.path &&
+                          location.pathname === item.path.split('?')[0] &&
+                          (!item.path.includes('?') || location.search.includes(item.path.split('?')[1]));
+                        return (
+                          <motion.li
+                            key={item.name}
+                            initial={{ opacity: 0, x: -12 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.15 + si * 0.07 + ii * 0.04, duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                          >
+                            <button
+                              type="button"
+                              className={`drawer-list-item ${
+                                item.accent === 'danger' ? 'drawer-list-item--danger' : ''
+                              } ${isActive ? 'drawer-list-item--active' : ''}`}
+                              onClick={() => handleMenuItemClick(item)}
+                            >
+                              <span className={`drawer-list-icon ${item.accent === 'danger' ? 'drawer-list-icon--danger' : ''}`}>
+                                {item.icon}
+                              </span>
+                              <span className="drawer-list-label">{item.name}</span>
+                              {isActive
+                                ? <span className="drawer-active-dot" />
+                                : <ChevronRight size={15} className="drawer-row-chevron" />
+                              }
+                            </button>
+                          </motion.li>
+                        );
+                      })}
+                    </ul>
+                  </motion.div>
+                ))}
+
+                {accountSection.items.length > 0 && (
+                  <motion.div
+                    className="drawer-section"
+                    initial={{ opacity: 0, x: -18 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.34, duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <ul className="drawer-list">
+                      {accountSection.items.map((item) => (
+                        <li key={item.name}>
+                          <button
+                            type="button"
+                            className={`drawer-list-item ${item.action === 'logout' ? 'drawer-list-item--logout' : ''}`}
+                            onClick={() => handleMenuItemClick(item)}
+                          >
+                            <span className="drawer-list-icon">{item.icon}</span>
+                            <span className="drawer-list-label">{item.name}</span>
+                            <ChevronRight size={15} className="drawer-row-chevron" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </motion.div>
                 )}
+
               </div>
 
-              {/* Grid of all features */}
-              <div className="hub-body">
-                <div className="hub-features-grid">
-                  {hubFeatures.map((feat, index) => (
-                    <motion.div
-                      key={feat.name}
-                      className={`hub-feature-card glass-card border-${feat.colorClass}`}
-                      onClick={() => handleLinkClick(feat.path)}
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.04 }}
-                      whileHover={{ y: -3, scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                    >
-                      <div className={`feature-card-icon-box gradient-${feat.colorClass}`}>
-                        {feat.icon}
-                      </div>
-                      <div className="feature-card-details">
-                        <h4>{feat.name}</h4>
-                        <p>{feat.desc}</p>
-                      </div>
-                    </motion.div>
-                  ))}
+              <div className="drawer-footer">
+                <span className="drawer-settings-title">
+                  {language === 'en' ? 'Preferences' : 'प्राथमिकताएँ'}
+                </span>
+                <div className="drawer-settings-actions">
+                  <button
+                    type="button"
+                    className={`drawer-preference drawer-preference--language ${language === 'hi' ? 'is-active' : ''}`}
+                    onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
+                    aria-pressed={language === 'hi'}
+                    aria-label={language === 'en' ? 'Language: English. Switch to Hindi' : 'भाषा: हिन्दी। अंग्रेज़ी में बदलें'}
+                    title={language === 'en' ? 'Switch language' : 'भाषा बदलें'}
+                  >
+                    <span className="drawer-preference-icon" aria-hidden="true">
+                      <Languages size={20} />
+                    </span>
+                    <span className="drawer-preference-copy">
+                      <span className="drawer-preference-label">{language === 'en' ? 'Language' : 'भाषा'}</span>
+                      <span className="drawer-preference-value">{language === 'en' ? 'English' : 'हिन्दी'}</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`drawer-preference drawer-preference--theme ${theme === 'dark' ? 'is-active' : ''}`}
+                    onClick={() => setTheme((currentTheme) => currentTheme === 'light' ? 'dark' : 'light')}
+                    aria-pressed={theme === 'dark'}
+                    aria-label={language === 'en'
+                      ? `Theme: ${theme}. Switch to ${theme === 'light' ? 'dark' : 'light'} mode`
+                      : `थीम: ${theme === 'light' ? 'लाइट' : 'डार्क'}। ${theme === 'light' ? 'डार्क' : 'लाइट'} मोड में बदलें`}
+                    title={language === 'en' ? 'Toggle theme' : 'थीम बदलें'}
+                  >
+                    <span className="drawer-preference-icon" aria-hidden="true">
+                      {theme === 'light' ? <Sun size={20} /> : <Moon size={20} />}
+                    </span>
+                    <span className="drawer-preference-copy">
+                      <span className="drawer-preference-label">{language === 'en' ? 'Appearance' : 'रूप'}</span>
+                      <span className="drawer-preference-value">
+                        {language === 'en' ? (theme === 'light' ? 'Light mode' : 'Dark mode') : (theme === 'light' ? 'लाइट मोड' : 'डार्क मोड')}
+                      </span>
+                    </span>
+                  </button>
                 </div>
               </div>
 
-              <div className="hub-footer">
-                <div className="hub-divider"></div>
-                <div className="hub-controls-row">
-                  {/* Theme Selector Segmented Control */}
-                  <div className="hub-control-group">
-                    <span className="control-group-title">
-                      {language === 'en' ? 'Theme Mode' : 'थीम का प्रकार'}
-                    </span>
-                    <div className="theme-segment-control">
-                      <button 
-                        className={`theme-segment-btn ${theme === 'light' ? 'active' : ''}`}
-                        onClick={() => setTheme('light')}
-                      >
-                        <Sun size={15} />
-                        <span>{language === 'en' ? 'Light' : 'लाइट'}</span>
-                      </button>
-                      <button 
-                        className={`theme-segment-btn ${theme === 'dark' ? 'active' : ''}`}
-                        onClick={() => setTheme('dark')}
-                      >
-                        <Moon size={15} />
-                        <span>{language === 'en' ? 'Dark' : 'डार्क'}</span>
-                      </button>
-                    </div>
-                  </div>
+            </motion.aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-                  {/* Language Selector Segmented Control */}
-                  <div className="hub-control-group">
-                    <span className="control-group-title">
-                      {language === 'en' ? 'Language' : 'भाषा चयन'}
-                    </span>
-                    <div className="language-segment-control">
-                      <button 
-                        className={`lang-segment-btn ${language === 'en' ? 'active' : ''}`}
-                        onClick={() => setLanguage('en')}
+      <AnimatePresence>
+        {isAuthOpen && (
+          <motion.div
+            className="auth-dialog-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeAuthDialog}
+            role="presentation"
+          >
+            <motion.section
+              className="auth-dialog"
+              initial={{ opacity: 0, y: 16, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+              onClick={(event) => event.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="auth-dialog-title"
+            >
+              <button type="button" className="auth-dialog-close" onClick={closeAuthDialog} aria-label="Close sign in dialog">
+                <X size={20} />
+              </button>
+              <div className="auth-dialog-heading">
+                <span className="auth-dialog-icon"><User size={22} /></span>
+                <h2 id="auth-dialog-title">{authMode === 'signin' ? 'Welcome back' : authMode === 'signup' ? 'Create your account' : 'Reset your password'}</h2>
+                <p>{authMode === 'signin' ? 'Sign in to securely sync your health records.' : authMode === 'signup' ? 'Save and securely sync your health records.' : 'We will email you a secure link to choose a new password.'}</p>
+              </div>
+
+              <form className="auth-form" onSubmit={handlePasswordAuth}>
+                <label htmlFor="auth-email">Email address</label>
+                <div className="auth-input-wrap">
+                  <Mail size={17} aria-hidden="true" />
+                  <input
+                    id="auth-email"
+                    type="email"
+                    autoComplete="email"
+                    value={authEmail}
+                    onChange={(event) => setAuthEmail(event.target.value)}
+                    placeholder="you@example.com"
+                    disabled={isAuthSubmitting}
+                    required
+                  />
+                </div>
+
+                {authMode !== 'forgot' && (
+                  <>
+                    <label htmlFor="auth-password">Password</label>
+                    <div className="auth-input-wrap">
+                      <LockKeyhole size={17} aria-hidden="true" />
+                      <input
+                        id="auth-password"
+                        type={showPassword ? 'text' : 'password'}
+                        autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
+                        value={authPassword}
+                        onChange={(event) => setAuthPassword(event.target.value)}
+                        placeholder={authMode === 'signup' ? 'At least 6 characters' : 'Your password'}
+                        minLength={authMode === 'signup' ? 6 : undefined}
+                        disabled={isAuthSubmitting}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="auth-password-toggle"
+                        onClick={() => setShowPassword((visible) => !visible)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
-                        EN
-                      </button>
-                      <button 
-                        className={`lang-segment-btn ${language === 'hi' ? 'active' : ''}`}
-                        onClick={() => setLanguage('hi')}
-                      >
-                        हिन्दी
+                        {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                       </button>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+                    {authMode === 'signin' && (
+                      <button type="button" className="auth-forgot-btn" onClick={() => {
+                        setAuthMode('forgot');
+                        setAuthMessage('');
+                        setAuthPassword('');
+                      }}>
+                        Forgot password?
+                      </button>
+                    )}
+                  </>
+                )}
+
+                {authMessage && <p className="auth-message" role="status">{authMessage}</p>}
+
+                <button type="submit" className="auth-submit-btn" disabled={isAuthSubmitting}>
+                  {isAuthSubmitting && <LoaderCircle size={17} className="animate-spin" />}
+                  {authMode === 'signin' ? 'Sign in with email' : authMode === 'signup' ? 'Create account' : 'Send reset link'}
+                </button>
+              </form>
+
+              {authMode !== 'forgot' && <>
+                <div className="auth-divider"><span>or</span></div>
+
+                <button type="button" className="auth-google-btn" onClick={loginWithGoogle} disabled={isAuthSubmitting}>
+                  <span className="google-mark" aria-hidden="true">G</span>
+                  Continue with Google
+                </button>
+              </>}
+
+              <p className="auth-mode-switch">
+                {authMode === 'signin' ? "New to ArogyaAI?" : authMode === 'signup' ? 'Already have an account?' : 'Remembered your password?'}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode((mode) => mode === 'signin' ? 'signup' : 'signin');
+                    setAuthMessage('');
+                    setAuthPassword('');
+                  }}
+                >
+                  {authMode === 'signin' ? 'Create an account' : 'Sign in'}
+                </button>
+              </p>
+            </motion.section>
           </motion.div>
         )}
       </AnimatePresence>

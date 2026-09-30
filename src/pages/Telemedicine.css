@@ -31,6 +31,26 @@
   color: #6b7280;
 }
 
+.telemedicine-demo-notice {
+  margin-bottom: 1.25rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #f2c46d;
+  border-radius: 0.75rem;
+  color: #7c4a03;
+  background: #fffbeb;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.telemedicine-action-message {
+  margin: -0.6rem 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.65rem;
+  color: #0f766e;
+  background: #ecfdf5;
+  font-size: 0.84rem;
+}
+
 /* Main Tab Selector (Pills) */
 .main-tab-group {
   display: flex;
@@ -275,6 +295,15 @@
   border-radius: 9999px;
 }
 
+.badge-status.neutral {
+  padding: 3px 10px;
+  border-radius: 9999px;
+  color: #7c4a03;
+  background-color: #fffbeb;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .badge-tag {
   font-size: 10px;
   font-weight: 700;
@@ -377,6 +406,52 @@
   margin-left: 6px;
 }
 
+.telemedicine-empty-state {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 1.25rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.8rem;
+  color: #475569;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.medicine-lookup-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 1rem;
+  color: #1e3a5f;
+  background: #eff6ff;
+}
+
+.medicine-lookup-panel h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.1rem;
+}
+
+.medicine-lookup-panel p {
+  max-width: 680px;
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.medicine-lookup-note {
+  margin-top: 0.6rem !important;
+  color: #475569;
+}
+
+.medicine-lookup-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.6rem;
+}
+
 /* Responsive Media Queries */
 @media (max-width: 640px) {
   .telemedicine-search-box {
@@ -394,5 +469,11 @@
 
   .cards-grid {
     grid-template-columns: 1fr;
+  }
+
+  .medicine-lookup-panel,
+  .medicine-lookup-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

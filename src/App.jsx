@@ -11,6 +11,7 @@ import PrescriptionOCR from './pages/PrescriptionOCR';
 import HealthDashboard from './pages/HealthDashboard';
 import Telemedicine from './pages/Telemedicine';
 import ArogyaAgentConsole from './components/ArogyaAgentConsole'; // 1. Agent Console Import Kiya
+import ResetPassword from './pages/ResetPassword';
 import { LanguageProvider } from './components/LanguageContext';
 import { AuthProvider } from './components/AuthContext';
 import './App.css';
@@ -39,6 +40,7 @@ function App() {
             
             {/* 2. Multi-Agent Engine ki Nayi Route Add Ki */}
             <Route path="/agent" element={<ArogyaAgentConsole />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
           </Routes>
         </main>
         <Footer />

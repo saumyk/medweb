@@ -1,53 +1,58 @@
 .symptoms-container {
   padding: 3rem 1.5rem;
-  max-width: 900px;
+  max-width: 960px;
+  margin: 0 auto;
 }
 
 .symptoms-header {
   text-align: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
 }
 
 .title-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.85rem;
   margin-bottom: 0.5rem;
 }
 
 .page-title {
   margin: 0;
+  font-size: 2.2rem;
+  font-family: var(--font-heading);
+  color: var(--text-main);
 }
 
 .page-subtitle {
   color: var(--text-muted);
-  font-size: 1.1rem;
+  font-size: 1.05rem;
 }
 
+/* Disclaimer Banner */
 .disclaimer-alert {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem;
   border-radius: 1rem;
-  background: rgba(245, 158, 11, 0.06);
-  border: 1.5px solid var(--warning);
-  margin-bottom: 2.5rem;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.05);
+  background: rgba(217, 119, 6, 0.08);
+  border: 1.5px solid rgba(217, 119, 6, 0.35);
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.05);
 }
 
 .alert-icon {
   color: var(--warning);
   flex-shrink: 0;
-  margin-top: 0.2rem;
+  margin-top: 0.15rem;
 }
 
 .alert-text strong {
   display: block;
   color: var(--warning);
-  font-size: 1.1rem;
-  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  margin-bottom: 0.35rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -56,41 +61,137 @@
   margin: 0;
   color: var(--text-main);
   line-height: 1.5;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
-.search-section {
-  padding: 2.5rem;
-  border-radius: 1rem;
-  margin-bottom: 3rem;
+/* Intake Form Card */
+.symptom-intake-card {
+  padding: 2.25rem;
+  border-radius: 1.25rem;
+  margin-bottom: 2.5rem;
   background: var(--surface);
   border: 1.5px solid var(--border);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.search-section:hover {
-  transform: scale(0.98); /* Zoom out */
-  background: var(--surface-hover);
-  box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06);
 }
 
 .symptoms-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
-.input-group {
+.intake-section {
   display: flex;
   flex-direction: column;
+  gap: 1rem;
+}
+
+.intake-section-header {
+  display: flex;
+  align-items: flex-start;
   gap: 0.75rem;
 }
 
-.input-group label {
+.section-icon {
+  color: var(--primary);
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.section-title {
+  font-size: 1.15rem;
+  font-family: var(--font-heading);
+  color: var(--text-main);
+  margin-bottom: 0.25rem;
+}
+
+.section-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+/* Structured Symptom Checkbox Grid */
+.symptom-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.75rem;
+}
+
+.symptom-pill-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.85rem;
+  border: 1.5px solid var(--border);
+  background: var(--background);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+}
+
+.symptom-pill-checkbox:hover {
+  border-color: var(--primary);
+  background: rgba(15, 118, 110, 0.05);
+  transform: translateY(-1px);
+}
+
+.symptom-pill-checkbox.pill-selected {
+  border-color: var(--primary);
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.15);
+}
+
+[data-theme='dark'] .symptom-pill-checkbox.pill-selected {
+  background: rgba(20, 184, 166, 0.18);
+  border-color: var(--primary-light);
+  color: var(--primary-light);
+}
+
+.symptom-pill-checkbox.pill-emergency.pill-selected {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+[data-theme='dark'] .symptom-pill-checkbox.pill-emergency.pill-selected {
+  color: #fca5a5;
+  border-color: #f87171;
+}
+
+.pill-icon {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.pill-label {
+  flex: 1;
+}
+
+.pill-check-state {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.pill-selected .pill-check-state {
+  opacity: 1;
+  color: var(--primary);
+}
+
+/* Free text input */
+.input-field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-weight: 600;
   color: var(--text-main);
-  font-size: 1.1rem;
+  font-size: 0.98rem;
 }
 
 .textarea-wrapper {
@@ -98,26 +199,19 @@
   display: flex;
 }
 
-.textarea-wrapper .search-icon {
-  position: absolute;
-  left: 1rem;
-  top: 1rem;
-  color: var(--text-muted);
-}
-
 .symptoms-input {
   width: 100%;
-  padding: 1rem 1rem 1rem 3rem;
+  padding: 0.9rem 1.1rem;
   border: 1.5px solid var(--border);
-  border-radius: 0.5rem;
-  font-size: 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.95rem;
   font-family: var(--font-sans);
   background: var(--background);
   color: var(--text-main);
   transition: all 0.2s;
   outline: none;
   resize: vertical;
-  min-height: 100px;
+  min-height: 90px;
 }
 
 .symptoms-input:focus {
@@ -126,18 +220,87 @@
   background: var(--surface);
 }
 
-.analyze-btn {
-  align-self: flex-end;
-  padding: 0.75rem 2rem;
-  font-size: 1.1rem;
+/* Triage Context Section */
+.triage-context-section {
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border);
 }
 
+.context-group-title {
+  font-size: 1.05rem;
+  color: var(--text-main);
+  font-family: var(--font-heading);
+  margin-bottom: 0.2rem;
+}
+
+.context-group-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.triage-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.triage-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.triage-field label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.triage-select, .triage-input {
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--background);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.triage-select:focus, .triage-input:focus {
+  border-color: var(--primary);
+}
+
+.analyze-btn {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.85rem 2.25rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.analyze-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Searching Spinner State */
 .searching-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: 4rem 2rem;
+  padding: 3.5rem 2rem;
   color: var(--text-muted);
   text-align: center;
 }
@@ -151,375 +314,392 @@
   100% { transform: rotate(360deg); }
 }
 
+/* Results Section */
 .results-section {
   margin-top: 2rem;
 }
 
+/* Emergency Banner in Symptoms */
+.symptom-emergency-banner {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: rgba(220, 38, 38, 0.12);
+  border: 2px solid #ef4444;
+}
+
+.emergency-banner-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #dc2626;
+  margin-bottom: 0.6rem;
+}
+
+[data-theme='dark'] .emergency-banner-title {
+  color: #f87171;
+}
+
+.emergency-banner-title h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.emergency-icon-pulse {
+  animation: pulse-icon 1.5s infinite;
+}
+
+.emergency-banner-text {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-main);
+  margin-bottom: 1.25rem;
+}
+
+.emergency-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* Main Guidance Card */
 .symptom-guidance-card {
-  padding: 2rem;
+  padding: 2.25rem;
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 1.25rem;
   margin-bottom: 2.5rem;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 8px 16px -6px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08);
 }
 
-.symptom-guidance-card:hover {
-  transform: scale(0.98); /* Zoom out */
-  background: var(--surface-hover);
-  box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.1);
+.summary-card-header {
+  border-bottom: 1.5px solid var(--border);
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
 }
 
-.guidance-header {
+.summary-title-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  border-bottom: 1.5px solid var(--border);
-  padding-bottom: 1rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
+  margin-bottom: 1rem;
 }
 
-.guidance-header-title-left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+.summary-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.4rem;
+  background: var(--primary);
+  color: #ffffff;
+  margin-bottom: 0.4rem;
 }
 
-.guidance-header h2 {
-  font-size: 1.35rem;
-  margin: 0;
-  color: var(--primary);
+.summary-heading {
+  font-size: 1.5rem;
   font-family: var(--font-heading);
+  color: var(--text-main);
+  margin: 0;
 }
 
-.guidance-header-icon {
-  color: var(--primary);
+.summary-header-actions {
+  flex-shrink: 0;
 }
 
 .btn-speak-results {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 1rem;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
   border-radius: 2rem;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--primary);
-  font-size: 0.82rem;
-  font-weight: 700;
+  border: 1.5px solid var(--border);
+  background: var(--background);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
 }
 
 .btn-speak-results:hover {
-  background: var(--background);
-  border-color: var(--primary-light);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(15, 118, 110, 0.15);
-}
-
-.btn-speak-results:active {
-  transform: translateY(0);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .btn-speak-results.active-speaking {
-  background: rgba(15, 118, 110, 0.08);
+  background: var(--primary);
+  color: #ffffff;
   border-color: var(--primary);
-  color: var(--primary);
-  animation: pulse-speaking 1.5s infinite ease-in-out;
+  animation: pulse-voice 1.5s infinite;
 }
 
-@keyframes pulse-speaking {
-  0% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.3); }
-  70% { box-shadow: 0 0 0 5px rgba(15, 118, 110, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(15, 118, 110, 0); }
+/* Meta Chips */
+.summary-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
-.guidance-content-grid {
-  display: grid;
-  grid-template-columns: 1.1fr 1.1fr 0.8fr;
-  gap: 2rem;
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 1.5rem;
+  background: var(--background);
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--text-main);
 }
 
-/* Disease Info Header Block */
-.disease-info-header {
+.meta-chip.severity-mild {
+  border-color: #10b981;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.meta-chip.severity-moderate {
+  border-color: #f59e0b;
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.meta-chip.severity-severe {
+  border-color: #ef4444;
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Possible Causes Section */
+.possible-causes-section {
   padding: 1.25rem 1.5rem;
-  border-radius: 10px;
-  background: rgba(15, 118, 110, 0.04);
-  border: 1px dashed var(--primary);
+  border-radius: 0.85rem;
+  border: 1.5px solid var(--border);
   margin-bottom: 2rem;
 }
 
-.disease-title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem 0;
-  color: var(--primary);
+.section-block-title {
+  font-size: 1.15rem;
   font-family: var(--font-heading);
-}
-
-.disease-explanation {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
-/* Dietary Guidelines Columns */
-.dietary-section {
-  padding: 1rem 1.25rem;
-  border-radius: 12px;
-  margin-bottom: 1.5rem;
-  border: 1px solid var(--border);
-}
-
-.dietary-section.eat-section {
-  background: rgba(16, 185, 129, 0.04);
-  border-color: rgba(16, 185, 129, 0.15);
-}
-
-.dietary-section.avoid-section {
-  background: rgba(239, 68, 68, 0.04);
-  border-color: rgba(239, 68, 68, 0.15);
-}
-
-.dietary-section h3 {
-  font-size: 1rem !important;
-  margin-top: 0;
-  margin-bottom: 0.75rem !important;
-  font-weight: 700;
-}
-
-.dietary-section.eat-section h3 {
-  color: #059669;
-}
-
-.dietary-section.avoid-section h3 {
-  color: #dc2626;
-}
-
-.guidance-eat-list, .guidance-avoid-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.guidance-eat-list li, .guidance-avoid-list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  font-size: 0.88rem;
-  line-height: 1.4;
-  color: var(--text-muted);
-}
-
-.eat-check {
-  color: #059669;
-  font-weight: bold;
-  flex-shrink: 0;
-  font-size: 1rem;
-}
-
-.avoid-cross {
-  color: #dc2626;
-  font-weight: bold;
-  flex-shrink: 0;
-  font-size: 0.9rem;
-}
-
-/* Responsive adjustments for 3 column grid */
-@media (max-width: 992px) {
-  .guidance-content-grid {
-    grid-template-columns: 1fr !important;
-    gap: 2rem;
-  }
-}
-
-.guidance-selfcare h3, .guidance-seekhelp h3 {
-  font-size: 1.1rem;
-  margin-top: 0;
-  margin-bottom: 1rem;
   color: var(--text-main);
-  font-family: var(--font-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  margin-bottom: 0.35rem;
 }
 
-.guidance-selfcare-list {
+.causes-disclaimer-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.85rem;
+  font-style: italic;
+}
+
+.causes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cause-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.cause-bullet {
+  color: var(--primary);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.cause-item p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-main);
+}
+
+/* Guidance Content Grid */
+.guidance-content-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.guidance-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.guidance-col h3 {
+  font-size: 1.05rem;
+  font-family: var(--font-heading);
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+  margin: 0;
+}
+
+.guidance-selfcare-list, .guidance-eat-list, .guidance-avoid-list {
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.6rem;
 }
 
-.guidance-selfcare-list li {
+.guidance-selfcare-list li, .guidance-eat-list li, .guidance-avoid-list li {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  color: var(--text-muted);
-  font-size: 0.95rem;
-  line-height: 1.5;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text-main);
 }
 
-.check-icon {
+.check-icon, .eat-check {
   color: var(--success);
   font-weight: bold;
   flex-shrink: 0;
-  font-size: 1.1rem;
-  margin-top: -1px;
+}
+
+.avoid-cross {
+  color: var(--error);
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.dietary-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
 .guidance-seekhelp-box {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  padding: 1.25rem;
-  background: rgba(239, 68, 68, 0.04);
-  border: 1.5px solid rgba(239, 68, 68, 0.15);
-  border-radius: 12px;
+  padding: 1.1rem;
+  border-radius: 0.75rem;
+  background: rgba(217, 119, 6, 0.08);
+  border: 1.5px solid rgba(217, 119, 6, 0.35);
 }
 
 .guidance-alert-icon {
-  color: var(--error);
+  color: var(--warning);
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 0.15rem;
 }
 
 .guidance-seekhelp-box p {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
   color: var(--text-main);
-  line-height: 1.45;
 }
 
-@media (max-width: 768px) {
+/* Card Footer Actions */
+.summary-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1.5px solid var(--border);
+}
+
+.btn-consult-assistant {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 0.65rem;
+}
+
+.btn-new-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 0.65rem;
+  border: 1.5px solid var(--border);
+  background: var(--background);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-new-check:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Responsive Rules */
+@media (max-width: 900px) {
+  .guidance-content-grid {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+
+  .triage-fields-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
   .symptoms-container {
     padding: 1.5rem 1rem;
   }
-  
-  .symptoms-header {
-    margin-bottom: 1.5rem;
-  }
-  
-  .title-wrapper {
-    gap: 0.75rem;
-  }
-  
-  .header-icon {
-    width: 24px;
-    height: 24px;
-  }
-  
+
   .page-title {
-    font-size: 1.8rem;
-  }
-  
-  .page-subtitle {
-    font-size: 0.95rem;
-  }
-  
-  .disclaimer-alert {
-    padding: 1rem;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-    border-width: 1.5px;
-  }
-  
-  .alert-icon {
-    width: 20px;
-    height: 20px;
-    margin-top: 0.1rem;
-  }
-  
-  .alert-text strong {
-    font-size: 0.95rem;
-  }
-  
-  .alert-text p {
-    font-size: 0.85rem;
-  }
-  
-  .search-section {
-    padding: 1.25rem;
-    margin-bottom: 2rem;
-    border-width: 1.5px;
-    border-radius: 0.75rem;
-  }
-  
-  .symptoms-form {
-    gap: 1rem;
-  }
-  
-  .input-group label {
-    font-size: 1rem;
-  }
-  
-  .symptoms-input {
-    min-height: 80px;
-    padding: 0.8rem 0.8rem 0.8rem 2.8rem;
-    font-size: 0.95rem;
-    border-width: 1.5px;
-  }
-  
-  .textarea-wrapper .search-icon {
-    top: 0.85rem;
-  }
-  
-  .analyze-btn {
-    align-self: stretch;
-    width: 100%;
-    padding: 0.8rem 1.5rem;
-    font-size: 1rem;
+    font-size: 1.75rem;
   }
 
-  .symptom-guidance-card {
+  .symptom-intake-card, .symptom-guidance-card {
     padding: 1.25rem;
-    margin-bottom: 1.5rem;
-    border-width: 1.5px;
-    border-radius: 0.75rem;
-  }
-  
-  .guidance-header {
-    border-bottom-width: 1.5px;
-    padding-bottom: 0.75rem;
-    margin-bottom: 1rem;
   }
 
-  .guidance-header h2 {
-    font-size: 1.15rem;
+  .symptom-checkbox-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
   }
-  
-  .guidance-content-grid {
+
+  .symptom-pill-checkbox {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.82rem;
+  }
+
+  .triage-fields-grid {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
   }
 
-  .guidance-selfcare h3, .guidance-seekhelp h3 {
-    font-size: 0.95rem;
-    margin-bottom: 0.75rem;
+  .analyze-btn {
+    width: 100%;
   }
-  
-  .guidance-selfcare-list li {
-    font-size: 0.88rem;
-    gap: 0.5rem;
+
+  .summary-title-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
-  
-  .guidance-seekhelp-box {
-    padding: 1rem;
-    gap: 0.5rem;
-    border-width: 1.5px;
+
+  .summary-footer-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
-  
-  .guidance-seekhelp-box p {
-    font-size: 0.85rem;
+
+  .btn-consult-assistant, .btn-new-check {
+    width: 100%;
+    justify-content: center;
   }
 }

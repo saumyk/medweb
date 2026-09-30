@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heart, Activity, Thermometer, Trash2, ShieldAlert, BarChart3, Clock, PlusCircle, Cloud, CloudOff, RefreshCw } from 'lucide-react';
+import { Heart, Activity, Thermometer, Trash2, ShieldAlert, BarChart3, Clock, PlusCircle, Cloud, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import { useAuth } from '../components/AuthContext';
 import { supabase } from '../utils/supabaseClient';
@@ -376,8 +376,8 @@ const HealthDashboard = () => {
         <p className="page-subtitle">{t('dashSubtitle')}</p>
         
         {/* Cloud Sync Status Badge */}
-        <div className="sync-status-badge-container">
-          {user ? (
+        {user && (
+          <div className="sync-status-badge-container">
             <div className="sync-badge synced glass">
               {loadingDb ? (
                 <>
@@ -391,13 +391,8 @@ const HealthDashboard = () => {
                 </>
               )}
             </div>
-          ) : (
-            <div className="sync-badge local glass">
-              <CloudOff size={14} className="text-muted" />
-              <span>Offline Cache Mode (Local Storage Only)</span>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Critical Warnings Bar */}
