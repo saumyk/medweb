@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Bot, ShieldAlert, Search, Wifi, Battery, Signal, Camera, HeartPulse, Globe, Stethoscope } from 'lucide-react';
+import { ArrowRight, Bot, ShieldAlert, Wifi, Battery, Signal } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import './Home.css';
 
