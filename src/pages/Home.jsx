@@ -102,76 +102,7 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section className="features-section">
-        <div className="container">
-          <h2 className="section-title">{t('featuresTitle')}</h2>
-          <div className="features-grid">
-            <FeatureCard 
-              icon={<Bot size={32} />}
-              title={t('aiAssistantTitle')}
-              desc={t('aiAssistantSubtitle')}
-              delay={0.1}
-              path="/assistant"
-              colorClass="teal"
-            />
-
-            <FeatureCard 
-  icon={<Stethoscope size={32} />}
-  title="Telemedicine"
-  desc="Consult doctors via video call or book lab tests"
-  delay={0.2}
-  path="/telemedicine"
-  colorClass="teal"
-/>
-            
-            <FeatureCard 
-              icon={<Camera size={32} />}
-              title={t('cardOcrTitle')}
-              desc={t('cardOcrDesc')}
-              delay={0.2}
-              path="/ocr"
-              colorClass="purple"
-            />
-            <FeatureCard 
-              icon={<HeartPulse size={32} />}
-              title={t('cardDashboardTitle')}
-              desc={t('cardDashboardDesc')}
-              delay={0.3}
-              path="/dashboard"
-              colorClass="rose"
-            />
-            <FeatureCard 
-              icon={<ShieldAlert size={32} />}
-              title={t('cardSosTitle')}
-              desc={t('cardSosDesc')}
-              delay={0.4}
-              path="/nearby?emergency=true"
-              colorClass="red"
-            />
-            <FeatureCard 
-              icon={<Search size={32} />}
-              title={t('medTitle')}
-              desc={t('medSubtitle')}
-              delay={0.5}
-              path="/medicine"
-              colorClass="amber"
-            />
-            <FeatureCard 
-              icon={<Globe size={32} />}
-              title={t('cardLangTitle')}
-              desc={t('cardLangDesc')}
-              delay={0.6}
-              path=""
-              isAction={true}
-              colorClass="blue"
-            />
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-};
-
+      
 const FeatureCard = ({ icon, title, desc, delay, path, isAction, colorClass }) => {
   const { language, setLanguage } = useLanguage();
   
