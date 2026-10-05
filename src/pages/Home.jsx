@@ -101,40 +101,9 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Features Section */}
       
-const FeatureCard = ({ icon, title, desc, delay, path, isAction, colorClass }) => {
-  const { language, setLanguage } = useLanguage();
-  
-  const handleCardClick = (e) => {
-    if (isAction) {
-      e.preventDefault();
-      setLanguage(language === 'en' ? 'hi' : 'en');
-    }
-  };
+      
 
-  const cardContent = (
-    <motion.div 
-      className={`feature-card glass border-${colorClass}`}
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay }}
-      whileHover={{ y: -8, scale: 1.03 }}
-    >
-      <div className={`feature-icon gradient-${colorClass}`}>{icon}</div>
-      <h3>{title}</h3>
-      <p>{desc}</p>
-    </motion.div>
-  );
-
-  return path ? (
-    <Link to={path} className="feature-card-link">
-      {cardContent}
-    </Link>
-  ) : (
-    <div onClick={handleCardClick} className="feature-card-link" style={{ cursor: 'pointer' }}>
-      {cardContent}
     </div>
   );
 };
