@@ -31,7 +31,7 @@ const AIAssistant = () => {
     {
       id: 'welcome',
       sender: 'bot',
-      text: t('welcomeMsg') || 'Hello! I am your MedWeb AI Health Assistant. Ask me about a symptom or health concern, and I will guide you with self-care steps and let you know when to seek immediate medical help.',
+      text: t('welcomeMsg') || 'Hello! I am your Arogya AI Health Assistant. Ask me about a symptom or health concern, and I will guide you with self-care steps and let you know when to seek immediate medical help.',
       isFirst: true
     }
   ]);
@@ -348,7 +348,7 @@ Seek emergency medical evaluation immediately. Do not delay.`;
       <div className="ai-assistant-header">
         <div className="ai-hero-badge">
           <Sparkles size={16} />
-          <span>{t('aiHeroTitle') || 'MEDWEB AI'}</span>
+          <span>{t('aiHeroTitle') || 'AROGYA AI'}</span>
         </div>
         <h1 className="page-title">{t('aiHeroSubtitle') || 'Your personal health companion'}</h1>
         <p className="page-subtitle">&ldquo;{t('aiHeroPrompt') || 'How can I help you today?'}&rdquo;</p>
@@ -359,7 +359,7 @@ Seek emergency medical evaluation immediately. Do not delay.`;
         <ShieldAlert size={20} className="disclaimer-icon" />
         <div className="disclaimer-text">
           <strong>{t('disclaimerBannerTitle') || 'Medical Disclaimer'}:</strong>{' '}
-          <span>{t('disclaimerBannerText') || 'MedWeb AI provides general health information and guidance only. It does not provide medical diagnoses or prescriptions. If experiencing an emergency, immediately seek urgent medical attention.'}</span>
+          <span>{t('disclaimerBannerText') || 'Arogya AI provides general health information and guidance only. It does not provide medical diagnoses or prescriptions. If experiencing an emergency, immediately seek urgent medical attention.'}</span>
         </div>
       </div>
 

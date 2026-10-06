@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Bot, ShieldAlert, Wifi, Battery, Signal } from 'lucide-react';
+import { ArrowRight, Bot, Camera, Globe, HeartPulse, Search, ShieldAlert, Stethoscope, Wifi, Battery, Signal } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import './Home.css';
 
@@ -101,9 +101,111 @@ const Home = () => {
         </div>
       </section>
 
-      
-      
+      {/* Features Section */}
+      <section className="features-section">
+        <div className="container">
+          <div className="features-heading">
+            <h2>{t('featuresTitle')}</h2>
+          </div>
+          <div className="features-grid">
+            <FeatureCard 
+              icon={<Bot size={32} />}
+              title={t('aiAssistantTitle')}
+              desc={t('aiAssistantSubtitle')}
+              delay={0.1}
+              path="/assistant"
+              colorClass="teal"
+            />
 
+            <FeatureCard
+              icon={<Stethoscope size={32} />}
+              title="Telemedicine"
+              desc="Consult doctors via video call or book lab tests"
+              delay={0.2}
+              path="/telemedicine"
+              colorClass="teal"
+            />
+
+            <FeatureCard
+              icon={<Camera size={32} />}
+              title={t('cardOcrTitle')}
+              desc={t('cardOcrDesc')}
+              delay={0.2}
+              path="/ocr"
+              colorClass="purple"
+            />
+            <FeatureCard
+              icon={<HeartPulse size={32} />}
+              title={t('cardDashboardTitle')}
+              desc={t('cardDashboardDesc')}
+              delay={0.3}
+              path="/dashboard"
+              colorClass="rose"
+            />
+            <FeatureCard
+              icon={<ShieldAlert size={32} />}
+              title={t('cardSosTitle')}
+              desc={t('cardSosDesc')}
+              delay={0.4}
+              path="/nearby?emergency=true"
+              colorClass="red"
+            />
+            <FeatureCard
+              icon={<Search size={32} />}
+              title={t('medTitle')}
+              desc={t('medSubtitle')}
+              delay={0.5}
+              path="/medicine"
+              colorClass="amber"
+            />
+            <FeatureCard
+              icon={<Globe size={32} />}
+              title={t('cardLangTitle')}
+              desc={t('cardLangDesc')}
+              delay={0.6}
+              path=""
+              isAction
+              colorClass="blue"
+            />
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+const FeatureCard = ({ icon, title, desc, delay, path, isAction, colorClass }) => {
+  const { language, setLanguage } = useLanguage();
+
+  const handleCardClick = (event) => {
+    if (isAction) {
+      event.preventDefault();
+      setLanguage(language === 'en' ? 'hi' : 'en');
+    }
+  };
+
+  const cardContent = (
+    <motion.div
+      className={`feature-card glass border-${colorClass}`}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay }}
+      whileHover={{ y: -8, scale: 1.03 }}
+    >
+      <div className={`feature-icon gradient-${colorClass}`}>{icon}</div>
+      <h3>{title}</h3>
+      <p>{desc}</p>
+    </motion.div>
+  );
+
+  return path ? (
+    <Link to={path} className="feature-card-link">
+      {cardContent}
+    </Link>
+  ) : (
+    <div onClick={handleCardClick} className="feature-card-link" style={{ cursor: 'pointer' }}>
+      {cardContent}
     </div>
   );
 };
