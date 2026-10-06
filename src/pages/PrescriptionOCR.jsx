@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Camera, FileText, CheckCircle, AlertCircle, Search, RefreshCw, Loader2 } from 'lucide-react';
+import { Upload, Camera, FileText, CheckCircle, AlertCircle, Search, RefreshCw, Loader2, ShieldCheck } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 import { useLanguage } from '../components/LanguageContext';
 import { supabase } from '../utils/supabaseClient'; // 🟢 Supabase Client Imported
@@ -77,6 +77,7 @@ const preprocessImage = (imageFile) => {
     const img = new Image();
     img.src = URL.createObjectURL(imageFile);
     img.onload = () => {
+      URL.revokeObjectURL(img.src);
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       canvas.width = img.width;
@@ -113,6 +114,7 @@ const preprocessImage = (imageFile) => {
       }, 'image/jpeg', 0.9);
     };
     img.onerror = () => {
+      URL.revokeObjectURL(img.src);
       resolve(imageFile);
     };
   });
@@ -130,8 +132,15 @@ const PrescriptionOCR = () => {
   const [identifiedMeds, setIdentifiedMeds] = useState([]);
   const [hasScanned, setHasScanned] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [extractedText, setExtractedText] = useState('');
+  const [ocrConfidence, setOcrConfidence] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
   
   const fileInputRef = useRef(null);
+
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -161,18 +170,33 @@ const PrescriptionOCR = () => {
 
   const handleFile = (file) => {
     if (!file.type.startsWith('image/')) {
-      alert("Please upload an image file (PNG, JPG, or JPEG).");
+      setErrorMessage('Please choose a PNG, JPG, or JPEG image.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMessage('Please choose an image smaller than 10 MB.');
       return;
     }
     setImage(file);
     setPreviewUrl(URL.createObjectURL(file));
     setIdentifiedMeds([]);
+    setExtractedText('');
+    setOcrConfidence(null);
+    setErrorMessage('');
     setHasScanned(false);
     setProgress(0);
+    setStatusText('');
   };
 
   const triggerFileInput = () => {
-    fileInputRef.current.click();
+    fileInputRef.current?.click();
+  };
+
+  const handleUploadKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      triggerFileInput();
+    }
   };
 
   const runOCR = async () => {
@@ -182,6 +206,7 @@ const PrescriptionOCR = () => {
     setProgress(0);
     setStatusText("Preprocessing image for better accuracy...");
     setHasScanned(false);
+    setErrorMessage('');
 
     try {
       const preprocessedBlob = await preprocessImage(image);
@@ -202,14 +227,17 @@ const PrescriptionOCR = () => {
         }
       );
 
-      const text = result.data.text;
+      const text = result.data.text?.trim() || '';
       
       // Parse medicines from text
       const parsedMeds = parseMedicines(text);
       setIdentifiedMeds(parsedMeds);
+      setExtractedText(text);
+      setOcrConfidence(Math.round(result.data.confidence || 0));
 
       // 🟢 SUPABASE BACKEND INTEGRATION
       try {
+        if (!supabase) throw new Error('Database is not configured');
         const { data, error } = await supabase
           .from('prescriptions')
           .insert([
@@ -234,7 +262,8 @@ const PrescriptionOCR = () => {
       setStatusText(t('ocrSuccess'));
     } catch (err) {
       console.error("OCR operation failed:", err);
-      setStatusText("Failed to process image. Try a clearer photo.");
+      setErrorMessage('We could not read this image. Use a well-lit, in-focus prescription photo and try again.');
+      setStatusText('Scan failed');
     } finally {
       setIsProcessing(false);
     }
@@ -242,9 +271,20 @@ const PrescriptionOCR = () => {
 
   const parseMedicines = (text) => {
     const identified = new Set();
-    
-    // Identify known drugs using fuzzy Levenshtein matching
-    const words = text.toLowerCase().split(/[^a-z0-9-]+/);
+
+    const normalizedText = text.toLowerCase().replace(/\s+/g, ' ');
+    const sortedDrugs = [...KNOWN_DRUGS].sort((a, b) => b.length - a.length);
+
+    // Preserve multi-word medicines (for example, "folic acid") before word matching.
+    sortedDrugs.forEach((drug) => {
+      const escapedDrug = drug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+      if (new RegExp(`(^|[^a-z])${escapedDrug}($|[^a-z])`, 'i').test(normalizedText)) {
+        identified.add(drug);
+      }
+    });
+
+    // Use fuzzy matching only for meaningful single-word candidates to reduce false positives.
+    const words = normalizedText.split(/[^a-z0-9-]+/);
     words.forEach(word => {
       let cleanWord = word.trim().replace(/^-+|-+$/g, '');
       if (cleanWord.length < 3) return;
@@ -252,8 +292,9 @@ const PrescriptionOCR = () => {
       cleanWord = cleanWord.replace(/(?:500|650|100|250|50|20|10|5|mg|ml|mcg|g)$/, '').replace(/-$/, '');
       if (cleanWord.length < 3) return;
 
-      KNOWN_DRUGS.forEach(drug => {
-        if (cleanWord.includes(drug) || drug.includes(cleanWord)) {
+      sortedDrugs.forEach(drug => {
+        if (drug.includes(' ')) return;
+        if (cleanWord === drug || (drug.length > 4 && cleanWord.startsWith(drug))) {
           identified.add(drug);
           return;
         }
@@ -276,21 +317,44 @@ const PrescriptionOCR = () => {
     setImage(null);
     setPreviewUrl(null);
     setIdentifiedMeds([]);
+    setExtractedText('');
+    setOcrConfidence(null);
+    setErrorMessage('');
     setHasScanned(false);
     setProgress(0);
     setStatusText('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleTextReview = (value) => {
+    setExtractedText(value);
+    setIdentifiedMeds(parseMedicines(value));
   };
 
   return (
     <div className="ocr-container container">
       <div className="ocr-header text-center">
+        <div className="ocr-trust-badge"><ShieldCheck size={16} /> Image stays private while it is scanned</div>
         <h1 className="page-title">{t('ocrTitle')}</h1>
         <p className="page-subtitle">{t('ocrSubtitle')}</p>
+      </div>
+
+      <div className="ocr-steps" aria-label="Prescription scanning steps">
+        <span><b>1</b> Upload image</span>
+        <span><b>2</b> Scan text</span>
+        <span><b>3</b> Review matches</span>
       </div>
 
       <div className="ocr-content-grid">
         {/* Upload & Scanning Card */}
         <div className="ocr-card-wrapper glass shadow-md">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/png,image/jpeg,image/jpg"
+            className="visually-hidden"
+          />
           {!previewUrl ? (
             <div 
               className={`drag-drop-zone ${dragActive ? 'drag-active' : ''}`}
@@ -299,31 +363,38 @@ const PrescriptionOCR = () => {
               onDragLeave={handleDrag}
               onDrop={handleDrop}
               onClick={triggerFileInput}
+              onKeyDown={handleUploadKeyDown}
+              role="button"
+              tabIndex={0}
             >
-              <Upload className="upload-icon" size={48} />
-              <h3>{t('dragDrop')}</h3>
+              <div className="upload-icon-shell"><Upload className="upload-icon" size={34} /></div>
+              <h3>Upload a clear prescription photo</h3>
               <p>{t('supportedFormats')}</p>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileChange} 
-                accept="image/*"
-                style={{ display: 'none' }}
-              />
+              <span className="upload-file-types">PNG, JPG, or JPEG · Max 10 MB</span>
+              <span className="upload-cta">Choose image <Camera size={16} /></span>
             </div>
           ) : (
             <div className="preview-scan-zone">
               <div className="preview-image-wrapper glass">
                 <img src={previewUrl} alt="Prescription preview" className="prescription-preview-img" />
                 {isProcessing && <div className="scanner-laser-line"></div>}
+                <div className="image-meta">
+                  <FileText size={15} />
+                  <span>{image?.name}</span>
+                </div>
               </div>
               
               <div className="scan-actions-panel">
                 {!isProcessing && !hasScanned && (
-                  <button className="btn btn-primary btn-lg scan-btn" onClick={runOCR}>
-                    <Camera size={20} />
-                    Scan Prescription
-                  </button>
+                  <>
+                    <button className="btn btn-primary btn-lg scan-btn" onClick={runOCR}>
+                      <Camera size={20} />
+                      Scan prescription
+                    </button>
+                    <button className="change-image-btn" type="button" onClick={triggerFileInput}>
+                      <RefreshCw size={15} /> Choose a different image
+                    </button>
+                  </>
                 )}
                 
                 {isProcessing && (
@@ -353,6 +424,14 @@ const PrescriptionOCR = () => {
                     </button>
                   </div>
                 )}
+
+                {errorMessage && (
+                  <div className="scan-error" role="alert">
+                    <AlertCircle size={18} />
+                    <span>{errorMessage}</span>
+                    <button type="button" onClick={runOCR} aria-label="Try scan again"><RefreshCw size={15} /></button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -361,7 +440,7 @@ const PrescriptionOCR = () => {
         {/* Results Panel */}
         <div className="ocr-results-wrapper">
           <AnimatePresence mode="wait">
-            {!hasScanned && !isProcessing && (
+            {!hasScanned && !isProcessing && !errorMessage && (
               <motion.div 
                 className="results-placeholder glass shadow-md text-center"
                 initial={{ opacity: 0 }}
@@ -372,6 +451,19 @@ const PrescriptionOCR = () => {
                 <FileText className="doc-icon" size={48} />
                 <h3>Waiting for Scan</h3>
                 <p>Upload a prescription image on the left and click Scan to extract medicine info.</p>
+              </motion.div>
+            )}
+
+            {errorMessage && !isProcessing && (
+              <motion.div
+                className="results-placeholder scan-failed glass shadow-md text-center"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                key="error-placeholder"
+              >
+                <AlertCircle className="text-warning" size={48} />
+                <h3>Scan needs another try</h3>
+                <p>Use a bright, straight-on photo where medicine names are easy to read.</p>
               </motion.div>
             )}
 
@@ -398,7 +490,14 @@ const PrescriptionOCR = () => {
               >
                 {/* Medicines Found section */}
                 <div className="ocr-results-card glass shadow-md">
-                  <h2>{t('ocrMedsFound')}</h2>
+                  <div className="results-card-heading">
+                    <div>
+                      <span className="section-kicker">Scan results</span>
+                      <h2>{t('ocrMedsFound')}</h2>
+                    </div>
+                    {ocrConfidence !== null && <span className="confidence-pill">{ocrConfidence}% text confidence</span>}
+                  </div>
+                  <p className="review-notice">Review every match against your prescription before looking up medicine information.</p>
                   
                   {identifiedMeds.length === 0 ? (
                     <div className="no-meds-alert">
@@ -416,7 +515,7 @@ const PrescriptionOCR = () => {
                           transition={{ delay: idx * 0.05 }}
                         >
                           <div className="med-match-info">
-                            <span className="pill-dot">💊</span>
+                            <CheckCircle className="pill-dot" size={18} />
                             <h4>{med}</h4>
                           </div>
                           <button 
@@ -430,6 +529,23 @@ const PrescriptionOCR = () => {
                       ))}
                     </div>
                   )}
+                </div>
+
+                <div className="raw-text-card glass shadow-md">
+                  <div className="results-card-heading">
+                    <div>
+                      <span className="section-kicker">Review text</span>
+                      <h3>Correct OCR text if needed</h3>
+                    </div>
+                    <span className="edit-hint">Matches update as you edit</span>
+                  </div>
+                  <textarea
+                    className="raw-text-editor"
+                    value={extractedText}
+                    onChange={(event) => handleTextReview(event.target.value)}
+                    placeholder="Recognized prescription text will appear here."
+                    aria-label="Recognized prescription text"
+                  />
                 </div>
               </motion.div>
             )}
