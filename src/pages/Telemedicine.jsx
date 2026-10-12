@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './Telemedicine.css';
 
 const cities = ['Delhi NCR', 'Mumbai', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Jaipur', 'Lucknow', 'Kanpur', 'Noida'];
@@ -49,7 +48,6 @@ const matchesFilter = (item, query, category, categoryKey) => {
 };
 
 const Telemedicine = () => {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('doctor');
   const [selectedCity, setSelectedCity] = useState('Delhi NCR');
   const [selectedDoctorCategory, setSelectedDoctorCategory] = useState('All');
@@ -80,14 +78,6 @@ const Telemedicine = () => {
   };
 
   const handleSearch = () => {
-    if (activeTab === 'medicine') {
-      if (!searchQuery.trim()) {
-        setActionMessage('Enter a medicine name to look up its current label information.');
-        return;
-      }
-      navigate(`/medicine?search=${encodeURIComponent(searchQuery.trim())}`);
-      return;
-    }
     setActionMessage(`Showing ${visibleResultCount} matching ${visibleResultCount === 1 ? 'result' : 'results'}.`);
   };
 
@@ -96,17 +86,15 @@ const Telemedicine = () => {
       <div className="telemedicine-content">
         <div className="telemedicine-header">
           <h1>Medical Services, Consultations and Delivery</h1>
-          <p>Browse sample care listings or search a medicine by name.</p>
         </div>
 
         <aside className="telemedicine-demo-notice" role="status">
-          <strong>Care listings are demo data only.</strong> Medicine searches use the current label-information lookup. Do not use any result as a substitute for professional medical advice.
+          <strong> listings are demo data only.</strong>
         </aside>
 
         <div className="main-tab-group" role="tablist" aria-label="Telemedicine services">
           <button type="button" onClick={() => switchTab('doctor')} className={`main-tab-btn ${activeTab === 'doctor' ? 'active' : ''}`} role="tab" aria-selected={activeTab === 'doctor'}>Doctor Consultation</button>
           <button type="button" onClick={() => switchTab('lab')} className={`main-tab-btn ${activeTab === 'lab' ? 'active' : ''}`} role="tab" aria-selected={activeTab === 'lab'}>Lab Test Booking</button>
-          <button type="button" onClick={() => switchTab('medicine')} className={`main-tab-btn ${activeTab === 'medicine' ? 'active' : ''}`} role="tab" aria-selected={activeTab === 'medicine'}>Medicine Information</button>
         </div>
 
         <div className="telemedicine-search-box">
@@ -119,11 +107,11 @@ const Telemedicine = () => {
           <div className="search-input-wrapper">
             <input
               type="search"
-              placeholder={activeTab === 'doctor' ? 'Search sample doctors or specialties...' : activeTab === 'lab' ? 'Search sample lab tests or packages...' : 'Enter a medicine name, for example paracetamol'}
+              placeholder={activeTab === 'doctor' ? 'Search sample doctors or specialties...' : 'Search sample lab tests or packages...'}
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               className="telemedicine-search-input"
-              aria-label={activeTab === 'medicine' ? 'Search medicine information' : 'Search sample listings'}
+              aria-label="Search sample listings"
             />
           </div>
           <button type="button" className="telemedicine-search-btn" onClick={handleSearch}>Search</button>
@@ -131,24 +119,10 @@ const Telemedicine = () => {
 
         {actionMessage && <p className="telemedicine-action-message" role="status">{actionMessage}</p>}
 
-        {activeTab !== 'medicine' && <div className="filter-pills-scroll" aria-label="Category filters">
+        <div className="filter-pills-scroll" aria-label="Category filters">
           {activeTab === 'doctor' && doctorCategories.map((category) => <button type="button" key={category.name} onClick={() => setSelectedDoctorCategory(category.name)} className={`sub-pill-btn ${selectedDoctorCategory === category.name ? 'active' : ''}`}>{category.name} ({category.count})</button>)}
           {activeTab === 'lab' && labCategories.map((category) => <button type="button" key={category.name} onClick={() => setSelectedLabCategory(category.name)} className={`sub-pill-btn ${selectedLabCategory === category.name ? 'active' : ''}`}>{category.name} ({category.count})</button>)}
-        </div>}
-
-        {activeTab === 'medicine' && (
-          <div className="medicine-lookup-panel">
-            <div>
-              <h2>Search medicine information</h2>
-              <p>Search by the generic medicine name to view current label information, uses, warnings, and available manufacturer details.</p>
-              <p className="medicine-lookup-note">Exact retailer price and local stock are not shown because they require a licensed pharmacy partner for your selected location.</p>
-            </div>
-            <div className="medicine-lookup-actions">
-              <button type="button" className="rx-upload-btn" onClick={() => navigate('/ocr')}>Read a Prescription</button>
-              <button type="button" className="btn-primary" onClick={handleSearch}>Search Medicine</button>
-            </div>
-          </div>
-        )}
+        </div>
 
         {activeTab === 'doctor' && (
           <div className="cards-grid">

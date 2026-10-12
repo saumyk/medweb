@@ -1,19 +1,28 @@
 import { supabase } from '../supabaseClient';
+import { parsePrescriptionText } from './prescriptionParser';
 
 // AGENT 1: Diagnostics & OCR Agent (Parses exact user prescription input)
 export const DiagnosticsOCRAgent = {
   async processPrescription(extractedText) {
     if (!extractedText || extractedText.trim().length === 0) {
-      return { success: false, medicines: [], message: 'No prescription text provided.' };
+      return { success: false, medicines: [], parsedDetails: [], message: 'No prescription text provided.' };
     }
 
-    // Dynamic line-by-line parsing from user input
-    const detectedMedicines = extractedText
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
+    const parsed = parsePrescriptionText(extractedText);
+    const medicineNames = parsed.medicines.length > 0
+      ? parsed.medicines.map((m) => m.name)
+      : extractedText
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0);
 
-    return { success: true, medicines: detectedMedicines };
+    return { 
+      success: true, 
+      medicines: medicineNames,
+      parsedDetails: parsed.medicines,
+      metadata: parsed.metadata,
+      safetyAlerts: parsed.safetyAlerts
+    };
   }
 };
 

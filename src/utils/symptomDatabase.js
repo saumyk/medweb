@@ -28,7 +28,7 @@ export const symptomDb = [
     selfCare: [
       "🛑 STOP all physical activity immediately and sit in an upright, comfortable position.",
       "Loosen all tight clothing, collars, ties, and belts to assist breathing.",
-      "Call your local emergency services (108 / 911) immediately.",
+      "Call India's emergency number (112) immediately. For an ambulance, call 108 where available.",
       "Do not try to drive yourself to the emergency room."
     ],
     whatToEat: [

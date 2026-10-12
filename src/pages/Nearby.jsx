@@ -448,8 +448,7 @@ const Nearby = () => {
             
             {/* GPS Tracker indicator */}
             <div className="emergency-system-status">
-              <span className="status-indicator-dot pulsing-green"></span>
-              <span className="status-indicator-text">GPS DISPATCH STATUS ACTIVE</span>
+              <span className="status-indicator-text">{t('sosContactStatus')}</span>
             </div>
 
             {/* Radar Beacon Animation */}
@@ -465,12 +464,19 @@ const Nearby = () => {
             <h2 className="sos-title">{t('emergencyAlert')}</h2>
             <p className="sos-desc">{t('emergencyGuidelines')}</p>
             
-            {/* Direct Call Ambulance Button */}
+            {/* These links open the phone dialer; they do not dispatch help automatically. */}
             <a href="tel:108" className="sos-call-btn">
               <Phone size={22} className="phone-icon-pulse" />
               <div className="sos-call-text-wrapper">
-                <span className="call-title">{t('sosEmergencyServices')}</span>
-                <span className="call-number">TAP TO LAUNCH DIALER (108 / 911)</span>
+                <span className="call-title">{t('sosAmbulanceTitle')}</span>
+                <span className="call-number">{t('sosAmbulanceDetail')}</span>
+              </div>
+            </a>
+            <a href="tel:112" className="sos-call-btn sos-police-btn">
+              <Phone size={22} />
+              <div className="sos-call-text-wrapper">
+                <span className="call-title">{t('sosPoliceTitle')}</span>
+                <span className="call-number">{t('sosPoliceDetail')}</span>
               </div>
             </a>
 

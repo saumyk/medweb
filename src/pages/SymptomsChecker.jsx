@@ -470,9 +470,9 @@ Do not include markdown wrappers like \`\`\`json. Return raw JSON string only.`;
                     <MapPin size={16} />
                     <span>{t('findNearbyHospitalBtn') || 'Find Nearby Hospital'}</span>
                   </Link>
-                  <a href="tel:108" className="btn btn-emergency-hotline">
+                  <a href="tel:112" className="btn btn-emergency-hotline">
                     <Phone size={16} />
-                    <span>{t('callEmergencyBtn') || 'Call Emergency (108 / 112)'}</span>
+                    <span>{t('callEmergencyBtn') || 'Call Emergency (112)'}</span>
                   </a>
                 </div>
               </div>

@@ -166,7 +166,7 @@ CRITICAL MEDICAL SAFETY & GUARDRAILS:
   "general information"
   "consider speaking with a healthcare professional"
 - If the user describes potentially dangerous symptoms (chest pain, shortness of breath, unconsciousness, severe bleeding, stroke signs, suicidal ideation, anaphylaxis), prioritize emergency guidance immediately.
-${isEmergency ? "URGENT NOTE: The user's query mentions potentially life-threatening symptoms. Prioritize emergency guidance, advise immediate emergency care (108 / 112 or ER), and discourage waiting or casual self-treatment." : ""}
+${isEmergency ? "URGENT NOTE: The user's query mentions potentially life-threatening symptoms. Prioritize emergency guidance, advise calling India's emergency number (112) or going to an emergency department, and discourage waiting or casual self-treatment. For an ambulance, 108 may be available depending on the state." : ""}
 
 Language requirement: Answer in ${language === 'hi' ? 'Hindi (clean Devanagari script)' : 'English'}.
 
@@ -320,7 +320,7 @@ Symptoms such as severe chest pain, extreme breathlessness, sudden weakness, or 
 📋 Immediate Action Steps:
 1. Stop all physical exertion and sit or lie down in a safe, comfortable position.
 2. Loosen all tight clothing to aid natural respiration.
-3. Call emergency dispatch (108 / 112) or have someone drive you to the nearest emergency department.
+3. Call India's emergency number (112), or have someone call an ambulance (108 where available).
 4. Do not attempt to drive yourself.
 
 🚨 Seek Help If:
@@ -406,9 +406,9 @@ Seek emergency medical evaluation immediately. Do not delay.`;
                         <MapPin size={16} />
                         <span>{t('findNearbyHospitalBtn') || 'Find Nearby Hospital'}</span>
                       </Link>
-                      <a href="tel:108" className="btn btn-emergency-hotline">
+                      <a href="tel:112" className="btn btn-emergency-hotline">
                         <Phone size={16} />
-                        <span>{t('callEmergencyBtn') || 'Call Emergency (108 / 112)'}</span>
+                        <span>{t('callEmergencyBtn') || 'Call Emergency (112)'}</span>
                       </a>
                     </div>
                   </div>

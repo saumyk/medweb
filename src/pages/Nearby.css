@@ -356,41 +356,23 @@
               inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
 }
 
-/* GPS System Active Badge */
+/* Emergency contact context badge */
 .emergency-system-status {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  background: rgba(16, 185, 129, 0.08);
+  background: var(--background);
   padding: 4px 12px;
   border-radius: 1rem;
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  border: 1px solid var(--border);
   width: fit-content;
   margin: 0 auto;
-}
-
-.status-indicator-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #10B981;
-  box-shadow: 0 0 8px #10B981;
-}
-
-.pulsing-green {
-  animation: green-dot-pulse 1s infinite alternate ease-in-out;
-}
-
-@keyframes green-dot-pulse {
-  from { opacity: 0.4; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1.15); }
 }
 
 .status-indicator-text {
   font-size: 0.65rem;
   font-weight: 850;
-  color: #10B981;
+  color: var(--text-muted);
   letter-spacing: 0.8px;
 }
 
@@ -512,6 +494,16 @@
 
 .sos-call-btn:active {
   transform: scale(0.97);
+}
+
+.sos-police-btn {
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+  animation: none;
+}
+
+.sos-police-btn:hover {
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.45);
 }
 
 .sos-call-text-wrapper {
@@ -893,4 +885,3 @@
     justify-content: center;
   }
 }
-

@@ -50,7 +50,7 @@ const translations = {
     emergencyAlertTitle: "POSSIBLE MEDICAL EMERGENCY",
     emergencyAlertText: "Your symptoms may require immediate medical attention. Please contact your local emergency service or go to the nearest emergency department.",
     findNearbyHospitalBtn: "Find Nearby Hospital",
-    callEmergencyBtn: "Call Emergency (108 / 112)",
+    callEmergencyBtn: "Call Emergency (112)",
     errorOccurred: "Unable to complete AI response right now. Please try again or check emergency services if urgent.",
     retryBtn: "Retry",
     promptFever: "I have a fever",
@@ -130,11 +130,15 @@ const translations = {
 
     // SOS Modal
     emergencyAlert: "EMERGENCY ALERT",
-    emergencyGuidelines: "We have detected an emergency command. Please follow these guidelines immediately:",
+    emergencyGuidelines: "For police or any emergency in India, call 112. For an ambulance, call 108 where available.",
     sosStep1: "1. Stay calm and sit down to stabilize breathing.",
     sosStep2: "2. Do not attempt to drive yourself to a hospital.",
     sosStep3: "3. If pain or breathing worsens, contact local emergency services immediately.",
-    sosEmergencyServices: "Call Emergency Services (108 / 911)",
+    sosContactStatus: "INDIA EMERGENCY CONTACTS · DIALER CALLS ONLY",
+    sosAmbulanceTitle: "Call an Ambulance",
+    sosAmbulanceDetail: "108 · Availability varies by state",
+    sosPoliceTitle: "Call Police / Emergency Response",
+    sosPoliceDetail: "112 · All-India emergency number",
 
     // OCR Scanner
     ocrTitle: "Prescription OCR Scanner",
@@ -230,7 +234,7 @@ const translations = {
     emergencyAlertTitle: "संभावित चिकित्सा आपातकाल",
     emergencyAlertText: "आपके लक्षणों में तत्काल चिकित्सा सहायता की आवश्यकता हो सकती है। कृपया अपनी स्थानीय आपातकालीन सेवा से संपर्क करें या निकटतम आपातकालीन विभाग में जाएं।",
     findNearbyHospitalBtn: "निकटतम अस्पताल खोजें",
-    callEmergencyBtn: "आपातकालीन कॉल (108 / 112)",
+    callEmergencyBtn: "आपातकालीन सेवा कॉल करें (112)",
     errorOccurred: "एआई प्रतिक्रिया प्राप्त करने में समस्या हुई। कृपया पुनः प्रयास करें या आपातकालीन सेवा से संपर्क करें।",
     retryBtn: "पुनः प्रयास करें",
     promptFever: "मुझे बुखार है",
@@ -310,11 +314,15 @@ const translations = {
 
     // SOS Modal
     emergencyAlert: "आपातकालीन चेतावनी",
-    emergencyGuidelines: "हमें एक आपातकालीन कमांड मिली है। कृपया तुरंत इन दिशानिर्देशों का पालन करें:",
+    emergencyGuidelines: "भारत में पुलिस या किसी भी आपातकाल के लिए 112 पर कॉल करें। एम्बुलेंस के लिए, जहां उपलब्ध हो, 108 पर कॉल करें।",
     sosStep1: "1. शांत रहें और सांस लेने को स्थिर करने के लिए बैठ जाएं।",
     sosStep2: "2. खुद गाड़ी चलाकर अस्पताल जाने की कोशिश न करें।",
     sosStep3: "3. यदि दर्द या सांस लेने में तकलीफ बढ़ती है, तो तुरंत आपातकालीन सेवाओं से संपर्क करें।",
-    sosEmergencyServices: "आपातकालीन सेवाओं को कॉल करें (108 / 911)",
+    sosContactStatus: "भारत के आपातकालीन नंबर · कॉल डायलर में खुलेगी",
+    sosAmbulanceTitle: "एम्बुलेंस कॉल करें",
+    sosAmbulanceDetail: "108 · उपलब्धता राज्य के अनुसार अलग हो सकती है",
+    sosPoliceTitle: "पुलिस / आपातकालीन सेवा कॉल करें",
+    sosPoliceDetail: "112 · पूरे भारत का आपातकालीन नंबर",
 
     // OCR Scanner
     ocrTitle: "नुस्खा ओसीआर स्कैनर",
