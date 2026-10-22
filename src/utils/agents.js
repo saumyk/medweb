@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient';
+import { supabase } from './supabaseClient';
 import { parsePrescriptionText } from './prescriptionParser';
 
 // AGENT 1: Diagnostics & OCR Agent (Parses exact user prescription input)

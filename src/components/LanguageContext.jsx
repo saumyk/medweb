@@ -127,6 +127,10 @@ const translations = {
     noRating: "No Rating",
     noServicesFound: "No nearby services found. Try extending your search radius or check your GPS settings.",
     emergencyBtn: "Trigger Emergency SOS",
+    useGpsLocation: "Use GPS Location",
+    openInGoogleMaps: "Open in Google Maps",
+    viewOnMap: "View on Map",
+    googleMapsTitle: "Google Maps View",
 
     // SOS Modal
     emergencyAlert: "EMERGENCY ALERT",
@@ -311,6 +315,10 @@ const translations = {
     noRating: "कोई रेटिंग नहीं",
     noServicesFound: "कोई निकटतम सेवाएं नहीं मिलीं। अपना खोज दायरा बढ़ाएं या जीपीएस जांचें।",
     emergencyBtn: "आपातकालीन एसओएस सक्रिय करें",
+    useGpsLocation: "जीपीएस लोकेशन का उपयोग करें",
+    openInGoogleMaps: "गूगल मैप्स में खोलें",
+    viewOnMap: "मैप पर देखें",
+    googleMapsTitle: "गूगल मैप्स दृश्य",
 
     // SOS Modal
     emergencyAlert: "आपातकालीन चेतावनी",
