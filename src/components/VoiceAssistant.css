@@ -43,7 +43,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
+  z-index: 10001;
   animation: overlay-fade-in 0.3s ease;
   padding: 1.5rem;
 }
@@ -202,4 +202,279 @@
 @keyframes card-slide-up {
   from { opacity: 0; transform: translateY(35px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Paused wave rings when mic is not active ──────────────────── */
+.wave-ring.paused {
+  animation-play-state: paused;
+  opacity: 0;
+}
+
+/* ── Transcript placeholder ────────────────────────────────────── */
+.transcript-placeholder {
+  font-style: normal;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ── Text input fallback ───────────────────────────────────────── */
+.va-text-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.va-text-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-align: left;
+}
+
+.va-text-input-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.va-text-input {
+  flex: 1;
+  padding: 0.55rem 0.85rem;
+  border: 1.5px solid var(--border);
+  border-radius: 0.65rem;
+  background: var(--surface);
+  color: var(--text-main);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.va-text-input:focus {
+  border-color: var(--primary);
+}
+
+.va-text-submit {
+  padding: 0.55rem 1rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 0.65rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.va-text-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.va-text-submit:focus-visible {
+  outline: 3px solid var(--primary-light);
+  outline-offset: 2px;
+}
+
+/* ── Voice / text mode toggle ──────────────────────────────────── */
+.va-mode-toggle {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.va-toggle-text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 2rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.va-toggle-text-btn:hover,
+.va-toggle-text-btn[aria-pressed='true'] {
+  background: var(--surface-hover);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ── Command help details / summary ────────────────────────────── */
+.va-commands-help {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+  text-align: left;
+}
+
+.va-commands-help summary {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.va-commands-help summary::-webkit-details-marker { display: none; }
+
+.va-commands-help summary::before {
+  content: '▸';
+  font-size: 0.65rem;
+  transition: transform 0.2s ease;
+}
+
+.va-commands-help[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.va-commands-list {
+  margin: 0.6rem 0 0 0;
+  padding: 0 0 0 0.5rem;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.va-commands-list li {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.va-commands-list code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: var(--primary);
+  background: rgba(15, 118, 110, 0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* ── Error / status banner ─────────────────────────────────────── */
+.voice-error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.voice-error-banner svg {
+  flex-shrink: 0;
+  color: #EF4444;
+  margin-top: 2px;
+}
+
+.voice-error-banner p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-main);
+  line-height: 1.45;
+}
+
+/* ── Emergency confirmation ────────────────────────────────────── */
+.voice-emergency-confirm {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1.5px solid rgba(239, 68, 68, 0.5);
+  border-radius: 0.85rem;
+  padding: 1rem 1.1rem;
+  margin-bottom: 0.5rem;
+  text-align: left;
+  animation: card-slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.voice-emergency-confirm-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  color: #DC2626;
+}
+
+.voice-emergency-confirm-header strong {
+  font-size: 0.95rem;
+}
+
+.voice-emergency-confirm p {
+  font-size: 0.8rem;
+  color: var(--text-main);
+  margin: 0 0 0.85rem 0;
+  line-height: 1.45;
+}
+
+.voice-emergency-confirm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.voice-sos-confirm-btn {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: linear-gradient(135deg, #DC2626, #B91C1C);
+  color: white;
+  border: none;
+  border-radius: 0.6rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.voice-sos-confirm-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.voice-sos-confirm-btn:focus-visible {
+  outline: 3px solid #FECACA;
+  outline-offset: 2px;
+}
+
+.voice-sos-cancel-btn {
+  width: 100%;
+  padding: 0.55rem 1rem;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.voice-sos-cancel-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-main);
+}
+
+/* ── Secondary strip call button ───────────────────────────────── */
+.sos-strip-call--secondary {
+  background: rgba(239, 68, 68, 0.12);
+  color: #DC2626;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ── Focus-visible styles for all SOS interactive elements ─────── */
+.sos-call-btn:focus-visible,
+.sos-strip-call:focus-visible,
+.sos-strip-guide:focus-visible,
+.sos-close-btn:focus-visible,
+.voice-sos-confirm-btn:focus-visible {
+  outline: 3px solid #F87171;
+  outline-offset: 3px;
 }

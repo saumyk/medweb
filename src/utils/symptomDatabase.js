@@ -1,3 +1,5 @@
+import { partitionNegatedSymptoms } from './symptomTriage';
+
 // Shared Medical Symptom & Disease Database for MedWeb
 
 export const symptomDb = [
@@ -376,7 +378,9 @@ export function lookupSymptom(query) {
     return fallbackSymptom;
   }
   
-  const text = query.toLowerCase().trim();
+  // Strip negated clauses so negated symptoms are not matched affirmatively
+  const { affirmedText } = partitionNegatedSymptoms(query);
+  const text = (affirmedText || query).toLowerCase().trim();
   
   // We will score each entry in symptomDb
   const scored = symptomDb.map(entry => {

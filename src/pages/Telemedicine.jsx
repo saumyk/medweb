@@ -89,7 +89,7 @@ const Telemedicine = () => {
         </div>
 
         <aside className="telemedicine-demo-notice" role="status">
-          <strong> listings are demo data only.</strong>
+          <strong>Healthcare listings and telemedicine consultations are demo simulations for reference.</strong>
         </aside>
 
         <div className="main-tab-group" role="tablist" aria-label="Telemedicine services">
@@ -97,7 +97,7 @@ const Telemedicine = () => {
           <button type="button" onClick={() => switchTab('lab')} className={`main-tab-btn ${activeTab === 'lab' ? 'active' : ''}`} role="tab" aria-selected={activeTab === 'lab'}>Lab Test Booking</button>
         </div>
 
-        <div className="telemedicine-search-box">
+        <form className="telemedicine-search-box" onSubmit={(e) => { e.preventDefault(); handleSearch(); }}>
           <label className="city-selector" htmlFor="city-select">
             <span className="city-icon" aria-hidden="true">Location</span>
             <select id="city-select" value={selectedCity} onChange={(event) => setSelectedCity(event.target.value)} className="city-dropdown">
@@ -114,14 +114,34 @@ const Telemedicine = () => {
               aria-label="Search sample listings"
             />
           </div>
-          <button type="button" className="telemedicine-search-btn" onClick={handleSearch}>Search</button>
-        </div>
+          <button type="submit" className="telemedicine-search-btn">Search</button>
+        </form>
 
         {actionMessage && <p className="telemedicine-action-message" role="status">{actionMessage}</p>}
 
         <div className="filter-pills-scroll" aria-label="Category filters">
-          {activeTab === 'doctor' && doctorCategories.map((category) => <button type="button" key={category.name} onClick={() => setSelectedDoctorCategory(category.name)} className={`sub-pill-btn ${selectedDoctorCategory === category.name ? 'active' : ''}`}>{category.name} ({category.count})</button>)}
-          {activeTab === 'lab' && labCategories.map((category) => <button type="button" key={category.name} onClick={() => setSelectedLabCategory(category.name)} className={`sub-pill-btn ${selectedLabCategory === category.name ? 'active' : ''}`}>{category.name} ({category.count})</button>)}
+          {activeTab === 'doctor' && doctorCategories.map((category) => (
+            <button
+              type="button"
+              key={category.name}
+              onClick={() => setSelectedDoctorCategory(category.name)}
+              className={`sub-pill-btn ${selectedDoctorCategory === category.name ? 'active' : ''}`}
+              aria-pressed={selectedDoctorCategory === category.name}
+            >
+              {category.name} ({category.count})
+            </button>
+          ))}
+          {activeTab === 'lab' && labCategories.map((category) => (
+            <button
+              type="button"
+              key={category.name}
+              onClick={() => setSelectedLabCategory(category.name)}
+              className={`sub-pill-btn ${selectedLabCategory === category.name ? 'active' : ''}`}
+              aria-pressed={selectedLabCategory === category.name}
+            >
+              {category.name} ({category.count})
+            </button>
+          ))}
         </div>
 
         {activeTab === 'doctor' && (

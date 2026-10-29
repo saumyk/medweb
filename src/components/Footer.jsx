@@ -28,9 +28,12 @@ const Footer = () => {
           </Link>
           <div className="footer-links">
             <Link to="/assistant">{t('aiAssistant')}</Link>
-            <Link to="/ocr">{t('ocr')}</Link>
+            <Link to="/symptoms">{t('symptoms')}</Link>
             <Link to="/medicine">{t('medicineInfo')}</Link>
+            <Link to="/ocr">{t('ocr')}</Link>
             <Link to="/dashboard">{t('dashboard')}</Link>
+            <Link to="/nearby">{t('nearby')}</Link>
+            <Link to="/telemedicine">{t('telemedicine')}</Link>
           </div>
         </motion.div>
         

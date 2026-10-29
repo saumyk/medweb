@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -7,7 +7,9 @@ import {
   User, Thermometer, Heart, Pill, MessageSquare, MapPin, Phone, RotateCcw
 } from 'lucide-react';
 import { lookupSymptom } from '../utils/symptomDatabase';
+import { checkEmergencyWithNegation, checkWorseningProgression } from '../utils/symptomTriage';
 import { useLanguage } from '../components/LanguageContext';
+import { enforceMaxLength } from '../utils/security';
 import './SymptomsChecker.css';
 
 const COMMON_SYMPTOMS = [
@@ -26,25 +28,14 @@ const COMMON_SYMPTOMS = [
 ];
 
 const checkEmergencyKeywords = (text) => {
-  if (!text) return false;
-  const lower = text.toLowerCase();
-  const patterns = [
-    /chest\s*(pain|pressure|tightness|heaviness)/i,
-    /(difficulty|trouble|can't|cannot)\s*breath/i,
-    /shortness\s*of\s*breath/i,
-    /unconscious|fainted|blackout/i,
-    /severe\s*bleed/i,
-    /stroke|facial\s*droop|slurred\s*speech/i,
-    /suicid|self[- ]harm/i,
-    /anaphylax|throat\s*closing/i
-  ];
-  return patterns.some(p => p.test(lower));
+  return checkEmergencyWithNegation(text);
 };
 
 const SymptomsChecker = () => {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const hasHandledSearchRef = useRef(false);
 
   // Intake State
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
@@ -60,6 +51,7 @@ const SymptomsChecker = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [symptomSummary, setSymptomSummary] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speechWarning, setSpeechWarning] = useState('');
 
   // Toggle structured symptom checkbox
   const toggleSymptom = (symptomId) => {
@@ -73,7 +65,7 @@ const SymptomsChecker = () => {
   // Text to Speech
   const toggleSpeak = () => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      alert("Text-to-speech is not supported in this browser.");
+      setSpeechWarning("Text-to-speech is not supported in this browser.");
       return;
     }
 
@@ -85,6 +77,7 @@ const SymptomsChecker = () => {
 
     if (!symptomSummary) return;
 
+    setSpeechWarning('');
     const causesText = symptomSummary.possibleCauses.join('. ');
     const careText = symptomSummary.selfCare.join('. ');
     const textToSpeak = `
@@ -121,6 +114,7 @@ const SymptomsChecker = () => {
   // Handle Symptom Analysis
   const handleAnalyze = async (e, overrideQuery) => {
     if (e) e.preventDefault();
+    if (isSearching) return;
 
     // Compile active symptoms list
     const selectedLabels = selectedSymptoms.map(id => {
@@ -129,12 +123,13 @@ const SymptomsChecker = () => {
     });
 
     const queryInput = overrideQuery !== undefined ? overrideQuery : freeTextSymptoms;
-    const combinedQuery = [
+    const combinedRaw = [
       selectedLabels.length > 0 ? selectedLabels.join(', ') : '',
       queryInput.trim()
     ].filter(Boolean).join('. ');
 
-    if (!combinedQuery.trim()) return;
+    if (!combinedRaw.trim()) return;
+    const combinedQuery = enforceMaxLength(combinedRaw, 2000);
 
     setIsSearching(true);
     setSymptomSummary(null);
@@ -145,8 +140,7 @@ const SymptomsChecker = () => {
         return item && item.isEmergency;
       }) || checkEmergencyKeywords(combinedQuery);
 
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || '';
-    console.log("Symptoms Checker API Key status:", apiKey ? "FOUND (calling Gemini API)" : "MISSING (falling back to local database)");
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 
     if (apiKey) {
       try {
@@ -154,12 +148,12 @@ const SymptomsChecker = () => {
 Analyze the following patient reported symptoms and context:
 
 Symptoms: "${combinedQuery}"
-Duration: "${duration}"
-Severity: "${severity}"
-Age Group: "${ageGroup}"
-Temperature: "${temperature || 'Not specified'}"
-Pre-existing Conditions: "${existingCondition}"
-Current Medicines: "${currentMedicines || 'None reported'}"
+Duration: "${enforceMaxLength(duration, 50)}"
+Severity: "${enforceMaxLength(severity, 50)}"
+Age Group: "${enforceMaxLength(ageGroup, 50)}"
+Temperature: "${enforceMaxLength(temperature || 'Not specified', 50)}"
+Pre-existing Conditions: "${enforceMaxLength(existingCondition, 100)}"
+Current Medicines: "${enforceMaxLength(currentMedicines || 'None reported', 200)}"
 
 CRITICAL NON-DIAGNOSTIC SAFETY RULES:
 - You must NEVER declare a definitive diagnosis like "You have X disease".
@@ -179,14 +173,22 @@ CRITICAL NON-DIAGNOSTIC SAFETY RULES:
 Language: ${language === 'hi' ? 'Hindi (Devanagari)' : 'English'}.
 Do not include markdown wrappers like \`\`\`json. Return raw JSON string only.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
           body: JSON.stringify({
             contents: [{ parts: [{ text: promptText }] }],
             generationConfig: { responseMimeType: "application/json" }
           })
         });
+        clearTimeout(timeoutId);
 
         if (response.ok) {
           const data = await response.json();
@@ -210,21 +212,26 @@ Do not include markdown wrappers like \`\`\`json. Return raw JSON string only.`;
           setIsSearching(false);
           return;
         } else {
-          const errBody = await response.text().catch(() => '');
-          throw new Error(`Gemini API returned status: ${response.status} - ${errBody}`);
+          throw new Error(`AI service responded with status: ${response.status}`);
         }
-      } catch (err) {
-        console.error("Gemini API call failed, falling back to local database:", err);
+      } catch {
+        console.warn('AI triage service temporarily unavailable, switching to local clinical database.');
       }
     }
 
     // Graceful Fallback to Local Medical Database
     setTimeout(() => {
       const match = lookupSymptom(combinedQuery);
+      const isWorsening = checkWorseningProgression(combinedQuery);
+      const seekHelpMessage = isWorsening
+        ? `⚠️ PROGRESSIVE WORSENING NOTED: Your symptoms are described as progressively worsening or intense. Seek prompt medical evaluation and do not wait. ${match.seekHelp || ''}`
+        : (match.seekHelp || 'Consult a doctor if symptoms worsen, high fever lasts beyond 3 days, or severe breathing difficulties arise.');
+
       setSymptomSummary({
         symptomsList: selectedLabels.length > 0 ? selectedLabels : [combinedQuery],
-        duration: duration,
-        severity: severity,
+        duration: duration || 'Not specified',
+        durationAlert: (!duration || duration === 'Not specified') ? 'Duration not specified — clinical evaluation relies on knowing symptom duration.' : null,
+        severity: isWorsening && severity === 'Mild' ? 'Moderate to Severe' : severity,
         ageGroup: ageGroup,
         temperature: temperature,
         existingCondition: existingCondition,
@@ -240,8 +247,9 @@ Do not include markdown wrappers like \`\`\`json. Return raw JSON string only.`;
         ],
         whatToEat: match.whatToEat || ["Warm broths and soups", "Fresh hydrating fruits", "Herbal teas"],
         whatToAvoid: match.whatToAvoid || ["Caffeine and alcohol", "Oily, spicy, or fried meals", "Cold drinks"],
-        seekHelp: match.seekHelp || "Consult a doctor if symptoms worsen, high fever lasts beyond 3 days, or severe breathing difficulties arise.",
-        isEmergency: hasEmergencyTrigger
+        seekHelp: seekHelpMessage,
+        isEmergency: hasEmergencyTrigger,
+        isWorsening: isWorsening
       });
       setIsSearching(false);
     }, 1000);
@@ -250,15 +258,15 @@ Do not include markdown wrappers like \`\`\`json. Return raw JSON string only.`;
   // Preload from URL search param
   useEffect(() => {
     const searchVal = searchParams.get('search');
-    if (searchVal) {
+    if (searchVal && !hasHandledSearchRef.current) {
+      hasHandledSearchRef.current = true;
       const timer = setTimeout(() => {
         setFreeTextSymptoms(searchVal);
         handleAnalyze(null, searchVal);
       }, 100);
       return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Discuss in AI Assistant
   const handleConsultAssistant = () => {
@@ -309,6 +317,8 @@ Do not include markdown wrappers like \`\`\`json. Return raw JSON string only.`;
                   <button
                     key={item.id}
                     type="button"
+                    role="checkbox"
+                    aria-checked={isSelected}
                     onClick={() => toggleSymptom(item.id)}
                     className={`symptom-pill-checkbox ${isSelected ? 'pill-selected' : ''} ${item.isEmergency ? 'pill-emergency' : ''}`}
                   >
@@ -499,6 +509,7 @@ Do not include markdown wrappers like \`\`\`json. Return raw JSON string only.`;
                       {isSpeaking ? <VolumeX size={18} /> : <Volume2 size={18} />}
                       <span>{isSpeaking ? (language === 'en' ? 'Stop' : 'रोकें') : (language === 'en' ? 'Listen' : 'सुनें')}</span>
                     </button>
+                    {speechWarning && <span className="speech-warning-chip" role="status">{speechWarning}</span>}
                   </div>
                 </div>
 

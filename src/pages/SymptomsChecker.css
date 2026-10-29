@@ -675,6 +675,12 @@
     gap: 0.5rem;
   }
 
+  @media (max-width: 400px) {
+    .symptom-checkbox-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .symptom-pill-checkbox {
     padding: 0.6rem 0.75rem;
     font-size: 0.82rem;

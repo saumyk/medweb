@@ -1,4 +1,4 @@
- 0nimport { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -33,13 +33,13 @@ import {
   ZoomIn,
   Eye,
   ShieldAlert,
-  Activity,
-  HeartPulse,
-  Share2
+  Activity
 } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 import { useLanguage } from '../components/LanguageContext';
+import { useAuth } from '../components/AuthContext';
 import { supabase } from '../utils/supabaseClient';
+import { validateImageFile } from '../utils/security';
 import { lookupMedicine } from '../utils/medicineLookup';
 import {
   MEDICINE_REGISTRY,
@@ -52,6 +52,7 @@ import './PrescriptionOCR.css';
 const PrescriptionOCR = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { user } = useAuth();
 
   // File and Scan States
   const [image, setImage] = useState(null);
@@ -78,7 +79,6 @@ const PrescriptionOCR = () => {
   const [selectedMedicineModal, setSelectedMedicineModal] = useState(null);
   const [modalDetails, setModalDetails] = useState(null);
   const [isLoadingModal, setIsLoadingModal] = useState(false);
-  const [modalError, setModalError] = useState(null);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   // Manual Medicine Add State
@@ -87,6 +87,24 @@ const PrescriptionOCR = () => {
   const [copySuccess, setCopySuccess] = useState(false);
 
   const fileInputRef = useRef(null);
+
+  const handleFile = (file) => {
+    const validation = validateImageFile(file, 10 * 1024 * 1024);
+    if (!validation.valid) {
+      setErrorMessage(validation.error || 'Please upload a valid image file (PNG, JPG, JPEG, or WEBP under 10MB).');
+      return;
+    }
+
+    setImage(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setParsedData({ medicines: [], metadata: { doctor: null, clinic: null, date: null }, safetyAlerts: [] });
+    setExtractedText('');
+    setOcrConfidence(null);
+    setErrorMessage('');
+    setHasScanned(false);
+    setProgress(0);
+    setStatusText('');
+  };
 
   // Clean up object URLs on unmount
   useEffect(() => () => {
@@ -136,27 +154,6 @@ const PrescriptionOCR = () => {
     }
   };
 
-  const handleFile = (file) => {
-    if (!file.type.startsWith('image/')) {
-      setErrorMessage('Please upload a valid image file (PNG, JPG, JPEG, or WEBP).');
-      return;
-    }
-    if (file.size > 15 * 1024 * 1024) {
-      setErrorMessage('Please choose an image under 15 MB.');
-      return;
-    }
-
-    setImage(file);
-    setPreviewUrl(URL.createObjectURL(file));
-    setParsedData({ medicines: [], metadata: { doctor: null, clinic: null, date: null }, safetyAlerts: [] });
-    setExtractedText('');
-    setOcrConfidence(null);
-    setErrorMessage('');
-    setHasScanned(false);
-    setProgress(0);
-    setStatusText('');
-  };
-
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
@@ -183,6 +180,9 @@ const PrescriptionOCR = () => {
         }
         setPreviewUrl(URL.createObjectURL(blob));
       }, 'image/jpeg', 0.95);
+    };
+    img.onerror = () => {
+      setErrorMessage('Unable to process or rotate image. The image file may be corrupted.');
     };
     img.src = previewUrl;
   };
@@ -235,19 +235,20 @@ const PrescriptionOCR = () => {
       const parsed = parsePrescriptionText(text);
       setParsedData(parsed);
 
-      // 4. Save to Supabase (if available)
+      // 4. Save to Supabase (if authenticated and available)
       try {
-        if (supabase) {
+        if (supabase && user) {
           await supabase.from('prescriptions').insert([
             {
+              user_id: user.id,
               extracted_medicines: parsed.medicines.map((m) => m.name),
               status: 'processed',
-              image_url: fileToScan.name || 'prescription_upload'
+              image_url: 'prescription_scan'
             }
           ]);
         }
       } catch (dbErr) {
-        console.warn('Database logging note:', dbErr);
+        console.warn('Database logging note:', dbErr?.code || 'database insert failed');
       }
 
       setHasScanned(true);
@@ -407,7 +408,6 @@ const PrescriptionOCR = () => {
   const openClinicalModal = async (med) => {
     setSelectedMedicineModal(med);
     setIsLoadingModal(true);
-    setModalError(null);
     setModalDetails(null);
 
     try {

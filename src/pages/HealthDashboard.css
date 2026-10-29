@@ -529,3 +529,114 @@
   animation: spin 1.2s linear infinite;
 }
 
+
+/* ─── Toast notification ───────────────────────────────────────────────── */
+.dashboard-toast {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  max-width: 420px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  animation: slideInRight 0.25s ease;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.toast-success {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: var(--success, #10B981);
+}
+
+.toast-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--error, #EF4444);
+}
+
+.toast-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #B45309;
+}
+
+[data-theme='dark'] .toast-warning {
+  color: #FCD34D;
+}
+
+.toast-dismiss {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  font-size: 1.15rem;
+  cursor: pointer;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.7;
+  padding: 0 0.2rem;
+}
+.toast-dismiss:hover { opacity: 1; }
+
+/* ─── Inline form error / warning boxes ──────────────────────────────── */
+.form-error-box,
+.form-warning-box {
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.form-error-box {
+  background: rgba(239, 68, 68, 0.07);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--error, #EF4444);
+}
+
+.form-warning-box {
+  background: rgba(245, 158, 11, 0.07);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #92400E;
+}
+
+[data-theme='dark'] .form-warning-box {
+  color: #FCD34D;
+}
+
+.form-error-box ul,
+.form-warning-box ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.form-error-box li,
+.form-warning-box li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+}
+
+.form-error-box li:last-child,
+.form-warning-box li:last-child {
+  margin-bottom: 0;
+}
+
+/* ─── Unit label in form field labels ──────────────────────────────────── */
+.unit-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}

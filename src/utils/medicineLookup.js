@@ -5,7 +5,6 @@
  * - Intelligent Search Engine (Typo-tolerance, fuzzy matching, strength awareness)
  * - RxNorm (NIH RxNav NLM standardized clinical drug concepts & RxCUIs)
  * - US openFDA & DailyMed (official pharmaceutical label monographs & warnings)
- * - 1mg retail listing proxy for real-time market availability
  */
 
 import {
@@ -17,6 +16,7 @@ import {
   formatCapitalized
 } from './medicineSearchEngine';
 import { INGREDIENT_SYNONYMS } from './indianMedicineDatabase';
+import { searchWikipediaMedicine } from '../services/medicine/freeMedicineApi';
 
 export {
   searchMedicines,
@@ -32,7 +32,7 @@ const DAILYMED_SPLS = 'https://dailymed.nlm.nih.gov/dailymed/services/v2/spls.js
 
 
 
-function fetchWithTimeout(url, timeoutMs = 4500) {
+function fetchWithTimeout(url, timeoutMs = 1500) {
   return new Promise((resolve, reject) => {
     const controller = new AbortController();
     const timer = setTimeout(() => {
@@ -101,7 +101,7 @@ function firstField(med, keys) {
 async function resolveViaRxNorm(term) {
   try {
     const approxUrl = `${RXNAV_BASE}/approximateTerm.json?term=${encodeURIComponent(term)}&maxEntries=5`;
-    const approxRes = await fetchWithTimeout(approxUrl, 3500);
+    const approxRes = await fetchWithTimeout(approxUrl, 1200);
     if (!approxRes.ok) return null;
     const approxData = await approxRes.json();
     const candidates = approxData?.approximateGroup?.candidate || [];
@@ -111,7 +111,7 @@ async function resolveViaRxNorm(term) {
     const sources = ['RxNorm Concept'];
 
     const relatedUrl = `${RXNAV_BASE}/rxcui/${rxcui}/related.json?tty=IN+PIN+BN+MIN`;
-    const relatedRes = await fetchWithTimeout(relatedUrl, 3500);
+    const relatedRes = await fetchWithTimeout(relatedUrl, 1200);
     let ingredients = [];
     let brands = [];
     let displayName = term;
@@ -162,7 +162,7 @@ async function resolveViaRxNorm(term) {
 async function fetchOpenFdaByQuery(searchExpr) {
   try {
     const url = `${OPENFDA_LABEL}?search=${encodeURIComponent(searchExpr)}&limit=3`;
-    const res = await fetchWithTimeout(url, 4000);
+    const res = await fetchWithTimeout(url, 1200);
     if (!res.ok) return null;
     const data = await res.json();
     return data?.results || [];
@@ -198,7 +198,7 @@ async function fetchOpenFdaLabel(ingredientNames) {
 async function fetchDailyMedThenOpenFda(drugName) {
   try {
     const dmUrl = `${DAILYMED_SPLS}?drug_name=${encodeURIComponent(drugName)}&pagesize=1`;
-    const dmRes = await fetchWithTimeout(dmUrl, 3500);
+    const dmRes = await fetchWithTimeout(dmUrl, 1200);
     if (!dmRes.ok) return null;
     const dmData = await dmRes.json();
     const setId = dmData?.data?.[0]?.setid;
@@ -213,38 +213,11 @@ async function fetchDailyMedThenOpenFda(drugName) {
   }
 }
 
-async function fetchOneMgListing(query) {
-  try {
-    const tataUrl = encodeURIComponent(
-      `https://www.1mg.com/api/v1/search/autocomplete?name=${query}`
-    );
-    const tataProxyUrl = `https://api.allorigins.win/get?url=${tataUrl}`;
-    const res = await fetchWithTimeout(tataProxyUrl, 1500);
-    if (!res.ok) return null;
-    const proxyData = await res.json();
-    if (!proxyData.contents) return null;
-    const tataData = JSON.parse(proxyData.contents);
-    const drug = tataData.results?.find((r) => r.type === 'drug' && r.price);
-    if (!drug) return null;
-    return {
-      price: drug.price,
-      discountPrice: drug.discounted_price,
-      packSize: drug.pack_size_label,
-      manufacturer: drug.manufacturer_name,
-      name: String(drug.name || '').replace(/<[^>]*>?/gm, ''),
-      url: `https://www.1mg.com${drug.url_path}`,
-    };
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Formats a local Indian medicine record into the standard monograph object
  */
-function formatLocalMedicineMonograph(localMed, searchedName, externalLabel, tataInfo) {
+function formatLocalMedicineMonograph(localMed, searchedName, externalLabel) {
   const sources = [...(localMed.sources || [])];
-  if (tataInfo) sources.push('1mg (Retail Listing)');
   if (externalLabel?.labelSource) sources.push(externalLabel.labelSource);
 
   // If external openFDA has extra boxed warnings or pharmacokinetics, merge gracefully
@@ -268,11 +241,6 @@ function formatLocalMedicineMonograph(localMed, searchedName, externalLabel, tat
     cdscoStatus: localMed.cdscoStatus,
     nppaPricing: localMed.nppaPricing,
     category: localMed.category,
-    tataInfo: tataInfo || (localMed.nppaPricing ? {
-      price: localMed.nppaPricing.ceilingPrice,
-      packSize: localMed.nppaPricing.packSize,
-      manufacturer: localMed.manufacturer
-    } : null),
     description: localMed.description || [localMed.indication],
     boxedWarning: localMed.boxedWarning || (fdaBoxed ? cleanText(fdaBoxed, 4) : null),
     precautions: localMed.precautions || [],
@@ -307,7 +275,6 @@ export async function lookupMedicine(rawQuery) {
 
   // 1. First, search local Indian Medicine Knowledge Base
   const localMatch = getMedicineById(searchedName);
-  const oneMgPromise = fetchOneMgListing(searchedName);
 
   if (localMatch) {
     // Attempt non-blocking external enrichment for FDA labels
@@ -319,8 +286,7 @@ export async function lookupMedicine(rawQuery) {
       /* ignore timeout, local data is complete */
     }
 
-    const tataInfo = await oneMgPromise;
-    return formatLocalMedicineMonograph(localMatch, searchedName, externalLabel, tataInfo);
+    return formatLocalMedicineMonograph(localMatch, searchedName, externalLabel);
   }
 
   // 2. If not found in local DB, attempt intelligent search
@@ -334,8 +300,7 @@ export async function lookupMedicine(rawQuery) {
     } catch {
       /* ignore */
     }
-    const tataInfo = await oneMgPromise;
-    return formatLocalMedicineMonograph(topMatch, searchedName, externalLabel, tataInfo);
+    return formatLocalMedicineMonograph(topMatch, searchedName, externalLabel);
   }
 
   // 3. Fallback: External RxNorm + openFDA / DailyMed Pipeline
@@ -351,14 +316,11 @@ export async function lookupMedicine(rawQuery) {
     labelBundle = await fetchDailyMedThenOpenFda(rxResult.displayName);
   }
 
-  const tataInfo = await oneMgPromise;
-
   if (labelBundle?.med) {
     const med = labelBundle.med;
     const openfda = med.openfda || {};
     const ingredients = rxResult?.ingredients || openfda.generic_name || [normalized];
     const sources = ['openFDA', ...(rxResult?.sources || [])];
-    if (tataInfo) sources.push('1mg (Retail Listing)');
 
     const usesRaw = firstField(med, ['indications_and_usage', 'purpose', 'description']);
     const boxed = firstField(med, ['boxed_warning']);
@@ -376,12 +338,11 @@ export async function lookupMedicine(rawQuery) {
       strength: 'Consult product packaging',
       dosageForm: 'Oral / Standard Form',
       route: 'Oral',
-      manufacturer: tataInfo?.manufacturer || openfda.manufacturer_name?.[0] || 'Various Manufacturers',
+      manufacturer: openfda.manufacturer_name?.[0] || 'Various Manufacturers',
       market: 'Global / US FDA',
       schedule: 'Prescription / Regulated',
       cdscoStatus: 'International Labeling Record',
       category: openfda.pharm_class_epc?.[0] || 'Medication',
-      tataInfo,
       description: usesRaw ? textToList(usesRaw, 5) : ['Approved clinical uses available on official product label.'],
       boxedWarning: boxed ? cleanText(boxed, 4) : null,
       precautions: textToList(firstField(med, ['warnings', 'precautions']) || '', 4),
@@ -402,6 +363,50 @@ export async function lookupMedicine(rawQuery) {
       sources: [...new Set(sources)],
       disclaimer: 'Clinical information retrieved from US FDA labeling (openFDA / DailyMed) and RxNorm concepts. Always confirm with a qualified healthcare practitioner.'
     };
+  }
+
+  // 4. Free API Fallback: Wikimedia / Wikipedia Global Clinical Knowledge
+  try {
+    const wikiData = await searchWikipediaMedicine(rxResult?.displayName || rxTerm || normalized);
+    if (wikiData) {
+      const ingredients = rxResult?.ingredients || [normalized];
+      return {
+        name: wikiData.title || formatCapitalized(searchedName),
+        searchedName,
+        genericName: ingredients.join(', '),
+        formula: ingredients.join(', '),
+        ingredients,
+        strength: 'Consult product packaging',
+        dosageForm: 'Oral / Standard Form',
+        route: 'Oral',
+        manufacturer: 'Regulated Pharmaceutical Manufacturer',
+        market: 'Global / International',
+        schedule: 'Prescription / Regulated Medicine',
+        cdscoStatus: 'International Formulation Record',
+        category: wikiData.description || 'Therapeutic Agent',
+        description: textToList(wikiData.extract, 4),
+        boxedWarning: null,
+        precautions: ['Use strictly in accordance with licensed physician instructions or product package insert.'],
+        doNotUse: ['Known allergy or hypersensitivity to the active substance or excipients.'],
+        interactions: ['Consult your physician or pharmacist regarding concurrent medication interactions.'],
+        dosage: 'Adhere to recommended clinical dosages and packaged instructions.',
+        risks: ['Mild gastrointestinal intolerance', 'Headache or minor adverse effects'],
+        pharmacokinetics: cleanText(wikiData.extract, 2),
+        seekHelp: 'Discontinue use and seek urgent medical evaluation if severe adverse effects or allergic reactions occur.',
+        pregnancyDetail: null,
+        lactationDetail: null,
+        safety: {
+          alcohol: 'CAUTION',
+          alcoholNote: 'Check package label and follow advice of healthcare provider.',
+          pregnancy: 'CAUTION',
+          pregnancyNote: 'Follow doctor advice during pregnancy or breastfeeding.'
+        },
+        sources: ['Wikimedia / Wikipedia Open Medical Summary (Free API)', ...(rxResult?.sources || [])],
+        disclaimer: 'Clinical monograph compiled dynamically from free public APIs (Wikimedia / NIH RxNorm). Always verify with a licensed healthcare professional.'
+      };
+    }
+  } catch {
+    // Ignore Wikipedia fallback error
   }
 
   throw new Error('NOT_FOUND');

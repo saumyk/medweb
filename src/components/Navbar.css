@@ -109,8 +109,53 @@
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   flex-shrink: 0;
+}
+
+.nav-quick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.65rem;
+  border-radius: 8px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+
+.nav-quick-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.nav-quick-btn:active {
+  transform: scale(0.96);
+}
+
+.nav-quick-btn .nav-quick-label {
+  font-size: 0.78rem;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 680px) {
+  .nav-quick-btn--signin .nav-quick-label,
+  .nav-quick-btn--lang .nav-quick-label {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .nav-quick-btn--theme,
+  .nav-quick-btn--lang {
+    display: none;
+  }
 }
 
 .sos-nav-btn {

@@ -130,6 +130,26 @@
   color: #ef4444;
 }
 
+/* Secondary call button in the strip (e.g. 112 link) */
+.sos-strip-call--secondary {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  box-shadow: 0 3px 10px rgba(29, 78, 216, 0.35);
+  color: white !important;
+}
+
+.sos-strip-call--secondary:hover {
+  box-shadow: 0 5px 16px rgba(29, 78, 216, 0.5);
+}
+
+/* Focus-visible ring for all SOS interactive elements */
+.sos-call-btn:focus-visible,
+.sos-strip-call:focus-visible,
+.sos-strip-guide:focus-visible,
+.sos-close-btn:focus-visible {
+  outline: 3px solid #F87171;
+  outline-offset: 3px;
+}
+
 /* --------------------------------------------------------------------------
    Hero Header & Search Controls
    -------------------------------------------------------------------------- */
@@ -1679,4 +1699,157 @@
   .loc-dir-btn, .loc-map-btn {
     flex: 1 1 120px;
   }
+}
+
+/* ==========================================================================
+   NEW: Demo Location Notice
+   ========================================================================== */
+.demo-location-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.85rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1.5px solid rgba(245, 158, 11, 0.32);
+  color: #92400e;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-top: 0.5rem;
+}
+
+[data-theme='dark'] .demo-location-notice {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+.demo-location-notice svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #f59e0b;
+}
+
+/* Demo dot on target pill */
+.target-dot-demo {
+  background: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25) !important;
+}
+
+/* Demo badge inline in toolbar */
+.demo-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.71rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  margin-left: 0.35rem;
+}
+
+[data-theme='dark'] .demo-badge-inline {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+}
+
+/* ==========================================================================
+   NEW: Source Badge
+   ========================================================================== */
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.4rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  background: rgba(15, 118, 110, 0.08);
+  color: #0f766e;
+  border: 1px solid rgba(15, 118, 110, 0.2);
+}
+
+[data-theme='dark'] .source-badge {
+  background: rgba(20, 184, 166, 0.15);
+  color: #2dd4bf;
+  border-color: rgba(20, 184, 166, 0.3);
+}
+
+/* ==========================================================================
+   NEW: status-unknown pill
+   ========================================================================== */
+.status-pill.status-unknown {
+  background: rgba(100, 116, 139, 0.08);
+  border-color: rgba(100, 116, 139, 0.25);
+  color: #64748b;
+}
+
+[data-theme='dark'] .status-pill.status-unknown {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.25);
+  color: #94a3b8;
+}
+
+.status-unknown .status-dot { background: #94a3b8; }
+
+/* ==========================================================================
+   NEW: Error / Notice Banner
+   ========================================================================== */
+.location-notice-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.8rem 1rem;
+  border-radius: 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  flex-wrap: wrap;
+}
+
+.location-notice-banner.error {
+  background: rgba(239, 68, 68, 0.07);
+  border: 1.5px solid rgba(239, 68, 68, 0.28);
+  color: #991b1b;
+}
+
+[data-theme='dark'] .location-notice-banner.error {
+  background: rgba(239, 68, 68, 0.13);
+  border-color: rgba(239, 68, 68, 0.38);
+  color: #fca5a5;
+}
+
+.location-notice-banner svg { flex-shrink: 0; color: #ef4444; }
+
+/* ==========================================================================
+   NEW: Retry Button
+   ========================================================================== */
+.retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 0.5rem;
+  border: 1.5px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: auto;
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #dc2626;
+}
+
+[data-theme='dark'] .retry-btn {
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.12);
 }

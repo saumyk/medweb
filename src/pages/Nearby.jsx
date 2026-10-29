@@ -1,23 +1,23 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, useId } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  MapPin, 
-  Navigation, 
-  Loader2, 
-  AlertOctagon, 
-  Phone, 
-  ShieldAlert, 
-  HeartPulse, 
-  ExternalLink, 
-  Star, 
-  Compass, 
-  RotateCcw, 
-  Map, 
-  Search, 
-  Clock, 
-  ArrowUpRight, 
-  Activity, 
+import { motion } from 'framer-motion';
+import {
+  MapPin,
+  Navigation,
+  Loader2,
+  AlertOctagon,
+  Phone,
+  ShieldAlert,
+  HeartPulse,
+  ExternalLink,
+  Star,
+  Compass,
+  RotateCcw,
+  Map,
+  Search,
+  Clock,
+  ArrowUpRight,
+  Activity,
   Check,
   Building2,
   Pill,
@@ -28,650 +28,429 @@ import {
   Crosshair,
   ShieldCheck,
   X,
-  Copy
+  Info,
+  AlertTriangle,
+  WifiOff,
 } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
+import {
+  DEFAULT_DEMO_LOCATION,
+  acquireGpsPosition,
+  reverseGeocode,
+  forwardGeocode,
+  fetchOsmFacilities,
+  fetchGooglePlacesFacilities,
+  isValidCoord,
+} from '../utils/locationService';
+import { sanitizeUrl, enforceMaxLength } from '../utils/security';
 import './Nearby.css';
 
-const fetchWithTimeout = (url, options = {}, timeoutMs = 5000) => {
-  return new Promise((resolve, reject) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      controller.abort();
-      reject(new Error("Timeout"));
-    }, timeoutMs);
+// ---------------------------------------------------------------------------
+// Error message helpers
+// ---------------------------------------------------------------------------
 
-    fetch(url, { ...options, signal: controller.signal })
-      .then(res => {
-        clearTimeout(timer);
-        resolve(res);
-      })
-      .catch(err => {
-        clearTimeout(timer);
-        reject(err);
-      });
-  });
-};
+/** Returns a user-friendly string for a typed error from locationService. */
+function gpsErrorMessage(err) {
+  switch (err?.code) {
+    case 'PERMISSION_DENIED':
+      return 'Location access was denied. You can search your city or area manually using the search box above.';
+    case 'POSITION_UNAVAILABLE':
+      return 'GPS signal is unavailable (indoor or no network). Search your city or area manually above.';
+    case 'TIMEOUT':
+      return 'Location timed out. Search your city or area manually above.';
+    case 'UNSUPPORTED':
+      return 'Your browser does not support Geolocation. Search your city or area manually above.';
+    default:
+      return 'Could not determine your location. Search your city or area manually above.';
+  }
+}
 
-const generateMockFacilities = (lat, lng, areaName = 'Local Area') => {
-  const cleanArea = (areaName || 'Medical District').split(',')[0].trim();
-  const names = {
-    hospital: [
-      `Apollo Super Speciality Hospital, ${cleanArea}`,
-      `Max Super Speciality Hospital, ${cleanArea}`,
-      `Fortis Memorial Hospital, ${cleanArea}`,
-      `City Heart & Trauma Institute, ${cleanArea}`,
-      `Metro Healthcare & Research Center, ${cleanArea}`,
-      `Kailash Multi Speciality Hospital, ${cleanArea}`
-    ],
-    pharmacy: [
-      `Apollo 24x7 Pharmacy, ${cleanArea}`,
-      `MedPlus Chemist & Druggist, ${cleanArea}`,
-      `Wellness Forever Chemist, ${cleanArea}`,
-      `LifeLine Health Pharmacy, ${cleanArea}`,
-      `Guardian Pharmacy & Wellness, ${cleanArea}`
-    ],
-    clinic: [
-      `PrimeCare Multi-Speciality Clinic, ${cleanArea}`,
-      `CareFirst Family Health Clinic, ${cleanArea}`,
-      `Apex Diagnostic & Medical Clinic, ${cleanArea}`,
-      `HealWell Health Center, ${cleanArea}`
-    ],
-    doctor: [
-      `Dr. Rajesh Sharma (Sr. Cardiologist) - ${cleanArea}`,
-      `Dr. Priya Kapoor (Consultant Pediatrician) - ${cleanArea}`,
-      `Dr. Amit Patel (General Physician) - ${cleanArea}`,
-      `Dr. Sunita Verma (Consultant Gynecologist) - ${cleanArea}`,
-      `Dr. Vikram Das (Consultant Neurologist) - ${cleanArea}`,
-      `Dr. Neha Malhotra (Consultant Orthopedist) - ${cleanArea}`
-    ],
-    dentist: [
-      `SmileCraft Advanced Dental Care, ${cleanArea}`,
-      `Apex Orthodontic & Dental Clinic, ${cleanArea}`,
-      `ToothCare Implant Center, ${cleanArea}`,
-      `Cosmetic Dental Solutions, ${cleanArea}`
-    ]
-  };
+function apiErrorMessage(err) {
+  switch (err?.code) {
+    case 'RATE_LIMIT':
+      return 'The facility search API is rate-limited. Please wait a moment and try again.';
+    case 'NETWORK_ERROR':
+      return 'Network error: could not reach any facility search server. Check your internet connection.';
+    case 'MALFORMED_RESPONSE':
+      return 'The facility search server returned unexpected data. Try again or use a different search radius.';
+    case 'INVALID_COORDS':
+      return err.message;
+    default:
+      return err?.message || 'Failed to fetch nearby facilities.';
+  }
+}
 
-  const types = ['hospital', 'pharmacy', 'clinic', 'doctor', 'dentist'];
-  const specialities = {
-    hospital: "general medicine & trauma care",
-    pharmacy: "chemist & 24/7 medicines",
-    clinic: "family primary care",
-    doctor: "specialist medical consultant",
-    dentist: "dentistry & oral care"
-  };
+// ---------------------------------------------------------------------------
+// Stable request-id ref — cancels stale fetches
+// ---------------------------------------------------------------------------
 
-  const facilities = [];
-  const baseLat = typeof lat === 'number' && !isNaN(lat) ? lat : 28.5706;
-  const baseLng = typeof lng === 'number' && !isNaN(lng) ? lng : 77.3272;
+let _globalRequestId = 0;
 
-  let idCounter = 1;
-  types.forEach(type => {
-    const list = names[type] || [];
-    list.slice(0, 3).forEach((facilityName, i) => {
-      const angle = (idCounter * 137.5) * (Math.PI / 180);
-      const distKm = 0.5 + ((idCounter * 0.45) % 3.8);
-      const degLat = distKm / 111;
-      const degLng = distKm / (111 * Math.cos(baseLat * Math.PI / 180));
-      const itemLat = baseLat + Math.sin(angle) * degLat;
-      const itemLng = baseLng + Math.cos(angle) * degLng;
-
-      let spec = specialities[type];
-      if (facilityName.toLowerCase().includes('cardio')) spec = 'cardiology';
-      if (facilityName.toLowerCase().includes('pediatr')) spec = 'pediatrics';
-      if (facilityName.toLowerCase().includes('gynec')) spec = 'gynecology';
-      if (facilityName.toLowerCase().includes('ortho')) spec = 'orthopedics';
-      if (facilityName.toLowerCase().includes('neuro')) spec = 'neurology';
-
-      const street = `Block ${(i + 1) * 2}, Sector ${(i + 1) * 8}, ${cleanArea}`;
-
-      facilities.push({
-        id: `mock-${type}-${idCounter++}`,
-        name: facilityName,
-        type: type,
-        speciality: spec,
-        distance: `${distKm.toFixed(1)} km`,
-        distanceVal: distKm,
-        rating: (4.2 + ((idCounter * 0.17) % 0.7)).toFixed(1),
-        isOpen: (i + idCounter) % 4 !== 0,
-        timing: type === 'pharmacy' ? 'Open 24 Hours' : '8:00 AM - 9:30 PM',
-        website: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(facilityName + ', ' + street)}`,
-        address: street,
-        phone: `+91 ${98100 + ((idCounter * 1111) % 90000)} ${10000 + ((idCounter * 3333) % 90000)}`,
-        lat: itemLat,
-        lng: itemLng,
-        isSimulated: true
-      });
-    });
-  });
-
-  return facilities.sort((a, b) => a.distanceVal - b.distanceVal);
-};
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 const Nearby = () => {
   const { t, language } = useLanguage();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // --- State ---
   const [filter, setFilter] = useState('all');
-  const [locations, setLocations] = useState([]);
+  const [facilities, setFacilities] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocatingGps, setIsLocatingGps] = useState(false);
-  const [error, setError] = useState(null);
-  const [userLocation, setUserLocation] = useState(null);
-  const [activeLocationName, setActiveLocationName] = useState('Noida, Delhi NCR');
+  const [isResolvingLocation, setIsResolvingLocation] = useState(false);
+  const [locationError, setLocationError] = useState(null);   // GPS/geocoding errors
+  const [searchError, setSearchError] = useState(null);       // Facility-fetch errors
+  const [userLocation, setUserLocation] = useState(null);     // { lat, lng }
+  const [activeLocationName, setActiveLocationName] = useState('');
+  const [isDemoLocation, setIsDemoLocation] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [facilitySearchTerm, setFacilitySearchTerm] = useState('');
-  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [manualLocationText, setManualLocationText] = useState('');
-  const [isResolvingLocation, setIsResolvingLocation] = useState(false);
-  const [searchRadius, setSearchRadius] = useState(10000); // 10km default search radius
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  const sosModalRef = useRef(null);
+  const sosOpenBtnRef = useRef(null); // element that opened the modal — for focus restoration
+  const sosModalTitleId = useId();
+  const [searchRadius, setSearchRadius] = useState(10000);
   const [openNowOnly, setOpenNowOnly] = useState(false);
-  const [sortBy, setSortBy] = useState('distance'); // 'distance' or 'rating'
+  const [sortBy, setSortBy] = useState('distance');
   const [copiedId, setCopiedId] = useState(null);
   const [googleMapsLoaded, setGoogleMapsLoaded] = useState(
-    !!(typeof window !== 'undefined' && window.google && window.google.maps)
+    !!(typeof window !== 'undefined' && window.google?.maps)
   );
-  const apiKeyUsed = (typeof window !== 'undefined' && (import.meta.env.VITE_GOOGLE_MAPS_API_KEY || localStorage.getItem('google_maps_api_key'))) || '';
 
-  const handleCopyLocation = (e, loc) => {
-    e.stopPropagation();
-    const mapUrl = getDirectionsUrl(loc);
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(mapUrl);
-      setCopiedId(loc.id);
-      setTimeout(() => setCopiedId(null), 2200);
-    }
-  };
+  // Abort controller ref — cancelled on every new search
+  const abortRef = useRef(null);
+
+  const apiKeyUsed = typeof window !== 'undefined'
+    ? (import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '')
+    : '';
+
+  // ---------------------------------------------------------------------------
+  // Load Google Maps JS SDK (if API key is available)
+  // ---------------------------------------------------------------------------
 
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || localStorage.getItem('google_maps_api_key');
-    if (!apiKey) return;
-
-    if (window.google && window.google.maps) {
-      return;
-    }
+    if (!apiKeyUsed || googleMapsLoaded || (typeof window !== 'undefined' && window.google?.maps)) return;
 
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKeyUsed}&libraries=places`;
     script.async = true;
     script.defer = true;
     script.onload = () => setGoogleMapsLoaded(true);
-    script.onerror = () => console.error("Google Maps SDK failed to load.");
+    script.onerror = () => console.error('Google Maps SDK failed to load.');
     document.head.appendChild(script);
-  }, []);
+  }, [apiKeyUsed, googleMapsLoaded]);
+
+  // ---------------------------------------------------------------------------
+  // URL param handling (from other pages, e.g. emergency flow)
+  // ---------------------------------------------------------------------------
 
   useEffect(() => {
     const searchVal = searchParams.get('search');
     const emergencyVal = searchParams.get('emergency');
-    
-    if (searchVal || emergencyVal === 'true') {
-      const timer = setTimeout(() => {
-        if (searchVal) {
-          const validFilters = ['all', 'hospital', 'pharmacy', 'clinic', 'doctor', 'dentist', 'gynecologist', 'orthopedist', 'pediatrician'];
-          if (validFilters.includes(searchVal.toLowerCase())) {
-            setFilter(searchVal.toLowerCase());
-          } else {
-            setManualLocationText(searchVal);
-            setFacilitySearchTerm(searchVal);
-            handleManualLocationSearch(null, searchVal);
-          }
+
+    if (!searchVal && emergencyVal !== 'true') return;
+
+    const timer = setTimeout(() => {
+      if (searchVal) {
+        const validFilters = ['all', 'hospital', 'pharmacy', 'clinic', 'doctor', 'dentist', 'gynecologist', 'orthopedist', 'pediatrician'];
+        if (validFilters.includes(searchVal.toLowerCase())) {
+          setFilter(searchVal.toLowerCase());
         }
-        if (emergencyVal === 'true') {
-          setFilter('hospital');
-          setShowEmergencyModal(true);
-        }
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Do NOT trigger a location geocode from a facility-type keyword
+      }
+      if (emergencyVal === 'true') {
+        setFilter('hospital');
+        setShowEmergencyModal(prev => prev ? prev : true); // don't re-trigger if already open
+      }
+    }, 50);
+    return () => clearTimeout(timer);
   }, [searchParams]);
 
-  useEffect(() => {
-    getUserLocation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // ---------------------------------------------------------------------------
+  // On mount: attempt GPS
+  // ---------------------------------------------------------------------------
 
-  function getUserLocation() {
-    setIsLocatingGps(true);
-    setIsLoading(true);
-    setError(null);
-    setSelectedFacility(null);
-    
-    if (!navigator.geolocation) {
-      const defaultLat = 28.5706;
-      const defaultLng = 77.3272;
-      setUserLocation({ lat: defaultLat, lng: defaultLng });
-      setActiveLocationName('Noida, Delhi NCR');
-      setManualLocationText('Noida, Delhi NCR');
-      fetchNearbyFacilities(defaultLat, defaultLng, searchRadius, 'Noida');
-      setError('Geolocation not supported by browser. Defaulted to Noida (Delhi NCR).');
+  useEffect(() => {
+    requestGpsLocation();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---------------------------------------------------------------------------
+  // Emergency modal: focus trap + Escape key close
+  // ---------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (!showEmergencyModal) return;
+
+    // Move focus into the modal
+    const firstFocusable = sosModalRef.current?.querySelector(
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    firstFocusable?.focus();
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        closeEmergencyModal();
+        return;
+      }
+      // Basic focus trap: Tab / Shift+Tab cycles within the modal
+      if (e.key === 'Tab' && sosModalRef.current) {
+        const focusable = Array.from(
+          sosModalRef.current.querySelectorAll(
+            'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter(el => !el.closest('[aria-hidden]'));
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    // Prevent body scroll while modal is open
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [showEmergencyModal]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openEmergencyModal = useCallback((triggerEl) => {
+    if (showEmergencyModal) return; // duplicate-open guard
+    if (triggerEl) sosOpenBtnRef.current = triggerEl;
+    setShowEmergencyModal(true);
+  }, [showEmergencyModal]);
+
+  const closeEmergencyModal = useCallback(() => {
+    setShowEmergencyModal(false);
+    if (searchParams.get('emergency')) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('emergency');
+      setSearchParams(nextParams, { replace: true });
+    }
+    // Restore focus to the element that opened the modal
+    setTimeout(() => sosOpenBtnRef.current?.focus(), 50);
+  }, [searchParams, setSearchParams]);
+
+  // ---------------------------------------------------------------------------
+  // Cancel any running fetch (call before starting a new one)
+  // ---------------------------------------------------------------------------
+
+  function cancelInFlight() {
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+    abortRef.current = new AbortController();
+    return abortRef.current.signal;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Core: fetch facilities for a resolved location
+  // ---------------------------------------------------------------------------
+
+  async function loadFacilities(lat, lng, radiusM, areaName, signal) {
+    if (!isValidCoord(lat, lng)) {
+      setSearchError('Invalid coordinates — cannot search for facilities.');
       setIsLoading(false);
-      setIsLocatingGps(false);
       return;
     }
 
-    const options = {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 60000
-    };
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        setUserLocation({ lat: latitude, lng: longitude });
-
-        let detectedName = '';
-        try {
-          const revRes = await fetchWithTimeout(`https://photon.komoot.io/reverse?lat=${latitude}&lon=${longitude}`, {}, 2500);
-          if (revRes.ok) {
-            const revData = await revRes.json();
-            if (revData && revData.features && revData.features[0]) {
-              const p = revData.features[0].properties;
-              detectedName = [p.name, p.city || p.locality, p.state].filter(Boolean).join(', ');
-            }
-          }
-        } catch {
-          // Ignore reverse geocoding fallback
-        }
-
-        const locName = detectedName || `Current Location (${latitude.toFixed(3)}, ${longitude.toFixed(3)})`;
-        setActiveLocationName(locName);
-        setManualLocationText(detectedName || '');
-        await fetchNearbyFacilities(latitude, longitude, searchRadius, detectedName || 'Current Area');
-        setIsLoading(false);
-        setIsLocatingGps(false);
-      },
-      (err) => {
-        console.warn("GPS Error, using default Noida coordinates:", err);
-        const defaultLat = 28.5706;
-        const defaultLng = 77.3272;
-        setUserLocation({ lat: defaultLat, lng: defaultLng });
-        setActiveLocationName('Noida, Delhi NCR');
-        setManualLocationText('Noida, Delhi NCR');
-        fetchNearbyFacilities(defaultLat, defaultLng, searchRadius, 'Noida');
-        
-        let msg = 'Could not acquire GPS position. Defaulted to Noida (Delhi NCR). You can search your city above.';
-        if (err.code === 1) {
-          msg = 'Location permission denied. Defaulted to Noida. Search your city or area above.';
-        } else if (err.code === 3) {
-          msg = 'GPS request timed out. Defaulted to Noida. Search your city or area above.';
-        }
-        setError(msg);
-        setIsLoading(false);
-        setIsLocatingGps(false);
-      },
-      options
-    );
-  }
-
-  const handleManualLocationSearch = async (e, forcedQuery) => {
-    if (e) e.preventDefault();
-    const query = (forcedQuery !== undefined ? forcedQuery : manualLocationText).trim();
-    if (!query) return;
-
-    setIsResolvingLocation(true);
-    setError(null);
     setIsLoading(true);
+    setSearchError(null);
+    setFacilities([]);          // clear stale results immediately
     setSelectedFacility(null);
 
+    // Assign a request ID to detect stale callbacks
+    const reqId = ++_globalRequestId;
+
     try {
-      // 1. Direct coordinate format check (e.g., "28.57, 77.32")
-      const coordMatch = query.match(/^(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)$/);
-      if (coordMatch) {
-        const lat = parseFloat(coordMatch[1]);
-        const lng = parseFloat(coordMatch[3]);
-        const name = `Coords: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-        setUserLocation({ lat, lng });
-        setActiveLocationName(name);
-        await fetchNearbyFacilities(lat, lng, searchRadius, name);
+      let fetched;
+
+      if (apiKeyUsed && googleMapsLoaded && window.google?.maps?.places) {
+        try {
+          fetched = await fetchGooglePlacesFacilities(lat, lng, radiusM);
+        } catch (gErr) {
+          if (gErr.name === 'AbortError' || signal?.aborted) return;
+          console.warn('Google Places failed, falling back to OSM:', gErr);
+          const { facilities: osmFacilities } = await fetchOsmFacilities(lat, lng, radiusM, signal);
+          fetched = osmFacilities;
+        }
+      } else {
+        const result = await fetchOsmFacilities(lat, lng, radiusM, signal);
+        fetched = result.facilities;
+      }
+
+      // Stale-request guard
+      if (reqId !== _globalRequestId || signal?.aborted) return;
+
+      setFacilities(fetched);
+
+      if (fetched.length === 0) {
+        // Not an error, just empty — the empty-state UI will handle this
+      }
+    } catch (err) {
+      if (err.name === 'AbortError' || signal?.aborted) return;
+      if (reqId !== _globalRequestId) return;
+      setSearchError(apiErrorMessage(err));
+      setFacilities([]);
+    } finally {
+      if (reqId === _globalRequestId) setIsLoading(false);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // GPS location flow
+  // ---------------------------------------------------------------------------
+
+  async function requestGpsLocation() {
+    const signal = cancelInFlight();
+    setIsLocatingGps(true);
+    setLocationError(null);
+    setSearchError(null);
+    setFacilities([]);
+
+    try {
+      const coords = await acquireGpsPosition();
+      if (signal.aborted) return;
+
+      setUserLocation(coords);
+      setIsDemoLocation(false);
+
+      // Reverse-geocode to get a human-readable name
+      const name = await reverseGeocode(coords.lat, coords.lng, signal);
+      if (signal.aborted) return;
+
+      const locName = name || `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+      setActiveLocationName(locName);
+      setManualLocationText(name || '');
+      setIsLocatingGps(false);
+
+      await loadFacilities(coords.lat, coords.lng, searchRadius, locName, signal);
+    } catch (gpsErr) {
+      if (gpsErr.name === 'AbortError' || signal.aborted) return;
+
+      // Fall back to demo location — clearly labeled
+      const demo = DEFAULT_DEMO_LOCATION;
+      setUserLocation({ lat: demo.lat, lng: demo.lng });
+      setActiveLocationName(demo.name);
+      setManualLocationText('');
+      setIsDemoLocation(true);
+      setLocationError(gpsErrorMessage(gpsErr));
+      setIsLocatingGps(false);
+
+      await loadFacilities(demo.lat, demo.lng, searchRadius, demo.name, signal);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Manual location search
+  // ---------------------------------------------------------------------------
+
+  const handleManualLocationSearch = useCallback(async (e, forcedQuery) => {
+    if (e) e.preventDefault();
+    const rawQuery = (forcedQuery !== undefined ? forcedQuery : manualLocationText).trim();
+    const query = enforceMaxLength(rawQuery, 250);
+
+    if (!query) {
+      setLocationError('Please enter a city, area, or coordinates to search.');
+      return;
+    }
+
+    const signal = cancelInFlight();
+    setIsResolvingLocation(true);
+    setLocationError(null);
+    setSearchError(null);
+    setFacilities([]);
+
+    try {
+      const resolved = await forwardGeocode(query, signal);
+      if (signal.aborted) return;
+
+      if (!resolved) {
+        setLocationError(`Could not find "${query}". Try a different city name or enter coordinates (e.g. 28.57, 77.32).`);
         setIsResolvingLocation(false);
         setIsLoading(false);
         return;
       }
 
-      // 2. High-speed Photon Komoot Geocoder (POI, Area, City, Street)
-      let resolved = null;
-      try {
-        const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=1`;
-        const res = await fetchWithTimeout(photonUrl, {}, 3500);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.features && data.features.length > 0) {
-            const feat = data.features[0];
-            const [lng, lat] = feat.geometry.coordinates;
-            const name = [feat.properties.name, feat.properties.city || feat.properties.district, feat.properties.state]
-              .filter(Boolean)
-              .join(', ');
-            resolved = { lat, lng, name: name || query };
-          }
-        }
-      } catch (err) {
-        console.warn("Photon geocoder failed, trying fallback:", err);
-      }
+      setUserLocation({ lat: resolved.lat, lng: resolved.lng });
+      setActiveLocationName(resolved.name);
+      setIsDemoLocation(false);
+      setIsResolvingLocation(false);
 
-      // 3. Nominatim Fallback
-      if (!resolved) {
-        try {
-          const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
-          const res = await fetchWithTimeout(nominatimUrl, {
-            headers: { 'Accept': 'application/json' }
-          }, 3500);
-          if (res.ok) {
-            const data = await res.json();
-            if (data && data.length > 0) {
-              resolved = {
-                lat: parseFloat(data[0].lat),
-                lng: parseFloat(data[0].lon),
-                name: data[0].display_name ? data[0].display_name.split(',').slice(0, 3).join(', ') : query
-              };
-            }
-          }
-        } catch (err) {
-          console.warn("Nominatim geocoder failed:", err);
-        }
-      }
-
-      // 4. Known City Directory Fallback for Instant Search Reliability
-      if (!resolved) {
-        const lowerQ = query.toLowerCase();
-        const cityLookup = {
-          'noida': { lat: 28.5706, lng: 77.3272, name: 'Noida, Uttar Pradesh' },
-          'delhi': { lat: 28.6139, lng: 77.2090, name: 'Delhi, NCR' },
-          'new delhi': { lat: 28.6139, lng: 77.2090, name: 'New Delhi' },
-          'gurgaon': { lat: 28.4595, lng: 77.0266, name: 'Gurugram, Haryana' },
-          'gurugram': { lat: 28.4595, lng: 77.0266, name: 'Gurugram, Haryana' },
-          'mumbai': { lat: 19.0760, lng: 72.8777, name: 'Mumbai, Maharashtra' },
-          'bengaluru': { lat: 12.9716, lng: 77.5946, name: 'Bengaluru, Karnataka' },
-          'bangalore': { lat: 12.9716, lng: 77.5946, name: 'Bengaluru, Karnataka' },
-          'hyderabad': { lat: 17.3850, lng: 78.4867, name: 'Hyderabad, Telangana' },
-          'chennai': { lat: 13.0827, lng: 80.2707, name: 'Chennai, Tamil Nadu' },
-          'kolkata': { lat: 22.5726, lng: 88.3639, name: 'Kolkata, West Bengal' },
-          'pune': { lat: 18.5204, lng: 73.8567, name: 'Pune, Maharashtra' },
-          'ahmedabad': { lat: 23.0225, lng: 72.5714, name: 'Ahmedabad, Gujarat' },
-          'jaipur': { lat: 26.9124, lng: 75.7873, name: 'Jaipur, Rajasthan' },
-          'lucknow': { lat: 26.8467, lng: 80.9462, name: 'Lucknow, Uttar Pradesh' },
-          'chandigarh': { lat: 30.7333, lng: 76.7794, name: 'Chandigarh' },
-          'faridabad': { lat: 28.4089, lng: 77.3178, name: 'Faridabad, Haryana' },
-          'ghaziabad': { lat: 28.6692, lng: 77.4538, name: 'Ghaziabad, Uttar Pradesh' },
-          'indirapuram': { lat: 28.6393, lng: 77.3698, name: 'Indirapuram, Ghaziabad' },
-          'saket': { lat: 28.5244, lng: 77.2166, name: 'Saket, New Delhi' },
-        };
-
-        for (const [key, val] of Object.entries(cityLookup)) {
-          if (lowerQ.includes(key)) {
-            resolved = val;
-            break;
-          }
-        }
-      }
-
-      if (resolved) {
-        setUserLocation({ lat: resolved.lat, lng: resolved.lng });
-        setActiveLocationName(resolved.name);
-        await fetchNearbyFacilities(resolved.lat, resolved.lng, searchRadius, resolved.name);
-      } else {
-        // Even if third-party geocoder doesn't recognize it, Google Maps knows all queries!
-        setActiveLocationName(query);
-        const fallbackLat = userLocation ? userLocation.lat : 28.5706;
-        const fallbackLng = userLocation ? userLocation.lng : 77.3272;
-        await fetchNearbyFacilities(fallbackLat, fallbackLng, searchRadius, query);
-      }
+      await loadFacilities(resolved.lat, resolved.lng, searchRadius, resolved.name, signal);
     } catch (err) {
-      console.error("Geocoding failed:", err);
-      setError('Search encountered an error. Google Maps is displaying direct search results.');
-    } finally {
+      if (err.name === 'AbortError' || signal.aborted) return;
+      if (err.code === 'INVALID_COORDS') {
+        setLocationError(err.message);
+      } else {
+        setLocationError('Geocoding failed. Check your internet connection and try again.');
+      }
       setIsResolvingLocation(false);
       setIsLoading(false);
     }
-  };
+  }, [manualLocationText, searchRadius]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchFromGooglePlaces = (lat, lng, radius) => {
-    setIsLoading(true);
-    setError(null);
+  // ---------------------------------------------------------------------------
+  // Radius change (re-fetch same location)
+  // ---------------------------------------------------------------------------
 
-    try {
-      const mapDiv = document.createElement('div');
-      const service = new window.google.maps.places.PlacesService(mapDiv);
-
-      const types = ['hospital', 'pharmacy', 'doctor', 'dentist'];
-      const promises = types.map(type => {
-        return new Promise((resolve) => {
-          const request = {
-            location: new window.google.maps.LatLng(lat, lng),
-            radius: radius,
-            type: [type]
-          };
-          service.nearbySearch(request, (results, status) => {
-            if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-              resolve(results.map(place => ({ ...place, primaryType: type })));
-            } else {
-              resolve([]);
-            }
-          });
-        });
-      });
-
-      Promise.all(promises).then((allResults) => {
-        const flatResults = allResults.flat();
-        const seenIds = new Set();
-        const uniquePlaces = [];
-        for (const place of flatResults) {
-          if (!seenIds.has(place.place_id)) {
-            seenIds.add(place.place_id);
-            uniquePlaces.push(place);
-          }
-        }
-
-        const formatted = uniquePlaces.map(place => {
-          const placeLat = place.geometry.location.lat();
-          const placeLng = place.geometry.location.lng();
-          const R = 6371;
-          const dLat = (placeLat - lat) * Math.PI / 180;
-          const dLon = (placeLng - lng) * Math.PI / 180;
-          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat * Math.PI / 180) * Math.cos(placeLat * Math.PI / 180) *
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-          const d = R * c;
-
-          const type = place.primaryType;
-          const queryText = encodeURIComponent(`${place.name} ${type} ${place.vicinity || ''}`);
-
-          return {
-            id: place.place_id,
-            name: place.name,
-            type: type,
-            speciality: type === 'hospital' ? 'general medicine & surgery' : 'healthcare practitioner',
-            distance: `${d.toFixed(1)} km`,
-            distanceVal: d,
-            rating: place.rating ? place.rating.toFixed(1) : (4.2 + Math.random() * 0.6).toFixed(1),
-            isOpen: place.opening_hours ? (typeof place.opening_hours.isOpen === 'function' ? place.opening_hours.isOpen() : !!place.opening_hours.open_now) : true,
-            timing: place.opening_hours?.open_now ? 'Open Now' : 'Check hours',
-            address: place.vicinity || 'Local Area',
-            website: `https://www.google.com/maps/search/?api=1&query=${queryText}`,
-            phone: '+91 108',
-            lat: placeLat,
-            lng: placeLng
-          };
-        })
-        .sort((a, b) => a.distanceVal - b.distanceVal)
-        .slice(0, 35);
-
-        setLocations(formatted);
-        setIsLoading(false);
-      }).catch(err => {
-        console.error("Google Places processing failed, falling back to OSM:", err);
-        fetchNearbyFacilitiesOSM(lat, lng, radius, activeLocationName);
-      });
-    } catch (err) {
-      console.error("Google Places Service failed, falling back to OSM:", err);
-      fetchNearbyFacilitiesOSM(lat, lng, radius, activeLocationName);
+  const handleRadiusChange = useCallback((newRadius) => {
+    setSearchRadius(newRadius);
+    if (userLocation) {
+      const signal = cancelInFlight();
+      loadFacilities(userLocation.lat, userLocation.lng, newRadius, activeLocationName, signal);
     }
-  };
+  }, [userLocation, activeLocationName]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function fetchNearbyFacilities(lat, lng, customRadius, areaName) {
-    const radius = customRadius || searchRadius;
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || localStorage.getItem('google_maps_api_key');
-    
-    if (apiKey && window.google && window.google.maps && window.google.maps.places) {
-      fetchFromGooglePlaces(lat, lng, radius);
-    } else {
-      fetchNearbyFacilitiesOSM(lat, lng, radius, areaName || activeLocationName);
-    }
-  }
+  // ---------------------------------------------------------------------------
+  // Filtered/sorted list
+  // ---------------------------------------------------------------------------
 
-  async function fetchNearbyFacilitiesOSM(lat, lng, radius, areaName) {
-    setIsLoading(true);
-    const queryRadius = Math.min(radius || 5000, 15000);
-    const query = `
-      [out:json][timeout:10];
-      (
-        node["amenity"="hospital"](around:${queryRadius},${lat},${lng});
-        node["amenity"="pharmacy"](around:${queryRadius},${lat},${lng});
-        node["amenity"="clinic"](around:${queryRadius},${lat},${lng});
-        node["amenity"="doctors"](around:${queryRadius},${lat},${lng});
-        node["amenity"="dentist"](around:${queryRadius},${lat},${lng});
-        way["amenity"="hospital"](around:${queryRadius},${lat},${lng});
-        way["amenity"="clinic"](around:${queryRadius},${lat},${lng});
-      );
-      out center 40;
-    `;
-
-    const endpoints = [
-      'https://overpass-api.de/api/interpreter',
-      'https://overpass.kumi.systems/api/interpreter',
-      'https://api.openstreetmap.fr/oapi/interpreter'
-    ];
-
-    let data = null;
-    for (const url of endpoints) {
-      try {
-        const response = await fetchWithTimeout(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `data=${encodeURIComponent(query)}`
-        }, 4500);
-        
-        if (response.ok) {
-          const parsed = await response.json();
-          if (parsed && Array.isArray(parsed.elements) && parsed.elements.length > 0) {
-            data = parsed;
-            break;
-          }
-        }
-      } catch {
-        // try next endpoint
-      }
-    }
-
-    if (!data || !data.elements || data.elements.length === 0) {
-      const mocks = generateMockFacilities(lat, lng, areaName);
-      setLocations(mocks);
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const formattedLocations = data.elements
-        .filter(el => el.tags && (el.tags.name || el.tags['name:en']))
-        .map(el => {
-          const itemLat = el.lat || el.center?.lat;
-          const itemLon = el.lon || el.center?.lon;
-          if (!itemLat || !itemLon) return null;
-
-          const R = 6371;
-          const dLat = (itemLat - lat) * Math.PI / 180;
-          const dLon = (itemLon - lng) * Math.PI / 180;
-          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat * Math.PI / 180) * Math.cos(itemLat * Math.PI / 180) *
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-          const d = R * c;
-
-          const rawAmenity = el.tags.amenity || 'hospital';
-          const type = rawAmenity === 'doctors' ? 'doctor' : rawAmenity;
-          const spec = (el.tags['healthcare:speciality'] || el.tags.speciality || '').toLowerCase();
-          const name = el.tags.name || el.tags['name:en'];
-          const street = el.tags['addr:street'] || el.tags['addr:suburb'] || el.tags['addr:city'] || (areaName ? `${areaName}` : 'Nearby Medical District');
-
-          return {
-            id: `osm-${el.id}`,
-            name: name,
-            type: type,
-            speciality: spec || (type === 'hospital' ? 'general medicine & surgery' : type),
-            distance: `${d.toFixed(1)} km`,
-            distanceVal: d,
-            rating: (4.1 + Math.random() * 0.8).toFixed(1),
-            isOpen: el.tags.opening_hours ? !el.tags.opening_hours.includes('closed') : true,
-            timing: el.tags.opening_hours || 'Hours vary',
-            website: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' ' + street)}`,
-            address: el.tags['addr:full'] || `${street}`,
-            phone: el.tags.phone || el.tags['contact:phone'] || '+91 108',
-            lat: itemLat,
-            lng: itemLon
-          };
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.distanceVal - b.distanceVal)
-        .slice(0, 35);
-
-      if (formattedLocations.length === 0) {
-        setLocations(generateMockFacilities(lat, lng, areaName));
-      } else {
-        setLocations(formattedLocations);
-      }
-    } catch {
-      setLocations(generateMockFacilities(lat, lng, areaName));
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  const getCategoryCount = (cat) => {
-    return locations.filter(loc => {
-      if (cat === 'all') return true;
-      if (cat === 'gynecologist') return loc.speciality.includes('gynaecology') || loc.speciality.includes('gynecology') || loc.name.toLowerCase().includes('gynec');
-      if (cat === 'orthopedist') return loc.speciality.includes('orthopaedics') || loc.speciality.includes('orthopedics') || loc.name.toLowerCase().includes('ortho');
-      if (cat === 'dentist') return loc.type === 'dentist' || loc.speciality.includes('dentist') || loc.name.toLowerCase().includes('dent');
-      if (cat === 'pediatrician') return loc.speciality.includes('paediatrics') || loc.speciality.includes('pediatrics') || loc.name.toLowerCase().includes('pediatr') || loc.name.toLowerCase().includes('child');
-      return loc.type === cat || loc.name.toLowerCase().includes(cat.toLowerCase());
-    }).length;
-  };
-
-  const getChipLabel = (label, cat) => {
-    if (isLoading || locations.length === 0) return label;
-    return `${label} (${getCategoryCount(cat)})`;
-  };
-
-  const filteredLocations = useMemo(() => {
-    let list = locations.filter(loc => {
-      // 1. Category Filter
+  const filteredFacilities = useMemo(() => {
+    let list = facilities.filter(loc => {
+      // Category filter
       if (filter !== 'all') {
         const matchesCategory = (() => {
-          if (filter === 'gynecologist') return loc.speciality?.includes('gynaecology') || loc.speciality?.includes('gynecology') || loc.name.toLowerCase().includes('gynec');
-          if (filter === 'orthopedist') return loc.speciality?.includes('orthopaedics') || loc.speciality?.includes('orthopedics') || loc.name.toLowerCase().includes('ortho');
-          if (filter === 'dentist') return loc.type === 'dentist' || loc.speciality?.includes('dentist') || loc.name.toLowerCase().includes('dent');
-          if (filter === 'pediatrician') return loc.speciality?.includes('paediatrics') || loc.speciality?.includes('pediatrics') || loc.name.toLowerCase().includes('pediatr') || loc.name.toLowerCase().includes('child');
+          if (filter === 'gynecologist')
+            return loc.speciality?.includes('gynaecology') || loc.speciality?.includes('gynecology') || loc.name.toLowerCase().includes('gynec');
+          if (filter === 'orthopedist')
+            return loc.speciality?.includes('orthopaedics') || loc.speciality?.includes('orthopedics') || loc.name.toLowerCase().includes('ortho');
+          if (filter === 'dentist')
+            return loc.type === 'dentist' || loc.speciality?.includes('dentist') || loc.name.toLowerCase().includes('dent');
+          if (filter === 'pediatrician')
+            return loc.speciality?.includes('paediatrics') || loc.speciality?.includes('pediatrics') || loc.name.toLowerCase().includes('pediatr') || loc.name.toLowerCase().includes('child');
           return loc.type === filter || loc.name.toLowerCase().includes(filter.toLowerCase());
         })();
         if (!matchesCategory) return false;
       }
 
-      // 2. Keyword Search Filter
-      if (facilitySearchTerm && facilitySearchTerm.trim()) {
+      // Keyword search within the loaded list
+      if (facilitySearchTerm.trim()) {
         const term = facilitySearchTerm.toLowerCase().trim();
-        const matchesTerm = loc.name.toLowerCase().includes(term) ||
-                            (loc.speciality && loc.speciality.toLowerCase().includes(term)) ||
-                            (loc.address && loc.address.toLowerCase().includes(term)) ||
-                            (loc.type && loc.type.toLowerCase().includes(term));
-        if (!matchesTerm) return false;
+        const matches =
+          loc.name.toLowerCase().includes(term) ||
+          (loc.speciality && loc.speciality.toLowerCase().includes(term)) ||
+          (loc.address && loc.address.toLowerCase().includes(term)) ||
+          (loc.type && loc.type.toLowerCase().includes(term));
+        if (!matches) return false;
       }
 
-      // 3. Open Now filter
-      if (openNowOnly && !loc.isOpen) {
-        return false;
-      }
+      // Open-now filter (skip facilities whose open status is unknown)
+      if (openNowOnly && loc.isOpen !== true) return false;
 
       return true;
     });
@@ -679,12 +458,35 @@ const Nearby = () => {
     if (sortBy === 'rating') {
       return [...list].sort((a, b) => parseFloat(b.rating || 0) - parseFloat(a.rating || 0));
     }
-    return [...list].sort((a, b) => (a.distanceVal || 0) - (b.distanceVal || 0));
-  }, [locations, filter, facilitySearchTerm, openNowOnly, sortBy]);
+    return [...list].sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
+  }, [facilities, filter, facilitySearchTerm, openNowOnly, sortBy]);
 
-  // Google Maps URLs
+  // ---------------------------------------------------------------------------
+  // Count helpers for chip labels
+  // ---------------------------------------------------------------------------
+
+  const getCategoryCount = (cat) => {
+    return facilities.filter(loc => {
+      if (cat === 'all') return true;
+      if (cat === 'gynecologist') return loc.speciality?.includes('gynaecology') || loc.speciality?.includes('gynecology') || loc.name.toLowerCase().includes('gynec');
+      if (cat === 'orthopedist') return loc.speciality?.includes('orthopaedics') || loc.speciality?.includes('orthopedics') || loc.name.toLowerCase().includes('ortho');
+      if (cat === 'dentist') return loc.type === 'dentist' || loc.speciality?.includes('dentist') || loc.name.toLowerCase().includes('dent');
+      if (cat === 'pediatrician') return loc.speciality?.includes('paediatrics') || loc.speciality?.includes('pediatrics') || loc.name.toLowerCase().includes('pediatr') || loc.name.toLowerCase().includes('child');
+      return loc.type === cat || loc.name.toLowerCase().includes(cat.toLowerCase());
+    }).length;
+  };
+
+  const getChipLabel = (label, cat) => {
+    if (isLoading || facilities.length === 0) return label;
+    return `${label} (${getCategoryCount(cat)})`;
+  };
+
+  // ---------------------------------------------------------------------------
+  // Map URL helpers
+  // ---------------------------------------------------------------------------
+
   const getGoogleMapsEmbedUrl = () => {
-    let q = '';
+    let q;
     if (selectedFacility) {
       if (selectedFacility.lat && selectedFacility.lng) {
         q = `${selectedFacility.lat},${selectedFacility.lng}`;
@@ -692,17 +494,8 @@ const Nearby = () => {
         q = `${selectedFacility.name}, ${selectedFacility.address || activeLocationName || ''}`;
       }
     } else {
-      const categoryTerm = filter === 'all' 
-        ? 'hospitals and clinics' 
-        : (filter === 'pharmacy' ? 'pharmacy chemist' : `${filter} clinic`);
-      
-      if (activeLocationName) {
-        q = `${categoryTerm} in ${activeLocationName}`;
-      } else if (userLocation) {
-        q = `${categoryTerm} near ${userLocation.lat},${userLocation.lng}`;
-      } else {
-        q = `${categoryTerm} near me`;
-      }
+      const cat = filter === 'all' ? 'hospitals and clinics' : (filter === 'pharmacy' ? 'pharmacy chemist' : `${filter} clinic`);
+      q = activeLocationName ? `${cat} in ${activeLocationName}` : (userLocation ? `${cat} near ${userLocation.lat},${userLocation.lng}` : `${cat} near me`);
     }
 
     if (apiKeyUsed) {
@@ -712,117 +505,133 @@ const Nearby = () => {
   };
 
   const getGoogleMapsDirectUrl = () => {
-    let q = '';
+    let q;
     if (selectedFacility) {
-      if (selectedFacility.lat && selectedFacility.lng) {
-        q = `${selectedFacility.lat},${selectedFacility.lng}`;
-      } else {
-        q = `${selectedFacility.name}, ${selectedFacility.address || ''}`;
-      }
+      q = (selectedFacility.lat && selectedFacility.lng)
+        ? `${selectedFacility.lat},${selectedFacility.lng}`
+        : `${selectedFacility.name}, ${selectedFacility.address || ''}`;
     } else {
-      const categoryTerm = filter === 'all' ? 'hospitals and medical clinics' : filter;
-      if (activeLocationName) {
-        q = `${categoryTerm} in ${activeLocationName}`;
-      } else if (userLocation) {
-        q = `${categoryTerm} near ${userLocation.lat},${userLocation.lng}`;
-      } else {
-        q = `${categoryTerm} near me`;
-      }
+      const cat = filter === 'all' ? 'hospitals and medical clinics' : filter;
+      q = activeLocationName ? `${cat} in ${activeLocationName}` : (userLocation ? `${cat} near ${userLocation.lat},${userLocation.lng}` : `${cat} near me`);
     }
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
   };
 
   const getDirectionsUrl = (loc) => {
-    const hasCoords = loc.lat && loc.lng && !isNaN(loc.lat) && !isNaN(loc.lng);
-    const dest = hasCoords 
-      ? `${loc.lat},${loc.lng}` 
-      : encodeURIComponent(`${loc.name}, ${loc.address || activeLocationName || ''}`);
-    
-    const originParam = (userLocation?.lat && userLocation?.lng) 
-      ? `&origin=${userLocation.lat},${userLocation.lng}` 
-      : '';
-
-    return `https://www.google.com/maps/dir/?api=1${originParam}&destination=${dest}&travelmode=driving`;
+    let url;
+    if (loc.directionsUrl) {
+      // Add user origin if available
+      if (userLocation?.lat && userLocation?.lng) {
+        url = `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${loc.lat},${loc.lng}&travelmode=driving`;
+      } else {
+        url = loc.directionsUrl;
+      }
+    } else {
+      const dest = (loc.lat && loc.lng && isValidCoord(loc.lat, loc.lng))
+        ? `${loc.lat},${loc.lng}`
+        : encodeURIComponent(`${loc.name}, ${loc.address || activeLocationName || ''}`);
+      const origin = (userLocation?.lat && userLocation?.lng) ? `&origin=${userLocation.lat},${userLocation.lng}` : '';
+      url = `https://www.google.com/maps/dir/?api=1${origin}&destination=${dest}&travelmode=driving`;
+    }
+    return sanitizeUrl(url);
   };
 
   const handleOpenDirections = (e, loc) => {
     e.stopPropagation();
-    const url = getDirectionsUrl(loc);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(getDirectionsUrl(loc), '_blank', 'noopener,noreferrer');
   };
+
+  const handleCopyLocation = (e, loc) => {
+    e.stopPropagation();
+    const url = getDirectionsUrl(loc);
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(url);
+      setCopiedId(loc.id);
+      setTimeout(() => setCopiedId(null), 2200);
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
 
   return (
     <div className="nearby-container container">
+      {/* Emergency Modal — accessible dialog */}
       {showEmergencyModal && (
-        <div className="emergency-sos-overlay" onClick={() => setShowEmergencyModal(false)}>
-          <div className="emergency-sos-modal glass animate-scale-up" onClick={(e) => e.stopPropagation()}>
-            
+        <div
+          className="emergency-sos-overlay"
+          role="presentation"
+          onClick={closeEmergencyModal}
+        >
+          <div
+            ref={sosModalRef}
+            className="emergency-sos-modal glass animate-scale-up"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={sosModalTitleId}
+            onClick={e => e.stopPropagation()}
+          >
             <div className="emergency-system-status">
               <span className="status-indicator-text">{t('sosContactStatus')}</span>
             </div>
-
-            <div className="sos-radar-animation">
+            <div className="sos-radar-animation" aria-hidden="true">
               <div className="radar-wave wave-1"></div>
               <div className="radar-wave wave-2"></div>
               <div className="radar-wave wave-3"></div>
-              <div className="radar-core">
-                <AlertOctagon size={28} color="white" />
-              </div>
+              <div className="radar-core"><AlertOctagon size={28} color="white" /></div>
             </div>
-            
-            <h2 className="sos-title">{t('emergencyAlert')}</h2>
+            <h2 id={sosModalTitleId} className="sos-title">{t('emergencyAlert')}</h2>
             <p className="sos-desc">{t('emergencyGuidelines')}</p>
-            
-            <a href="tel:108" className="sos-call-btn">
-              <Phone size={22} className="phone-icon-pulse" />
+            <a
+              href="tel:108"
+              className="sos-call-btn"
+              aria-label="Call ambulance on 108. Availability varies by state."
+            >
+              <Phone size={22} className="phone-icon-pulse" aria-hidden="true" />
               <div className="sos-call-text-wrapper">
                 <span className="call-title">{t('sosAmbulanceTitle')}</span>
                 <span className="call-number">{t('sosAmbulanceDetail')}</span>
               </div>
             </a>
-            <a href="tel:112" className="sos-call-btn sos-police-btn">
-              <Phone size={22} />
+            <a
+              href="tel:112"
+              className="sos-call-btn sos-police-btn"
+              aria-label="Call national emergency helpline on 112. Works across all of India."
+            >
+              <Phone size={22} aria-hidden="true" />
               <div className="sos-call-text-wrapper">
                 <span className="call-title">{t('sosPoliceTitle')}</span>
                 <span className="call-number">{t('sosPoliceDetail')}</span>
               </div>
             </a>
-
             <div className="sos-instructions-grid">
               <div className="sos-step-card glass">
-                <div className="step-icon-container text-rose">
-                  <HeartPulse size={20} />
-                </div>
+                <div className="step-icon-container text-rose" aria-hidden="true"><HeartPulse size={20} /></div>
                 <div className="step-content">
                   <span className="step-badge">CRITICAL ACTION 1</span>
                   <p className="step-text">{t('sosStep1').replace(/^\d+\.\s*/, '')}</p>
                 </div>
               </div>
-              
               <div className="sos-step-card glass">
-                <div className="step-icon-container text-amber">
-                  <ShieldAlert size={20} />
-                </div>
+                <div className="step-icon-container text-amber" aria-hidden="true"><ShieldAlert size={20} /></div>
                 <div className="step-content">
                   <span className="step-badge">CRITICAL ACTION 2</span>
                   <p className="step-text">{t('sosStep2').replace(/^\d+\.\s*/, '')}</p>
                 </div>
               </div>
-              
               <div className="sos-step-card glass">
-                <div className="step-icon-container text-emerald">
-                  <Phone size={20} />
-                </div>
+                <div className="step-icon-container text-emerald" aria-hidden="true"><Phone size={20} /></div>
                 <div className="step-content">
                   <span className="step-badge">CRITICAL ACTION 3</span>
                   <p className="step-text">{t('sosStep3').replace(/^\d+\.\s*/, '')}</p>
                 </div>
               </div>
             </div>
-
-            <button 
-              className="btn sos-close-btn" 
-              onClick={() => setShowEmergencyModal(false)}
+            <button
+              className="btn sos-close-btn"
+              onClick={closeEmergencyModal}
+              aria-label="Close emergency dialog and proceed to hospital directory"
             >
               {language === 'en' ? 'Proceed to Nearby Hospital Directory →' : 'आस-पास के अस्पताल सूची पर जाएं →'}
             </button>
@@ -830,64 +639,65 @@ const Nearby = () => {
         </div>
       )}
 
-      {/* Emergency Quick Action Strip */}
-      <div className="nearby-sos-strip glass">
+      {/* Emergency Quick Action Strip — always visible, no network required */}
+      <div className="nearby-sos-strip glass" role="region" aria-label="Emergency contacts">
         <div className="sos-strip-left">
-          <div className="sos-pulse-icon">
-            <AlertOctagon size={18} />
-          </div>
+          <div className="sos-pulse-icon" aria-hidden="true"><AlertOctagon size={18} /></div>
           <div className="sos-strip-text">
             <strong>Critical Medical Emergency?</strong>
-            <span>Immediate response: Ambulance (108) or National Helpline (112)</span>
+            <span>Ambulance&nbsp;<strong>108</strong> &nbsp;·&nbsp; National Emergency&nbsp;<strong>112</strong></span>
           </div>
         </div>
         <div className="sos-strip-actions">
-          <a href="tel:108" className="sos-strip-call">
-            <Phone size={14} />
-            <span>Call 108</span>
-          </a>
-          <button 
-            type="button" 
-            onClick={() => setShowEmergencyModal(true)} 
-            className="sos-strip-guide"
+          <a
+            href="tel:108"
+            className="sos-strip-call"
+            aria-label="Call ambulance on 108"
           >
-            <ShieldAlert size={14} />
-            <span>Emergency Protocol</span>
+            <Phone size={14} aria-hidden="true" /><span>Call 108</span>
+          </a>
+          <a
+            href="tel:112"
+            className="sos-strip-call sos-strip-call--secondary"
+            aria-label="Call national emergency helpline on 112"
+          >
+            <Phone size={14} aria-hidden="true" /><span>Call 112</span>
+          </a>
+          <button
+            id="sos-protocol-btn"
+            type="button"
+            onClick={(e) => openEmergencyModal(e.currentTarget)}
+            className="sos-strip-guide"
+            aria-expanded={showEmergencyModal}
+            aria-haspopup="dialog"
+          >
+            <ShieldAlert size={14} aria-hidden="true" /><span>Emergency Protocol</span>
           </button>
         </div>
       </div>
 
       <div className="nearby-header">
-        <div className="nearby-hero-badge">
-          <Crosshair size={14} />
-          <span>Live Healthcare GPS Radar</span>
-        </div>
+        <div className="nearby-hero-badge"><Crosshair size={14} /><span>Live Healthcare GPS Radar</span></div>
         <h1 className="page-title">{t('nearbyTitle') || 'Nearby Services Locator'}</h1>
         <p className="page-subtitle">
           {t('nearbySubtitle') || 'Find verified clinics, 24/7 pharmacies, hospitals, and medical practitioners around your location.'}
         </p>
-        
-        {/* Geocoding & Place Search Form */}
+
+        {/* Location Search Form */}
         <form onSubmit={handleManualLocationSearch} className="location-search-container glass">
           <div className="location-input-wrapper">
             <MapPin size={18} className="search-pin-icon" />
-            <input 
-              type="text" 
-              placeholder="Search city, area, hospital or landmark (e.g. Kanpur, Delhi, Noida)..."
+            <input
+              type="text"
+              placeholder="Search city or area (e.g. Kanpur, Bengaluru, Connaught Place)..."
               value={manualLocationText}
-              onChange={(e) => {
-                setManualLocationText(e.target.value);
-                setFacilitySearchTerm(e.target.value);
-              }}
+              onChange={e => setManualLocationText(e.target.value)}
             />
             {manualLocationText && (
-              <button 
-                type="button" 
-                className="input-clear-btn" 
-                onClick={() => {
-                  setManualLocationText('');
-                  setFacilitySearchTerm('');
-                }}
+              <button
+                type="button"
+                className="input-clear-btn"
+                onClick={() => setManualLocationText('')}
                 title="Clear input"
               >
                 <X size={15} />
@@ -897,16 +707,10 @@ const Nearby = () => {
 
           <div className="radius-wrapper">
             <Compass size={16} className="radius-icon" />
-            <select 
-              className="radius-select" 
-              value={searchRadius} 
-              onChange={(e) => {
-                const r = parseInt(e.target.value);
-                setSearchRadius(r);
-                if (userLocation) {
-                  fetchNearbyFacilities(userLocation.lat, userLocation.lng, r, activeLocationName);
-                }
-              }}
+            <select
+              className="radius-select"
+              value={searchRadius}
+              onChange={e => handleRadiusChange(parseInt(e.target.value))}
             >
               <option value={2000}>2 km radius</option>
               <option value={5000}>5 km radius</option>
@@ -916,133 +720,98 @@ const Nearby = () => {
             </select>
           </div>
 
-          <button 
-            type="submit" 
-            className="btn btn-primary location-search-btn" 
+          <button
+            type="submit"
+            className="btn btn-primary location-search-btn"
             disabled={isResolvingLocation || isLoading}
           >
             {isResolvingLocation ? (
               <Loader2 className="spinner" size={16} />
             ) : (
-              <>
-                <Search size={16} />
-                <span>Search</span>
-              </>
+              <><Search size={16} /><span>Search</span></>
             )}
           </button>
 
-          <button 
-            type="button" 
-            onClick={getUserLocation} 
-            className={`gps-btn ${isLocatingGps ? 'locating' : ''}`} 
-            title={t('useGpsLocation') || 'Use GPS Location'} 
+          <button
+            type="button"
+            onClick={requestGpsLocation}
+            className={`gps-btn ${isLocatingGps ? 'locating' : ''}`}
+            title={t('useGpsLocation') || 'Use GPS Location'}
             disabled={isLoading || isLocatingGps}
           >
-            {isLocatingGps ? (
-              <Loader2 size={16} className="spinner" />
-            ) : (
-              <Navigation size={16} />
-            )}
+            {isLocatingGps ? <Loader2 size={16} className="spinner" /> : <Navigation size={16} />}
             <span>{t('useGpsLocation') || 'My Live GPS'}</span>
           </button>
         </form>
 
-        {/* Current Target Location & Scope Bar */}
+        {/* Demo-location notice — shown when GPS failed / not available */}
+        {isDemoLocation && (
+          <div className="demo-location-notice" role="alert">
+            <Info size={15} />
+            <span>
+              <strong>Demo location:</strong> Showing results for {activeLocationName}. This is <em>not</em> your actual position.
+              Search your city above to see real nearby facilities.
+            </span>
+          </div>
+        )}
+
+        {/* Target bar */}
         <div className="active-target-bar">
           <div className="target-pill">
-            <span className="target-dot"></span>
-            <span className="target-label">Target Area:</span>
+            <span className={`target-dot ${isDemoLocation ? 'target-dot-demo' : ''}`}></span>
+            <span className="target-label">{isDemoLocation ? 'Demo Area:' : 'Target Area:'}</span>
             <strong className="target-name">{activeLocationName || 'Detecting...'}</strong>
-            <span className="target-dist">({(searchRadius / 1000)} km radius)</span>
+            <span className="target-dist">({searchRadius / 1000} km radius)</span>
           </div>
           <div className="target-stats-quick">
-            <span className="stats-metric"><strong>{locations.length}</strong> facilities nearby</span>
+            <span className="stats-metric"><strong>{facilities.length}</strong> facilities found</span>
             <span className="stats-divider">•</span>
             <span className="stats-open-metric">
               <span className="mini-green-dot"></span>
-              <strong>{locations.filter(l => l.isOpen).length}</strong> Open Now
+              <strong>{facilities.filter(l => l.isOpen === true).length}</strong> Open Now
             </span>
           </div>
         </div>
 
-        {/* Category Filters with Rich Icons */}
+        {/* Category Filters */}
         <div className="filter-chips-wrapper">
           <div className="filter-chips">
-            <button 
-              className={`chip ${filter === 'all' ? 'active' : ''}`}
-              onClick={() => { setFilter('all'); setSelectedFacility(null); }}
-            >
-              <Sparkles size={14} className="chip-icon" />
-              <span>{getChipLabel('All Services', 'all')}</span>
-            </button>
-            <button 
-              className={`chip chip-hospital ${filter === 'hospital' ? 'active' : ''}`}
-              onClick={() => { setFilter('hospital'); setSelectedFacility(null); }}
-            >
-              <Building2 size={14} className="chip-icon" />
-              <span>{getChipLabel('Hospitals', 'hospital')}</span>
-            </button>
-            <button 
-              className={`chip chip-pharmacy ${filter === 'pharmacy' ? 'active' : ''}`}
-              onClick={() => { setFilter('pharmacy'); setSelectedFacility(null); }}
-            >
-              <Pill size={14} className="chip-icon" />
-              <span>{getChipLabel('Pharmacies 24x7', 'pharmacy')}</span>
-            </button>
-            <button 
-              className={`chip chip-clinic ${filter === 'clinic' ? 'active' : ''}`}
-              onClick={() => { setFilter('clinic'); setSelectedFacility(null); }}
-            >
-              <Stethoscope size={14} className="chip-icon" />
-              <span>{getChipLabel('Clinics', 'clinic')}</span>
-            </button>
-            <button 
-              className={`chip chip-doctor ${filter === 'doctor' ? 'active' : ''}`}
-              onClick={() => { setFilter('doctor'); setSelectedFacility(null); }}
-            >
-              <Activity size={14} className="chip-icon" />
-              <span>{getChipLabel('Doctors', 'doctor')}</span>
-            </button>
-            <button 
-              className={`chip ${filter === 'gynecologist' ? 'active' : ''}`}
-              onClick={() => { setFilter('gynecologist'); setSelectedFacility(null); }}
-            >
-              <span>{getChipLabel('Gynecology', 'gynecologist')}</span>
-            </button>
-            <button 
-              className={`chip ${filter === 'orthopedist' ? 'active' : ''}`}
-              onClick={() => { setFilter('orthopedist'); setSelectedFacility(null); }}
-            >
-              <span>{getChipLabel('Orthopedics', 'orthopedist')}</span>
-            </button>
-            <button 
-              className={`chip ${filter === 'pediatrician' ? 'active' : ''}`}
-              onClick={() => { setFilter('pediatrician'); setSelectedFacility(null); }}
-            >
-              <span>{getChipLabel('Pediatrics', 'pediatrician')}</span>
-            </button>
-            <button 
-              className={`chip chip-dentist ${filter === 'dentist' ? 'active' : ''}`}
-              onClick={() => { setFilter('dentist'); setSelectedFacility(null); }}
-            >
-              <span>{getChipLabel('Dentists', 'dentist')}</span>
-            </button>
+            {[
+              { id: 'all',          label: 'All Services',   icon: <Sparkles size={14} className="chip-icon" />,    cls: '' },
+              { id: 'hospital',     label: 'Hospitals',      icon: <Building2 size={14} className="chip-icon" />,   cls: 'chip-hospital' },
+              { id: 'pharmacy',     label: 'Pharmacies 24x7',icon: <Pill size={14} className="chip-icon" />,        cls: 'chip-pharmacy' },
+              { id: 'clinic',       label: 'Clinics',        icon: <Stethoscope size={14} className="chip-icon" />, cls: 'chip-clinic' },
+              { id: 'doctor',       label: 'Doctors',        icon: <Activity size={14} className="chip-icon" />,    cls: 'chip-doctor' },
+              { id: 'gynecologist', label: 'Gynecology',     icon: null,                                             cls: '' },
+              { id: 'orthopedist',  label: 'Orthopedics',    icon: null,                                             cls: '' },
+              { id: 'pediatrician', label: 'Pediatrics',     icon: null,                                             cls: '' },
+              { id: 'dentist',      label: 'Dentists',       icon: null,                                             cls: 'chip-dentist' },
+            ].map(({ id, label, icon, cls }) => (
+              <button
+                key={id}
+                className={`chip ${cls} ${filter === id ? 'active' : ''}`}
+                onClick={() => { setFilter(id); setSelectedFacility(null); }}
+              >
+                {icon}
+                <span>{getChipLabel(label, id)}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Results & Quick Filters Toolbar */}
+      {/* Results Toolbar */}
       <div className="results-toolbar">
         <div className="results-count-text">
           <span>Showing</span>
-          <strong>{filteredLocations.length}</strong>
-          <span>verified facilities</span>
+          <strong>{filteredFacilities.length}</strong>
+          <span>facilities</span>
           {filter !== 'all' && <span className="active-filter-badge">{filter}</span>}
+          {isDemoLocation && <span className="demo-badge-inline">demo location</span>}
         </div>
-
         <div className="toolbar-controls">
-          <button 
-            type="button" 
+          <button
+            type="button"
             className={`open-now-toggle ${openNowOnly ? 'active' : ''}`}
             onClick={() => setOpenNowOnly(!openNowOnly)}
             title="Filter to show only currently open facilities"
@@ -1050,14 +819,9 @@ const Nearby = () => {
             <span className="toggle-indicator"></span>
             <span>Open Now Only</span>
           </button>
-
           <div className="sort-select-wrapper">
             <SlidersHorizontal size={13} />
-            <select 
-              value={sortBy} 
-              onChange={(e) => setSortBy(e.target.value)}
-              className="sort-dropdown"
-            >
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="sort-dropdown">
               <option value="distance">Nearest First</option>
               <option value="rating">Highest Rated</option>
             </select>
@@ -1067,43 +831,82 @@ const Nearby = () => {
 
       <div className="nearby-grid">
         <div className="locations-list">
-          {error && (
-            <div className="location-notice-banner error">
-              <span>⚠️ {error}</span>
+          {/* Location / GPS error banner */}
+          {locationError && (
+            <div className="location-notice-banner error" role="alert">
+              <AlertTriangle size={16} />
+              <span>{locationError}</span>
             </div>
           )}
 
+          {/* Facility search / API error banner */}
+          {searchError && !isLoading && (
+            <div className="location-notice-banner error" role="alert">
+              <WifiOff size={16} />
+              <span>{searchError}</span>
+              <button
+                type="button"
+                className="retry-btn"
+                onClick={() => userLocation && loadFacilities(userLocation.lat, userLocation.lng, searchRadius, activeLocationName, cancelInFlight())}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Loading state */}
           {isLoading ? (
             <div className="loading-state glass">
               <div className="loading-pulse-ring">
                 <Loader2 className="spinner" size={36} />
               </div>
               <h4>Locating Healthcare Facilities...</h4>
-              <p>Scanning certified hospitals, 24/7 pharmacies, and clinics in your area.</p>
+              <p>Querying verified medical data for {activeLocationName || 'your area'}.</p>
             </div>
-          ) : filteredLocations.length === 0 && userLocation ? (
+
+          ) : !userLocation ? (
+            /* No location yet, no error — initial state */
             <div className="empty-state glass">
               <MapPin size={40} className="empty-icon" />
-              <h4>No facilities match your filters</h4>
-              <p>Try widening your search radius or toggling off "Open Now Only".</p>
-              <button 
-                type="button" 
+              <h4>Set Your Location</h4>
+              <p>Click <strong>My Live GPS</strong> or enter a city above to find nearby facilities.</p>
+            </div>
+
+          ) : filteredFacilities.length === 0 && !searchError ? (
+            /* Loaded but empty */
+            <div className="empty-state glass">
+              <MapPin size={40} className="empty-icon" />
+              {facilities.length === 0 ? (
+                <>
+                  <h4>No facilities found in this area</h4>
+                  <p>
+                    OpenStreetMap has no mapped medical facilities within {searchRadius / 1000} km of{' '}
+                    <strong>{activeLocationName}</strong>.
+                    Try a wider radius or search a nearby city.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h4>No facilities match your filters</h4>
+                  <p>Try widening your radius or toggling off &quot;Open Now Only&quot;.</p>
+                </>
+              )}
+              <button
+                type="button"
                 className="btn btn-primary btn-sm"
-                onClick={() => {
-                  setFilter('all');
-                  setFacilitySearchTerm('');
-                  setOpenNowOnly(false);
-                }}
+                onClick={() => { setFilter('all'); setFacilitySearchTerm(''); setOpenNowOnly(false); }}
               >
                 Reset All Filters
               </button>
             </div>
+
           ) : (
-            filteredLocations.map((loc, index) => {
-              const isSelected = selectedFacility && selectedFacility.id === loc.id;
+            /* Facility cards */
+            filteredFacilities.map((loc, index) => {
+              const isSelected = selectedFacility?.id === loc.id;
               const isCopied = copiedId === loc.id;
               return (
-                <motion.div 
+                <motion.div
                   key={loc.id}
                   className={`location-card glass ${loc.type} ${isSelected ? 'selected' : ''}`}
                   initial={{ opacity: 0, y: 16 }}
@@ -1112,18 +915,15 @@ const Nearby = () => {
                   transition={{ duration: 0.24, delay: Math.min(index * 0.03, 0.25) }}
                   onClick={() => setSelectedFacility(loc)}
                 >
-                  {/* Category Accent Stripe */}
                   <div className={`card-accent-stripe ${loc.type}`}></div>
 
-                  {/* Active on Map Tag */}
                   {isSelected && (
                     <div className="loc-selected-badge">
-                      <Check size={12} />
-                      <span>Active on Map</span>
+                      <Check size={12} /><span>Active on Map</span>
                     </div>
                   )}
 
-                  {/* Header: Name and Status */}
+                  {/* Header */}
                   <div className="loc-header">
                     <div className="loc-title-group">
                       <div className="loc-category-row">
@@ -1134,24 +934,26 @@ const Nearby = () => {
                           {loc.type === 'doctor' && <Activity size={11} />}
                           <span>{loc.type}</span>
                         </span>
-                        {loc.isSimulated && (
-                          <span className="verified-badge">
-                            <ShieldCheck size={11} />
-                            <span>Directory Verified</span>
-                          </span>
-                        )}
+                        {/* Source badge — show where data came from */}
+                        <span className="source-badge" title={`Data source: ${loc.source === 'google' ? 'Google Places' : 'OpenStreetMap'}`}>
+                          <ShieldCheck size={11} />
+                          <span>{loc.source === 'google' ? 'Google Places' : 'OpenStreetMap'}</span>
+                        </span>
                       </div>
                       <h3 title={loc.name}>{loc.name}</h3>
                     </div>
 
-                    <div className={`status-pill ${loc.isOpen ? 'status-open' : 'status-closed'}`}>
-                      {loc.isOpen && <span className="status-ping"></span>}
+                    {/* Open status — show "Unknown" when we don't know */}
+                    <div className={`status-pill ${loc.isOpen === true ? 'status-open' : loc.isOpen === false ? 'status-closed' : 'status-unknown'}`}>
+                      {loc.isOpen === true && <span className="status-ping"></span>}
                       <span className="status-dot"></span>
-                      <span className="status-label">{loc.isOpen ? 'Open Now' : 'Closed'}</span>
+                      <span className="status-label">
+                        {loc.isOpen === true ? 'Open Now' : loc.isOpen === false ? 'Closed' : 'Hours Unknown'}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Data Pills: Distance, Rating, Speciality */}
+                  {/* Data pills */}
                   <div className="loc-data-pills">
                     {loc.distance && (
                       <span className="data-pill distance-pill" title="Distance from searched location">
@@ -1159,8 +961,9 @@ const Nearby = () => {
                         <span>{loc.distance}</span>
                       </span>
                     )}
-                    {loc.rating && (
-                      <span className="data-pill rating-pill" title="User rating">
+                    {/* Only show rating if the source actually provided one */}
+                    {loc.rating != null && (
+                      <span className="data-pill rating-pill" title="Rating from data source">
                         <Star size={12} className="pill-icon star-icon" />
                         <span>{loc.rating}</span>
                       </span>
@@ -1173,42 +976,34 @@ const Nearby = () => {
                     )}
                   </div>
 
-                  {/* Details Box: Address, Hours, Phone */}
+                  {/* Details box */}
                   <div className="loc-details-box">
                     {loc.address && (
                       <div className="detail-data-item">
-                        <div className="detail-icon-wrap">
-                          <MapPin size={13} />
-                        </div>
+                        <div className="detail-icon-wrap"><MapPin size={13} /></div>
                         <div className="detail-content">
                           <span className="detail-label">Address</span>
                           <span className="detail-text" title={loc.address}>{loc.address}</span>
                         </div>
                       </div>
                     )}
-
-                    {loc.timing && (
+                    {loc.openingHours && (
                       <div className="detail-data-item">
-                        <div className="detail-icon-wrap">
-                          <Clock size={13} />
-                        </div>
+                        <div className="detail-icon-wrap"><Clock size={13} /></div>
                         <div className="detail-content">
                           <span className="detail-label">Working Hours</span>
-                          <span className="detail-text">{loc.timing}</span>
+                          <span className="detail-text">{loc.openingHours}</span>
                         </div>
                       </div>
                     )}
-
-                    {loc.phone && loc.phone !== 'N/A' && (
+                    {loc.phone && (
                       <div className="detail-data-item">
-                        <div className="detail-icon-wrap">
-                          <Phone size={13} />
-                        </div>
+                        <div className="detail-icon-wrap"><Phone size={13} /></div>
                         <div className="detail-content">
-                          <span className="detail-label">Helpline / Contact</span>
-                          <a 
-                            href={`tel:${loc.phone.replace(/[^+\d]/g, '')}`} 
-                            onClick={(e) => e.stopPropagation()} 
+                          <span className="detail-label">Contact</span>
+                          <a
+                            href={`tel:${loc.phone.replace(/[^\d+]/g, '')}`}
+                            onClick={e => e.stopPropagation()}
                             className="detail-phone-link"
                           >
                             {loc.phone}
@@ -1218,13 +1013,13 @@ const Nearby = () => {
                     )}
                   </div>
 
-                  {/* Action Buttons */}
+                  {/* Action buttons */}
                   <div className="loc-actions">
-                    <a 
-                      href={getDirectionsUrl(loc)} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      onClick={(e) => handleOpenDirections(e, loc)}
+                    <a
+                      href={getDirectionsUrl(loc)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => handleOpenDirections(e, loc)}
                       className="btn btn-primary btn-sm loc-dir-btn"
                       title={`Get Google Maps directions to ${loc.name}`}
                     >
@@ -1233,22 +1028,19 @@ const Nearby = () => {
                       <ArrowUpRight size={13} className="dir-arrow-icon" />
                     </a>
 
-                    <button 
-                      type="button" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedFacility(loc);
-                      }} 
+                    <button
+                      type="button"
+                      onClick={e => { e.stopPropagation(); setSelectedFacility(loc); }}
                       className={`btn btn-sm loc-map-btn ${isSelected ? 'btn-primary is-active' : 'btn-outline'}`}
                     >
                       <Map size={14} />
                       <span>{isSelected ? 'On Map' : 'View on Map'}</span>
                     </button>
 
-                    {loc.phone && loc.phone !== 'N/A' && (
-                      <a 
-                        href={`tel:${loc.phone.replace(/[^+\d]/g, '')}`} 
-                        onClick={(e) => e.stopPropagation()}
+                    {loc.phone && (
+                      <a
+                        href={`tel:${loc.phone.replace(/[^\d+]/g, '')}`}
+                        onClick={e => e.stopPropagation()}
                         className="btn btn-outline btn-sm loc-call-btn"
                         title={`Call ${loc.name}`}
                       >
@@ -1256,9 +1048,9 @@ const Nearby = () => {
                       </a>
                     )}
 
-                    <button 
-                      type="button" 
-                      onClick={(e) => handleCopyLocation(e, loc)} 
+                    <button
+                      type="button"
+                      onClick={e => handleCopyLocation(e, loc)}
                       className={`btn btn-outline btn-sm loc-share-btn ${isCopied ? 'copied' : ''}`}
                       title={isCopied ? 'Link Copied!' : 'Copy Location Link'}
                     >
@@ -1271,7 +1063,7 @@ const Nearby = () => {
           )}
         </div>
 
-        {/* Live Google Map Interactive View (Sticky on Desktop) */}
+        {/* Map panel */}
         <div className="map-panel-sticky">
           <div className="map-placeholder glass shadow-md">
             {!userLocation ? (
@@ -1282,12 +1074,8 @@ const Nearby = () => {
                   <div className="pulse-ring delay"></div>
                 </div>
                 <h3>Google Maps View</h3>
-                <p>Click "My Live GPS" or search your city above to view live Google Maps.</p>
-                <button 
-                  className="btn btn-primary gps-action-btn" 
-                  onClick={getUserLocation} 
-                  disabled={isLoading || isLocatingGps}
-                >
+                <p>Click &quot;My Live GPS&quot; or search your city above to view live Google Maps.</p>
+                <button className="btn btn-primary gps-action-btn" onClick={requestGpsLocation} disabled={isLoading || isLocatingGps}>
                   <Navigation size={16} />
                   <span>{t('useGpsLocation') || 'My Live GPS'}</span>
                 </button>
@@ -1301,41 +1089,38 @@ const Nearby = () => {
                       <span className="google-maps-text">Google Maps</span>
                     </div>
                     <span className="google-map-current-query" title={selectedFacility ? selectedFacility.name : activeLocationName}>
-                      {selectedFacility 
-                        ? `📍 ${selectedFacility.name}` 
+                      {selectedFacility
+                        ? `📍 ${selectedFacility.name}`
                         : `🔍 ${filter === 'all' ? 'Healthcare' : filter} in ${activeLocationName || 'Nearby'}`
                       }
                     </span>
                   </div>
-
                   <div className="google-map-actions">
                     {selectedFacility && (
-                      <button 
-                        type="button" 
-                        className="map-top-btn" 
+                      <button
+                        type="button"
+                        className="map-top-btn"
                         onClick={() => setSelectedFacility(null)}
                         title="Show all nearby facilities on map"
                       >
-                        <RotateCcw size={13} />
-                        <span>All Nearby</span>
+                        <RotateCcw size={13} /><span>All Nearby</span>
                       </button>
                     )}
-                    <a 
-                      href={getGoogleMapsDirectUrl()} 
-                      target="_blank" 
-                      rel="noreferrer" 
+                    <a
+                      href={getGoogleMapsDirectUrl()}
+                      target="_blank"
+                      rel="noreferrer"
                       className="map-top-btn map-external-link"
-                      title="Open in full Google Maps app or browser tab"
+                      title="Open in full Google Maps"
                     >
                       <span>{t('openInGoogleMaps') || 'Open in Google Maps'}</span>
                       <ExternalLink size={13} />
                     </a>
                   </div>
                 </div>
-
                 <div className="map-iframe-container">
                   <iframe
-                    key={`${selectedFacility ? selectedFacility.id : 'all'}-${userLocation.lat}-${userLocation.lng}-${filter}`}
+                    key={`${selectedFacility ? selectedFacility.id : 'all'}-${userLocation.lat.toFixed(4)}-${userLocation.lng.toFixed(4)}-${filter}-${searchRadius}`}
                     title="Google Maps Healthcare Services"
                     width="100%"
                     height="100%"

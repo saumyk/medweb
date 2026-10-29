@@ -88,7 +88,7 @@ export function normalizeMedicineQuery(query = '') {
   let str = String(query).toLowerCase().trim();
 
   // Replace punctuation and symbols with space
-  str = str.replace(/[_\-+/,:;()\[\]]/g, ' ');
+  str = str.replace(/[_\-+/,:;()[\]]/g, ' ');
 
   // Split concatenated letters and digits (e.g. "dolo650" -> "dolo 650", "40mg" -> "40 mg")
   str = str.replace(/([a-z])(\d)/gi, '$1 $2');
@@ -304,7 +304,6 @@ export function searchMedicines(rawQuery = '', options = {}) {
 
   const normalized = normalizeMedicineQuery(rawQuery);
   const spelling = getSpellingCorrection(rawQuery);
-  const queryToSearch = spelling.hasCorrection ? spelling.corrected : normalized;
 
   const queryStrength = extractStrength(normalized) || extractStrength(spelling.corrected);
   const queryForm = extractDosageForm(normalized);
@@ -380,7 +379,6 @@ export function getQuickSuggestions(input = '', limit = 8) {
     return [];
   }
 
-  const normalized = normalizeMedicineQuery(input);
   const spelling = getSpellingCorrection(input);
   const searchResult = searchMedicines(input, { limit });
 

@@ -65,12 +65,19 @@ const Navbar = () => {
 
   useEffect(() => {
     const closeOnEscape = (event) => {
-      if (event.key === 'Escape') setIsHubOpen(false);
+      if (event.key === 'Escape') {
+        setIsHubOpen(false);
+        if (!isAuthSubmitting) {
+          setIsAuthOpen(false);
+          setAuthMessage('');
+          setAuthPassword('');
+        }
+      }
     };
 
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
-  }, []);
+  }, [isAuthSubmitting]);
 
   const menuSections = [
     {
@@ -148,6 +155,7 @@ const Navbar = () => {
 
   const handlePasswordAuth = async (event) => {
     event.preventDefault();
+    if (isAuthSubmitting) return;
     setAuthMessage('');
 
     if (!authEmail.trim()) {
@@ -257,11 +265,56 @@ const Navbar = () => {
           >
             <button
               type="button"
+              className="nav-quick-btn nav-quick-btn--lang"
+              onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
+              title={language === 'en' ? 'Switch language to Hindi' : 'भाषा को अंग्रेज़ी में बदलें'}
+              aria-label={language === 'en' ? 'Language: English. Switch to Hindi' : 'भाषा: हिन्दी। अंग्रेज़ी में बदलें'}
+            >
+              <Languages size={15} aria-hidden="true" />
+              <span className="nav-quick-label">{language === 'en' ? 'EN' : 'हि'}</span>
+            </button>
+
+            <button
+              type="button"
+              className="nav-quick-btn nav-quick-btn--theme"
+              onClick={() => setTheme((currentTheme) => currentTheme === 'light' ? 'dark' : 'light')}
+              title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+              aria-label={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+            >
+              {theme === 'light' ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
+            </button>
+
+            {user ? (
+              <button
+                type="button"
+                className="nav-quick-btn nav-quick-btn--user"
+                onClick={() => navigate('/dashboard')}
+                title="Open Health Dashboard"
+                aria-label="Open Health Dashboard"
+              >
+                <User size={15} aria-hidden="true" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="nav-quick-btn nav-quick-btn--signin"
+                onClick={openAuthDialog}
+                title="Sign in or create account"
+                aria-label="Sign in or create account"
+              >
+                <User size={15} aria-hidden="true" />
+                <span className="nav-quick-label">{language === 'en' ? 'Sign In' : 'लॉगिन'}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
               className="sos-nav-btn"
               onClick={() => navigate('/nearby?emergency=true')}
               title={t('emergencyBtn')}
+              aria-label="Emergency SOS"
             >
-              <AlertOctagon size={15} />
+              <AlertOctagon size={15} aria-hidden="true" />
               <span>SOS</span>
             </button>
           </motion.div>

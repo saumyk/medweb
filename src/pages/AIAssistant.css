@@ -161,6 +161,51 @@
   text-align: left;
 }
 
+.msg-source-row {
+  display: flex;
+  margin-bottom: 0.65rem;
+}
+
+.msg-source-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 1rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.gemini-source-indicator {
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--primary);
+  border: 1px solid rgba(15, 118, 110, 0.3);
+}
+
+[data-theme='dark'] .gemini-source-indicator {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--primary-light);
+  border-color: rgba(20, 184, 166, 0.35);
+}
+
+.offline-source-indicator {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+}
+
+[data-theme='dark'] .offline-source-indicator {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.msg-spacer {
+  height: 0.45rem;
+}
+
 .msg-section-header {
   font-size: 1rem;
   font-weight: 700;
@@ -633,4 +678,70 @@
   border-top: 1px dashed var(--border);
   padding-top: 0.5rem;
   margin-top: 0.5rem;
+}
+
+/* Feature Action Card for Intelligently Routed Website Features */
+.msg-feature-card {
+  margin-top: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--surface);
+  border: 1.5px solid var(--primary);
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+[data-theme='dark'] .msg-feature-card {
+  background: rgba(15, 23, 42, 0.7);
+  border-color: rgba(45, 212, 191, 0.35);
+}
+
+.msg-feature-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.msg-feature-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+}
+
+[data-theme='dark'] .msg-feature-badge {
+  color: #2dd4bf;
+}
+
+.msg-feature-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.35;
+}
+
+.btn-feature-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: 0.5rem;
+  background: var(--primary);
+  color: #ffffff !important;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  margin-top: 0.25rem;
+}
+
+.btn-feature-link:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
 }

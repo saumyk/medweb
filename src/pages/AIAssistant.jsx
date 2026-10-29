@@ -1,28 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Bot, Send, Mic, MicOff, AlertOctagon, RotateCcw, ShieldAlert, Sparkles, MapPin, Phone } from 'lucide-react';
-import { lookupSymptom } from '../utils/symptomDatabase';
+import { Bot, Send, Mic, MicOff, AlertOctagon, RotateCcw, ShieldAlert, Sparkles, MapPin, Phone, ArrowRight } from 'lucide-react';
+import { generateClinicalAIResponse, isPhysicalEmergency } from '../utils/aiAssistantEngine';
 import { useLanguage } from '../components/LanguageContext';
+import { enforceMaxLength } from '../utils/security';
 import './AIAssistant.css';
 
 // Emergency symptom patterns
-const checkEmergencySymptoms = (text) => {
-  if (!text) return false;
-  const lower = text.toLowerCase();
-  const patterns = [
-    /chest\s*(pain|pressure|tightness|heaviness|discomfort)/i,
-    /(difficulty|trouble|can't|cannot|unable to)\s*breath/i,
-    /shortness\s*of\s*breath/i,
-    /unconscious|fainted|passing\s*out|passed\s*out|blackout|unresponsive/i,
-    /severe\s*bleed(ing)?|coughing\s*(up\s*)?blood/i,
-    /stroke|facial\s*droop|slurred\s*speech|one[- ]side(d)?\s*weakness|arm\s*numbness/i,
-    /suicid|kill\s*myself|end\s*my\s*life|self[- ]harm/i,
-    /anaphylax|severe\s*allergic|throat\s*closing|swelling\s*of\s*(the\s*)?(tongue|throat|mouth)/i,
-    /heart\s*attack|cardiac\s*arrest/i,
-    /seizure|convulsion/i
-  ];
-  return patterns.some(pattern => pattern.test(lower));
-};
+const checkEmergencySymptoms = (text) => isPhysicalEmergency(text);
 
 const AIAssistant = () => {
   const { language, t } = useLanguage();
@@ -41,10 +26,12 @@ const AIAssistant = () => {
     return typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
   });
   const [lastFailedQuery, setLastFailedQuery] = useState(null);
+  const [speechError, setSpeechError] = useState('');
 
   const chatEndRef = useRef(null);
   const messageIdCounter = useRef(1);
   const recognitionRef = useRef(null);
+  const hasHandledSearchRef = useRef(false);
   const [searchParams] = useSearchParams();
 
   // Cleanup speech recognition on unmount
@@ -73,7 +60,7 @@ const AIAssistant = () => {
   const toggleListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Speech Recognition is not supported in this browser. Please try Chrome or Edge.");
+      setSpeechError('Speech recognition is not supported in this browser. Please try Chrome or Edge, or type your question instead.');
       return;
     }
 
@@ -93,6 +80,7 @@ const AIAssistant = () => {
 
       recognition.onstart = () => {
         setIsListening(true);
+        setSpeechError('');
       };
 
       recognition.onresult = (event) => {
@@ -106,6 +94,15 @@ const AIAssistant = () => {
       recognition.onerror = (event) => {
         console.warn('Speech recognition error:', event.error);
         setIsListening(false);
+        if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+          setSpeechError('Microphone access denied. Please allow microphone permission in your browser settings.');
+        } else if (event.error === 'network') {
+          setSpeechError('Network error: speech recognition requires an internet connection.');
+        } else if (event.error === 'no-speech') {
+          // Transient — no message
+        } else if (event.error !== 'aborted') {
+          setSpeechError(`Voice recognition error: ${event.error}. Please try again.`);
+        }
       };
 
       recognition.onend = () => {
@@ -121,11 +118,13 @@ const AIAssistant = () => {
   };
 
   const handleSend = async (textToSend) => {
-    const userQuery = (textToSend !== undefined ? textToSend : query).trim();
-    if (!userQuery) return;
+    if (isTyping) return;
+    const rawQuery = (textToSend !== undefined ? textToSend : query).trim();
+    if (!rawQuery) return;
+    const userQuery = enforceMaxLength(rawQuery, 2000);
 
     if (isListening && recognitionRef.current) {
-      recognitionRef.current.stop();
+      try { recognitionRef.current.stop(); } catch { /* ignore */ }
       setIsListening(false);
     }
 
@@ -146,100 +145,79 @@ const AIAssistant = () => {
     // 1. EMERGENCY CHECK
     const isEmergency = checkEmergencySymptoms(userQuery);
 
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || '';
-    console.log("AI Chatbot API Key status:", apiKey ? "FOUND (calling Gemini API)" : "MISSING (falling back to local database)");
+    try {
+      const historyContext = messages.slice(-8).map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'model',
+        text: msg.text
+      }));
 
-    if (apiKey) {
-      try {
-        // Construct conversation history context for Gemini (last 6 messages)
-        const historyContext = messages.slice(-6).map(msg => {
-          return `${msg.sender === 'user' ? 'User' : 'Assistant'}: ${msg.text}`;
-        }).join('\n');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-        const promptText = `You are a supportive, professional Medical AI Health Assistant on the MedWeb healthcare platform.
+      const response = await fetch('/api/assistant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          message: userQuery,
+          history: historyContext,
+          language
+        })
+      });
+      clearTimeout(timeoutId);
 
-CRITICAL MEDICAL SAFETY & GUARDRAILS:
-- You must NEVER claim to diagnose a patient. Never state "You have X disease" or "You are diagnosed with X".
-- ALWAYS use careful, non-diagnostic wording:
-  "may be associated with"
-  "possible causes include"
-  "general information"
-  "consider speaking with a healthcare professional"
-- If the user describes potentially dangerous symptoms (chest pain, shortness of breath, unconsciousness, severe bleeding, stroke signs, suicidal ideation, anaphylaxis), prioritize emergency guidance immediately.
-${isEmergency ? "URGENT NOTE: The user's query mentions potentially life-threatening symptoms. Prioritize emergency guidance, advise calling India's emergency number (112) or going to an emergency department, and discourage waiting or casual self-treatment. For an ambulance, 108 may be available depending on the state." : ""}
+      const data = await response.json().catch(() => null);
 
-Language requirement: Answer in ${language === 'hi' ? 'Hindi (clean Devanagari script)' : 'English'}.
+      if (response.ok && data?.success) {
+        messageIdCounter.current += 1;
+        const botMsgId = `bot-msg-${messageIdCounter.current}`;
 
-Recent Conversation History:
-${historyContext}
-
-Current User Inquiry: "${userQuery}"
-
-Structure your response clearly with these exact section headers:
-🔍 What is it?
-(General information and possible associations)
-
-📋 Take Care Steps:
-1. (Actionable step 1)
-2. (Actionable step 2)
-...
-
-🍏 What to Eat:
-- (Beneficial food 1)
-- (Beneficial food 2)
-
-🚫 What to Avoid:
-- (Trigger or harmful item 1)
-- (Trigger or harmful item 2)
-
-🚨 When to Seek Help:
-(Warning thresholds and when to seek urgent medical care)
-
-IMPORTANT: Do NOT use any asterisks (*) or markdown bold formatting (like **text**) anywhere in your response. Write plain text headers and lists without asterisk characters. Keep tone compassionate, clear, and reassuring.`;
-
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{ text: promptText }]
-            }]
-          })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const responseText = data.candidates[0].content.parts[0].text.replace(/\*/g, '');
-
-          messageIdCounter.current += 1;
-          const botMsgId = `bot-msg-${messageIdCounter.current}`;
-
-          setMessages(prev => [
-            ...prev,
-            {
-              id: botMsgId,
-              sender: 'bot',
-              text: responseText,
-              isEmergency: isEmergency
-            }
-          ]);
-          setIsTyping(false);
-          return;
-        } else {
-          const errBody = await response.text().catch(() => '');
-          throw new Error(`Gemini API returned status: ${response.status} - ${errBody}`);
-        }
-      } catch (err) {
-        console.error("Gemini API call failed, falling back to local database:", err);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: botMsgId,
+            sender: 'bot',
+            text: (data.text || '').replace(/\*/g, ''),
+            suggestedAction: data.suggestedAction || null,
+            isEmergency: isEmergency || Boolean(data.isEmergency),
+            offlineMode: Boolean(data.offlineMode),
+            modelUsed: data.modelUsed || (data.offlineMode ? 'offline-rules' : 'gemini-1.5-flash')
+          }
+        ]);
+        setIsTyping(false);
+        return;
       }
-    }
 
-    // Graceful fallback to offline local database response
-    setTimeout(() => {
+      // If Quota exhausted (HTTP 429)
+      if (response.status === 429 || data?.error === 'QUOTA_EXHAUSTED') {
+        messageIdCounter.current += 1;
+        const botMsgId = `bot-msg-${messageIdCounter.current}`;
+        setMessages(prev => [
+          ...prev,
+          {
+            id: botMsgId,
+            sender: 'bot',
+            text: data?.fallbackText || 'The AI assistant has temporarily reached its usage limit. Please try again later.',
+            suggestedAction: data?.suggestedAction || null,
+            isEmergency: isEmergency || Boolean(data?.isEmergency)
+          }
+        ]);
+        setIsTyping(false);
+        return;
+      }
+
+      throw new Error(data?.userMessage || data?.message || `Assistant returned status ${response.status}`);
+    } catch (err) {
+      console.warn('[AIAssistant] Backend call failed, using clinical fallback engine:', err.message);
+
+      // Graceful offline fallback
       try {
-        const responseText = generateMockAIResponse(userQuery, isEmergency).replace(/\*/g, '');
+        const aiResponse = generateClinicalAIResponse(userQuery, { language, isEmergency });
+        const responseText = aiResponse.text.replace(/\*/g, '');
+        const finalEmergency = isEmergency || aiResponse.isEmergency;
+
         messageIdCounter.current += 1;
         const botMsgId = `bot-msg-${messageIdCounter.current}`;
 
@@ -249,12 +227,13 @@ IMPORTANT: Do NOT use any asterisks (*) or markdown bold formatting (like **text
             id: botMsgId,
             sender: 'bot',
             text: responseText,
-            isEmergency: isEmergency
+            isEmergency: finalEmergency,
+            offlineMode: true
           }
         ]);
         setIsTyping(false);
-      } catch (mockErr) {
-        console.error("Local database error:", mockErr);
+      } catch (fallbackErr) {
+        console.error('Fallback error:', fallbackErr);
         messageIdCounter.current += 1;
         setMessages(prev => [
           ...prev,
@@ -262,85 +241,26 @@ IMPORTANT: Do NOT use any asterisks (*) or markdown bold formatting (like **text
             id: `err-msg-${messageIdCounter.current}`,
             sender: 'bot',
             isError: true,
-            text: t('errorOccurred') || "Unable to complete AI response right now. Please try again or check emergency services if urgent."
+            text: t('errorOccurred') || 'Unable to complete AI response right now. Please try again or check emergency services if urgent.'
           }
         ]);
         setLastFailedQuery(userQuery);
         setIsTyping(false);
       }
-    }, 1000);
+    }
   };
 
-  const generateMockAIResponse = (input, isEmergency) => {
-    const match = lookupSymptom(input);
-
-    let emojiHeader = "💬";
-    if (match.keys) {
-      if (match.keys.includes("fever")) emojiHeader = "🌡️";
-      else if (match.keys.includes("headache")) emojiHeader = "🤕";
-      else if (match.keys.includes("stomach")) emojiHeader = "🤢";
-      else if (match.keys.includes("acidity")) emojiHeader = "🔥";
-      else if (match.keys.includes("burn")) emojiHeader = "🔥";
-      else if (match.keys.includes("chest")) emojiHeader = "🚨";
-      else if (match.keys.includes("allergy")) emojiHeader = "🍁";
-    }
-
-    const careStepsText = match.selfCare.map((step, i) => `${i + 1}. ${step}`).join('\n');
-    const eatText = match.whatToEat.map(food => `- ${food}`).join('\n');
-    const avoidText = match.whatToAvoid.map(food => `- ${food}`).join('\n');
-
-    let response = `${emojiHeader} AI Guidance (General Information):
-Possible causes or conditions may include: ${match.disease}
-
-🔍 What is it?
-${match.explanation}
-
-📋 Take Care Steps:
-${careStepsText}
-
-🍏 What to Eat:
-${eatText}
-
-🚫 What to Avoid:
-${avoidText}
-
-🚨 Seek Help If:
-${match.seekHelp}
-
-Note: This information is for general educational guidance only and does not constitute a formal diagnosis. Consider speaking with a healthcare professional.`;
-
-    if (isEmergency) {
-      response = `🚨 POSSIBLE MEDICAL EMERGENCY
-
-Your inquiry describes symptoms that may require urgent clinical evaluation.
-
-🔍 What is it?
-Symptoms such as severe chest pain, extreme breathlessness, sudden weakness, or unconsciousness may be associated with acute cardiovascular, neurological, or pulmonary conditions.
-
-📋 Immediate Action Steps:
-1. Stop all physical exertion and sit or lie down in a safe, comfortable position.
-2. Loosen all tight clothing to aid natural respiration.
-3. Call India's emergency number (112), or have someone call an ambulance (108 where available).
-4. Do not attempt to drive yourself.
-
-🚨 Seek Help If:
-Seek emergency medical evaluation immediately. Do not delay.`;
-    }
-
-    return response;
-  };
-
-  // Handle URL query parameter ?search=...
+  // Handle URL query parameter ?search=... or ?q=...
   useEffect(() => {
-    const searchVal = searchParams.get('search');
-    if (searchVal) {
+    const searchVal = searchParams.get('search') || searchParams.get('q');
+    if (searchVal && !hasHandledSearchRef.current) {
+      hasHandledSearchRef.current = true;
       const timer = setTimeout(() => {
         handleSend(searchVal);
       }, 50);
       return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="ai-assistant-container container">
@@ -414,12 +334,39 @@ Seek emergency medical evaluation immediately. Do not delay.`;
                   </div>
                 )}
 
+                {/* Source Badge: Live Gemini AI vs Offline Fallback */}
+                {msg.sender === 'bot' && !msg.isFirst && (
+                  <div className="msg-source-row">
+                    {msg.offlineMode ? (
+                      <span className="msg-source-indicator offline-source-indicator" title="Using offline fallback rules. Redeploy on Vercel with GEMINI_API_KEY to activate live Gemini AI.">
+                        ⚠️ Offline Fallback Rules
+                      </span>
+                    ) : (
+                      <span className="msg-source-indicator gemini-source-indicator">
+                        <Sparkles size={11} />
+                        Gemini AI • {msg.modelUsed || '1.5 Flash'}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {/* Formatted Content */}
                 {msg.sender === 'bot' && !msg.isFirst ? (
                   <div className="formatted-bot-text">
                     {msg.text.split('\n').map((line, index) => {
                       const trimmed = line.trim();
-                      if (
+                      if (!trimmed) {
+                        return <div key={index} className="msg-spacer" />;
+                      }
+
+                      const isDangerHeader = line.startsWith('🚨') || 
+                        /^(\*{1,3}|#{1,4}\s*)?(When to Seek Medical Attention|Emergency Warning Signs|Red Flags)/i.test(trimmed);
+
+                      if (isDangerHeader) {
+                        return <h4 key={index} className="msg-section-header danger-header">{line.replace(/^[#*]+\s*/, '')}</h4>;
+                      }
+
+                      const isSectionHeader = (
                         line.startsWith('⚠️') || 
                         line.startsWith('🌡️') || 
                         line.startsWith('🔥') || 
@@ -430,13 +377,14 @@ Seek emergency medical evaluation immediately. Do not delay.`;
                         line.startsWith('🔍') ||
                         line.startsWith('📋') ||
                         line.startsWith('🍏') ||
-                        line.startsWith('🚫')
-                      ) {
-                        return <h4 key={index} className="msg-section-header">{line}</h4>;
+                        line.startsWith('🚫') ||
+                        /^(\*{1,3}|#{1,4}\s*)?(Overview|Clinical Guidance|Supportive Care Methods?|Supportive Care Steps?|Dietary Considerations?|Recommended Foods|What to Eat|What to Avoid)/i.test(trimmed)
+                      );
+
+                      if (isSectionHeader) {
+                        return <h4 key={index} className="msg-section-header">{line.replace(/^[#*]+\s*/, '')}</h4>;
                       }
-                      if (line.startsWith('🚨')) {
-                        return <h4 key={index} className="msg-section-header danger-header">{line}</h4>;
-                      }
+
                       if (/^\d+\./.test(trimmed)) {
                         return <p key={index} className="msg-list-item">{line}</p>;
                       }
@@ -451,6 +399,25 @@ Seek emergency medical evaluation immediately. Do not delay.`;
                   </div>
                 ) : (
                   <p>{msg.id === 'welcome' ? (t('welcomeMsg') || msg.text) : msg.text}</p>
+                )}
+
+                {/* Intelligently Routed Feature Action Card */}
+                {msg.suggestedAction && msg.suggestedAction.route && (
+                  <div className="msg-feature-card">
+                    <div className="msg-feature-card-header">
+                      <span className="msg-feature-badge">
+                        <Sparkles size={12} style={{ marginRight: 5 }} />
+                        Recommended Feature
+                      </span>
+                      {msg.suggestedAction.description && (
+                        <p className="msg-feature-desc">{msg.suggestedAction.description}</p>
+                      )}
+                    </div>
+                    <Link to={msg.suggestedAction.route} className="btn-feature-link">
+                      <span>{msg.suggestedAction.label}</span>
+                      <ArrowRight size={15} />
+                    </Link>
+                  </div>
                 )}
 
                 {/* Error State with Retry Button */}
@@ -517,14 +484,27 @@ Seek emergency medical evaluation immediately. Do not delay.`;
               type="button"
               className={`chat-voice-btn ${isListening ? 'listening-active' : ''}`}
               onClick={toggleListening}
-              title={isListening ? "Stop listening" : "Speak your question"}
+              title={isListening ? 'Stop listening' : 'Speak your question'}
+              aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
+              aria-pressed={isListening}
               disabled={isTyping}
             >
-              {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+              {isListening ? <MicOff size={18} aria-hidden="true" /> : <Mic size={18} aria-hidden="true" />}
               <span className="voice-btn-text">
                 {isListening ? (t('listening') || 'Listening...') : (t('speakBtn') || 'Speak')}
               </span>
             </button>
+          )}
+
+          {/* Speech error message — shown inline, no alert() */}
+          {speechError && (
+            <p
+              className="speech-error-msg"
+              role="alert"
+              style={{ width: '100%', order: 10, padding: '0.4rem 0.75rem', fontSize: '0.78rem', color: 'var(--error, #DC2626)', background: 'rgba(239,68,68,0.08)', borderRadius: '0.5rem', margin: '0 0 0.25rem 0' }}
+            >
+              {speechError}
+            </p>
           )}
 
           <input 
@@ -532,6 +512,12 @@ Seek emergency medical evaluation immediately. Do not delay.`;
             placeholder={isListening ? (t('listening') || "Listening to your voice...") : (t('askPlaceholder') || "Ask about symptoms, self-care, or health guidance...")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
             className={`chat-input-field ${isListening ? 'input-listening' : ''}`}
             disabled={isTyping}
           />
@@ -540,9 +526,10 @@ Seek emergency medical evaluation immediately. Do not delay.`;
             type="submit" 
             className="chat-send-btn btn-primary"
             disabled={isTyping || !query.trim()}
+            aria-label="Send message"
             title="Send Message"
           >
-            <Send size={18} />
+            <Send size={18} aria-hidden="true" />
           </button>
         </form>
       </div>

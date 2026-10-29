@@ -655,6 +655,10 @@ export const parsePrescriptionText = (rawText) => {
         const extractedStr = extractStrength(trimmed);
         const extractedFm = extractForm(trimmed);
 
+        const isStrengthUncertain = !extractedStr;
+        const defaultStrength = med.generic.match(/\b\d+\s*(?:mg|ml|mcg|iu)\b/i)?.[0] || '';
+        const finalStrength = extractedStr || defaultStrength;
+
         detectedMedicines.push({
           ...med,
           certainty: 100,
@@ -663,7 +667,11 @@ export const parsePrescriptionText = (rawText) => {
           detectedLine: trimmed,
           matchedAlias,
           form: extractedFm || med.form,
-          strength: extractedStr || med.generic.match(/\b\d+\s*(?:mg|ml|mcg)\b/i)?.[0] || '',
+          strength: finalStrength,
+          isStrengthUncertain,
+          strengthWarning: isStrengthUncertain
+            ? `Strength not explicitly specified on prescription (Reference strength used: ${finalStrength || 'Standard dose'}). Verify exact dosage with your prescribing doctor or pharmacist.`
+            : null,
           schedule: extractedSchedule || {
             pattern: med.standardSchedule,
             readable: med.standardSchedule,
@@ -681,6 +689,16 @@ export const parsePrescriptionText = (rawText) => {
 
   // Calculate Drug-Drug and Safety Alerts
   const safetyAlerts = [];
+
+  // Check for Uncertain Strengths
+  const uncertainMeds = detectedMedicines.filter(m => m.isStrengthUncertain);
+  if (uncertainMeds.length > 0) {
+    safetyAlerts.push({
+      type: 'info',
+      title: 'Uncertain Dosage Strength Alert',
+      message: `Dosage strength was not explicitly stated on the prescription for: ${uncertainMeds.map(m => m.name).join(', ')}. Please confirm the required dosage with your physician or pharmacist before dispensing.`
+    });
+  }
 
   // 1. Check for Duplicate Active Salts (e.g. Paracetamol overdose risk)
   const paracetamolMeds = detectedMedicines.filter(m => 

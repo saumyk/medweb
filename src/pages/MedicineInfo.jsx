@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
+  Globe,
   Loader2,
   FileWarning,
   FlaskConical,
@@ -16,15 +17,28 @@ import {
   HeartPulse,
   Wine,
   Baby,
-  ExternalLink,
   Info,
   ChevronRight,
 } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import { lookupMedicine } from '../utils/medicineLookup';
+import { getSpellingCorrection, getQuickSuggestions } from '../utils/medicineSearchEngine';
+import { enforceMaxLength } from '../utils/security';
 import './MedicineInfo.css';
 
-const QUICK_SEARCHES = ['Dolo 650', 'Combiflam', 'Amoxicillin', 'Cetirizine', 'Pantoprazole', 'Lipitor'];
+const QUICK_SEARCHES = ['Dolo 650', 'Combiflam', 'Amoxicillin', 'Cetirizine', 'Tylenol', 'Panadol', 'Lipitor', 'Paxlovid'];
+
+const Section = ({ id, title, icon: Icon, tone = 'default', children }) => (
+  <section id={`med-sec-${id}`} className={`med-panel med-panel--${tone}`}>
+    <div className="med-panel-head">
+      <span className={`med-panel-icon med-panel-icon--${tone}`}>
+        <Icon size={18} />
+      </span>
+      <h3>{title}</h3>
+    </div>
+    <div className="med-panel-body">{children}</div>
+  </section>
+);
 
 const MedicineInfo = () => {
   const { t } = useLanguage();
@@ -33,65 +47,86 @@ const MedicineInfo = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [didYouMean, setDidYouMean] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
   const [activeSection, setActiveSection] = useState('');
   const contentRef = useRef(null);
+  const requestIdRef = useRef(0);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
-    fetchMedicineData(searchQuery.trim());
+    const query = enforceMaxLength(searchQuery.trim(), 250);
+    if (!query || isSearching) return;
+    fetchMedicineData(query);
   };
 
   const fetchMedicineData = async (query) => {
+    const currentId = ++requestIdRef.current;
     setIsSearching(true);
     setResult(null);
     setError(null);
+    setDidYouMean(null);
+    setSuggestions([]);
     setActiveSection('');
 
     try {
       const data = await lookupMedicine(query);
-      setResult(data);
+      if (currentId === requestIdRef.current) {
+        setResult(data);
+      }
     } catch (err) {
-      console.error(err);
-      setError(
-        `We couldn't find official label information for "${query}". Check the spelling, try the generic (INN) name, or ask a pharmacist.`
-      );
+      if (currentId === requestIdRef.current) {
+        console.error(err);
+        const correction = getSpellingCorrection(query);
+        const quick = getQuickSuggestions(query, 3);
+        setDidYouMean(correction.hasCorrection ? correction.didYouMean : null);
+        setSuggestions(quick);
+        setError(
+          `We couldn't find official label information for "${query}". Check the spelling, try the generic (INN) name, or ask a pharmacist.`
+        );
+      }
     } finally {
-      setIsSearching(false);
+      if (currentId === requestIdRef.current) {
+        setIsSearching(false);
+      }
     }
   };
 
   useEffect(() => {
     const searchVal = searchParams.get('search');
-    if (searchVal) {
+    if (searchVal && searchVal.trim()) {
+      const cleanVal = searchVal.trim();
       const timer = setTimeout(() => {
-        setSearchQuery(searchVal);
-        fetchMedicineData(searchVal);
+        setSearchQuery(cleanVal);
+        fetchMedicineData(cleanVal);
       }, 50);
       return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  const sections = result
-    ? [
-        result.boxedWarning && { id: 'boxed', label: 'Boxed warning', icon: ShieldAlert },
-        result.description?.length > 0 && { id: 'uses', label: 'Uses', icon: BookOpen },
-        result.doNotUse?.length > 0 && { id: 'avoid', label: 'Do not use', icon: Ban },
-        result.precautions?.length > 0 && { id: 'precautions', label: 'Precautions', icon: AlertTriangle },
-        result.interactions?.length > 0 && { id: 'interactions', label: 'Interactions', icon: Activity },
-        result.risks?.length > 0 && { id: 'effects', label: 'Side effects', icon: HeartPulse },
-        result.dosage && { id: 'dosage', label: 'Dosage', icon: Pill },
-        result.pharmacokinetics && { id: 'works', label: 'How it works', icon: FlaskConical },
-        result.seekHelp && { id: 'seek-help', label: 'Seek help', icon: ShieldAlert },
-        { id: 'safety', label: 'Safety', icon: Wine },
-        { id: 'sources', label: 'Sources', icon: Info },
-      ].filter(Boolean)
-    : [];
+  const sections = useMemo(() => {
+    if (!result) return [];
+    return [
+      result.boxedWarning && { id: 'boxed', label: 'Boxed warning', icon: ShieldAlert },
+      result.description?.length > 0 && { id: 'uses', label: 'Uses', icon: BookOpen },
+      result.doNotUse?.length > 0 && { id: 'avoid', label: 'Do not use', icon: Ban },
+      result.precautions?.length > 0 && { id: 'precautions', label: 'Precautions', icon: AlertTriangle },
+      result.interactions?.length > 0 && { id: 'interactions', label: 'Interactions', icon: Activity },
+      result.risks?.length > 0 && { id: 'effects', label: 'Side effects', icon: HeartPulse },
+      result.dosage && { id: 'dosage', label: 'Dosage', icon: Pill },
+      result.pharmacokinetics && { id: 'works', label: 'How it works', icon: FlaskConical },
+      result.seekHelp && { id: 'seek-help', label: 'Seek help', icon: ShieldAlert },
+      { id: 'safety', label: 'Safety', icon: Wine },
+      { id: 'sources', label: 'Sources', icon: Info },
+    ].filter(Boolean);
+  }, [result]);
 
   useEffect(() => {
     if (!result || !sections.length) return;
-    setActiveSection(sections[0].id);
+    const initialId = sections[0].id;
+    const raf = requestAnimationFrame(() => {
+      setActiveSection(initialId);
+    });
 
     const ids = sections.map((s) => s.id);
     const observer = new IntersectionObserver(
@@ -111,9 +146,11 @@ const MedicineInfo = () => {
       if (el) observer.observe(el);
     });
 
-    return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result]);
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
+  }, [result, sections]);
 
   const scrollToSection = (id) => {
     const el = document.getElementById(`med-sec-${id}`);
@@ -140,24 +177,12 @@ const MedicineInfo = () => {
     return <p className="med-body-text">{items}</p>;
   };
 
-  const Section = ({ id, title, icon: Icon, tone = 'default', children }) => (
-    <section id={`med-sec-${id}`} className={`med-panel med-panel--${tone}`}>
-      <div className="med-panel-head">
-        <span className={`med-panel-icon med-panel-icon--${tone}`}>
-          <Icon size={18} />
-        </span>
-        <h3>{title}</h3>
-      </div>
-      <div className="med-panel-body">{children}</div>
-    </section>
-  );
-
   return (
     <div className="med-page">
       <div className="med-hero">
         <div className="med-hero-glow" aria-hidden />
         <div className="med-hero-inner container">
-          <p className="med-eyebrow">Official labels · RxNorm · FDA</p>
+          <p className="med-eyebrow">Indian & Global Medicines · Official Labels · Free Public APIs</p>
           <h1 className="med-hero-title">{t('medTitle')}</h1>
           <p className="med-hero-sub">{t('medSubtitle')}</p>
 
@@ -217,7 +242,7 @@ const MedicineInfo = () => {
                 <Loader2 className="spinner" size={28} />
               </div>
               <p>{t('searchingMed')}</p>
-              <span className="med-state-hint">Checking RxNorm and FDA labels…</span>
+              <span className="med-state-hint">Checking CDSCO, RxNorm, openFDA, and global registries…</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -232,6 +257,38 @@ const MedicineInfo = () => {
             >
               <FileWarning size={28} />
               <p>{error}</p>
+              {(didYouMean || suggestions.length > 0) && (
+                <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Did you mean:</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
+                    {didYouMean && (
+                      <button
+                        type="button"
+                        className="med-quick-chip"
+                        onClick={() => {
+                          setSearchQuery(didYouMean);
+                          fetchMedicineData(didYouMean);
+                        }}
+                      >
+                        {didYouMean}
+                      </button>
+                    )}
+                    {suggestions.map(s => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className="med-quick-chip"
+                        onClick={() => {
+                          setSearchQuery(s.name);
+                          fetchMedicineData(s.name);
+                        }}
+                      >
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -250,6 +307,11 @@ const MedicineInfo = () => {
                   <div className="med-mono-main">
                     <div className="med-mono-badges">
                       <span className="med-cat-badge">{result.category}</span>
+                      {result.market && (
+                        <span className="med-cat-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <Globe size={12} /> {result.market}
+                        </span>
+                      )}
                       {result.ingredients?.length > 1 && (
                         <span className="med-combo-badge">Combination</span>
                       )}
@@ -290,30 +352,6 @@ const MedicineInfo = () => {
                       </div>
                     )}
                   </div>
-
-                  {result.tataInfo && (
-                    <aside className="med-price-card">
-                      <span className="med-price-eyebrow">India retail · 1mg</span>
-                      <div className="med-price-amounts">
-                        <span className="med-price-now">
-                          ₹{result.tataInfo.discountPrice || result.tataInfo.price}
-                        </span>
-                        {result.tataInfo.discountPrice && (
-                          <span className="med-price-was">₹{result.tataInfo.price}</span>
-                        )}
-                      </div>
-                      <span className="med-price-pack">{result.tataInfo.packSize}</span>
-                      <p className="med-price-note">Listing only — not prescribing info</p>
-                      <a
-                        href={result.tataInfo.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="med-price-link"
-                      >
-                        View on 1mg <ExternalLink size={14} />
-                      </a>
-                    </aside>
-                  )}
                 </header>
 
                 <div className="med-safety-strip">

@@ -11,39 +11,49 @@ export function useArogyaOrchestrator() {
 
   const processPrescriptionFlow = async (rawText) => {
     setLoading(true);
-    logAction("OCR Agent", "Prescription scan shuru ho gaya hai...");
+    try {
+      logAction("OCR Agent", "Prescription scan shuru ho gaya hai...");
 
-    const ocrResult = await DiagnosticsOCRAgent.processPrescription(rawText);
-    logAction("OCR Agent", `Medicines detect hui: ${ocrResult.medicines.join(', ')}`);
+      const ocrResult = await DiagnosticsOCRAgent.processPrescription(rawText);
+      logAction("OCR Agent", `Medicines detect hui: ${ocrResult.medicines.join(', ')}`);
 
-    for (const med of ocrResult.medicines) {
-      logAction("Inventory Agent", `'${med}' ke liye stock check ho raha hai...`);
-      const stockResult = await InventoryAgent.checkAndAddToCart(med);
+      for (const med of ocrResult.medicines) {
+        logAction("Inventory Agent", `'${med}' ke liye stock check ho raha hai...`);
+        const stockResult = await InventoryAgent.checkAndAddToCart(med);
 
-      if (stockResult.status === 'ADDED_TO_CART') {
-        logAction("Inventory Agent", `⚡ '${stockResult.item.name}' Cart me add ho gaya.`);
-      } else {
-        logAction("Inventory Agent", `⚠️ '${med}' Filhal out of stock hai.`);
+        if (stockResult.status === 'ADDED_TO_CART') {
+          logAction("Inventory Agent", `⚡ '${stockResult.item.name}' Cart me add ho gaya.`);
+        } else {
+          logAction("Inventory Agent", `⚠️ '${med}' Filhal out of stock hai.`);
+        }
       }
+    } catch (err) {
+      logAction("Orchestrator", `Execution error: ${err.message}`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const processSymptomFlow = async (userPrompt) => {
     setLoading(true);
-    logAction("Triage Agent", "Symptoms analyze ho rahe hain...");
+    try {
+      logAction("Triage Agent", "Symptoms analyze ho rahe hain...");
 
-    const triageResult = await ClinicalTriageAgent.analyzeSymptomsAndRoute(userPrompt);
-    
-    if (triageResult.recommendedDoctor) {
-      logAction(
-        "Triage Agent",
-        `⚡ Specialty: ${triageResult.specialty}. Recommended Doctor: ${triageResult.recommendedDoctor.name}`
-      );
-    } else {
-      logAction("Triage Agent", `Specialty: ${triageResult.specialty}. Doctor slot search in progress.`);
+      const triageResult = await ClinicalTriageAgent.analyzeSymptomsAndRoute(userPrompt);
+      
+      if (triageResult.recommendedDoctor) {
+        logAction(
+          "Triage Agent",
+          `⚡ Specialty: ${triageResult.specialty}. Recommended Doctor: ${triageResult.recommendedDoctor.name}`
+        );
+      } else {
+        logAction("Triage Agent", `Specialty: ${triageResult.specialty}. Doctor slot search in progress.`);
+      }
+    } catch (err) {
+      logAction("Orchestrator", `Execution error: ${err.message}`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return { logs, loading, processPrescriptionFlow, processSymptomFlow };

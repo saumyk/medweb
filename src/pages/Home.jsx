@@ -1,11 +1,39 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Bot, Camera, Globe, HeartPulse, Search, ShieldAlert, Stethoscope, Wifi, Battery, Signal } from 'lucide-react';
+import {
+  ArrowRight,
+  Bot,
+  Camera,
+  HeartPulse,
+  Search,
+  ShieldAlert,
+  Stethoscope,
+  MapPin,
+  Activity,
+  ShieldCheck,
+  CheckCircle2,
+  Wifi,
+  Battery,
+  Mic
+} from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import './Home.css';
 
 const Home = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const navigate = useNavigate();
+  const [phoneQuery, setPhoneQuery] = useState('');
+
+  const handlePhoneSubmit = (e) => {
+    e.preventDefault();
+    const query = phoneQuery.trim();
+    if (query) {
+      navigate(`/assistant?q=${encodeURIComponent(query)}`);
+    } else {
+      navigate('/assistant');
+    }
+  };
 
   return (
     <div className="home-container">
@@ -14,88 +42,142 @@ const Home = () => {
         <div className="container hero-content">
           <motion.div 
             className="hero-text"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
           >
-            <div className="badge">{t('heroBadge')}</div>
+            <div className="hero-badge">
+              <ShieldCheck size={15} />
+              <span>{t('heroBadge') || 'Clinical Decision Support'}</span>
+            </div>
+
             <h1 className="hero-title">
-              {t('heroTitlePre')}<span className="gradient-text">Medical AI</span>{t('heroTitlePost')}
+              {t('heroTitlePre') || 'Intelligent, Trusted '}<span className="hero-highlight">Healthcare Platform</span>{t('heroTitlePost') || ' for India'}
             </h1>
+
             <p className="hero-subtitle">
-              {t('heroSubtitle')}
+              {t('heroSubtitle') || 'Instant clinical guidance, verified medicine monographs with NPPA ceiling prices, AI symptom triage, and emergency hospital discovery.'}
             </p>
+
             <div className="hero-actions">
               <Link to="/assistant" className="btn btn-primary btn-lg">
-                <Bot size={20} />
-                {t('consultBtn')}
+                <Bot size={18} />
+                {t('consultBtn') || 'Consult Arogya AI'}
               </Link>
               <Link to="/symptoms" className="btn btn-outline btn-lg">
-                {t('checkSymptomsBtn')}
-                <ArrowRight size={20} />
+                {t('checkSymptomsBtn') || 'Check Symptoms'}
+                <ArrowRight size={18} />
               </Link>
+            </div>
+
+            {/* Standards & Regulatory Compliance Strip */}
+            <div className="hero-trust-strip">
+              <div className="trust-item">
+                <CheckCircle2 size={15} className="trust-icon" />
+                <span>CDSCO Schedules & NPPA Sahi Daam</span>
+              </div>
+              <div className="trust-item">
+                <CheckCircle2 size={15} className="trust-icon" />
+                <span>RxNorm & US FDA Monographs</span>
+              </div>
+              <div className="trust-item">
+                <CheckCircle2 size={15} className="trust-icon" />
+                <span>112 / 108 Emergency Protocol</span>
+              </div>
             </div>
           </motion.div>
 
           <motion.div 
-            className="hero-image-wrapper"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            className="hero-phone-wrapper"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
           >
-            {/* Smartphone device mockup */}
-            <div className="phone-mockup glass shadow-lg">
-              {/* Phone Hardware Decorations */}
-              <div className="phone-notch"></div>
-              
+            <div className="phone-mockup-frame">
+              {/* Dynamic Island / Camera Notch */}
+              <div className="phone-notch-island"></div>
+
+              {/* Status Bar */}
               <div className="phone-status-bar">
                 <span className="phone-time">09:41</span>
                 <div className="phone-status-icons">
-                  <Signal size={12} className="phone-status-icon" />
-                  <Wifi size={12} className="phone-status-icon" />
-                  <Battery size={14} className="phone-status-icon phone-battery-icon" />
+                  <span className="phone-signal-bars" aria-label="Signal">
+                    <span></span><span></span><span></span><span></span>
+                  </span>
+                  <Wifi size={13} className="phone-wifi-icon" />
+                  <Battery size={15} className="phone-battery-icon" />
                 </div>
               </div>
-              
-              {/* Phone Screen: Chat Interface */}
-              <div className="phone-screen-content">
-                <div className="mockup-header-chat">
-                  <div className="chat-avatar">
-                    <Bot size={20} color="white" />
-                  </div>
-                  <div className="chat-status-info">
-                    <span className="chat-bot-name">ArogyaAI</span>
-                    <span className="chat-status-text"><span className="status-dot-active"></span>Online</span>
-                  </div>
+
+              {/* Phone App Header */}
+              <div className="phone-app-header">
+                <div className="phone-bot-avatar">
+                  <Bot size={18} color="#ffffff" />
                 </div>
-                
-                <div className="mockup-body-chat">
-                  <div className="chat-bubble user-bubble">
-                    <p>I have a mild fever and throat irritation. What should I do?</p>
-                  </div>
-                  <div className="chat-bubble bot-bubble">
-                    <p>Here are some <strong>Self-Care Steps</strong>:</p>
-                    <ul>
-                      <li>Stay hydrated with warm water.</li>
-                      <li>Gargle with warm saline water twice daily.</li>
-                    </ul>
-                    <div className="warning-box-chat">
-                      <ShieldAlert size={14} className="text-warning-chat" />
-                      <span><strong>Red Flag:</strong> Seek immediate medical help if you experience breathing difficulties or chest pressure.</span>
-                    </div>
-                  </div>
+                <div className="phone-bot-info">
+                  <h4 className="phone-bot-name">ArogyaAI</h4>
+                  <span className="phone-online-status">
+                    <span className="phone-online-dot"></span>
+                    Online
+                  </span>
+                </div>
+              </div>
+
+              {/* Phone Chat Body */}
+              <div className="phone-chat-body">
+                {/* User Message */}
+                <div className="phone-msg-user">
+                  <p>I have a mild fever and throat irritation. What should I do?</p>
                 </div>
 
-                <div className="mockup-input-chat">
-                  <span className="input-placeholder">Message ArogyaAI...</span>
-                  <div className="input-actions">
-                    <span className="input-action-icon">🎙️</span>
-                    <span className="input-send-btn">➔</span>
+                {/* Bot Response Card */}
+                <div className="phone-msg-bot-card">
+                  <p className="phone-card-intro">
+                    Here are some <strong>Self-Care Steps</strong>:
+                  </p>
+                  <ul className="phone-card-bullets">
+                    <li>Stay hydrated with warm water.</li>
+                    <li>Gargle with warm saline water twice daily.</li>
+                  </ul>
+
+                  {/* Red Flag Warning Box */}
+                  <div className="phone-red-flag-box">
+                    <ShieldAlert size={16} className="red-flag-icon" />
+                    <p className="red-flag-text">
+                      <strong>Red Flag:</strong> Seek immediate medical help if you experience breathing difficulties or chest pressure.
+                    </p>
                   </div>
                 </div>
               </div>
-              
-              <div className="phone-home-indicator"></div>
+
+              {/* Bottom Message Input Bar */}
+              <form onSubmit={handlePhoneSubmit} className="phone-input-bar">
+                <input
+                  type="text"
+                  value={phoneQuery}
+                  onChange={(e) => setPhoneQuery(e.target.value)}
+                  placeholder="Message ArogyaAI..."
+                  className="phone-input-field"
+                  aria-label="Message ArogyaAI"
+                />
+                <button 
+                  type="button" 
+                  className="phone-mic-btn"
+                  onClick={() => navigate('/assistant')}
+                  title="Voice Assistant"
+                  aria-label="Voice Assistant"
+                >
+                  <Mic size={15} />
+                </button>
+                <button 
+                  type="submit" 
+                  className="phone-send-btn"
+                  title="Send message to ArogyaAI"
+                  aria-label="Send message to ArogyaAI"
+                >
+                  <ArrowRight size={13} />
+                </button>
+              </form>
             </div>
           </motion.div>
         </div>
@@ -105,67 +187,67 @@ const Home = () => {
       <section className="features-section">
         <div className="container">
           <div className="features-heading">
-            <h2>{t('featuresTitle')}</h2>
+            <span className="section-eyebrow">Comprehensive Healthcare Tools</span>
+            <h2>{t('featuresTitle') || 'Everything you need to manage your health safely'}</h2>
+            <p className="features-sub">Designed for clinical reliability, data security, and immediate ease of use.</p>
           </div>
+
           <div className="features-grid">
             <FeatureCard 
-              icon={<Bot size={32} />}
-              title={t('aiAssistantTitle')}
-              desc={t('aiAssistantSubtitle')}
-              delay={0.1}
+              icon={<Bot size={24} />}
+              title={t('aiAssistantTitle') || 'AI Health Assistant'}
+              desc={t('aiAssistantSubtitle') || 'Evidence-based clinical guidance, lifestyle care steps, and dietary advice.'}
               path="/assistant"
-              colorClass="teal"
+            />
+
+            <FeatureCard 
+              icon={<Activity size={24} />}
+              title={t('symptoms') || 'Symptom Checker'}
+              desc="Intelligent triage that analyzes symptom combinations and flags red-flag warnings."
+              path="/symptoms"
             />
 
             <FeatureCard
-              icon={<Stethoscope size={32} />}
-              title="Telemedicine"
-              desc="Consult doctors via video call or book lab tests"
-              delay={0.2}
-              path="/telemedicine"
-              colorClass="teal"
-            />
-
-            <FeatureCard
-              icon={<Camera size={32} />}
-              title={t('cardOcrTitle')}
-              desc={t('cardOcrDesc')}
-              delay={0.2}
+              icon={<Camera size={24} />}
+              title={t('cardOcrTitle') || 'Prescription Scanner'}
+              desc={t('cardOcrDesc') || 'Neural OCR extracts prescribed medications, detects duplicate salts, and builds dosage schedules.'}
               path="/ocr"
-              colorClass="purple"
             />
+
             <FeatureCard
-              icon={<HeartPulse size={32} />}
-              title={t('cardDashboardTitle')}
-              desc={t('cardDashboardDesc')}
-              delay={0.3}
+              icon={<MapPin size={24} />}
+              title={t('nearby') || 'Nearby Healthcare Facilities'}
+              desc="Locate verified hospitals, diagnostic labs, and pharmacies with live driving directions."
+              path="/nearby"
+            />
+
+            <FeatureCard
+              icon={<HeartPulse size={24} />}
+              title={t('cardDashboardTitle') || 'Health Vitals Dashboard'}
+              desc={t('cardDashboardDesc') || 'Track blood pressure, heart rate, and blood sugar with private, encrypted storage.'}
               path="/dashboard"
-              colorClass="rose"
             />
+
             <FeatureCard
-              icon={<ShieldAlert size={32} />}
-              title={t('cardSosTitle')}
-              desc={t('cardSosDesc')}
-              delay={0.4}
-              path="/nearby?emergency=true"
-              colorClass="red"
-            />
-            <FeatureCard
-              icon={<Search size={32} />}
-              title={t('medTitle')}
-              desc={t('medSubtitle')}
-              delay={0.5}
+              icon={<Search size={24} />}
+              title={t('medTitle') || 'Medicine Knowledge Base & Global Search'}
+              desc={language === 'hi' ? 'भारतीय और वैश्विक दवाओं के आधिकारिक मोनोग्राफ, सुरक्षा रेटिंग, सीडीएससीओ और एफडीए डेटा देखें।' : 'Search authentic Indian & global medicine monographs, CDSCO schedules, and FDA/RxNorm package data.'}
               path="/medicine"
-              colorClass="amber"
             />
+
             <FeatureCard
-              icon={<Globe size={32} />}
-              title={t('cardLangTitle')}
-              desc={t('cardLangDesc')}
-              delay={0.6}
-              path=""
-              isAction
-              colorClass="blue"
+              icon={<Stethoscope size={24} />}
+              title="Telemedicine Services"
+              desc="Browse verified doctor specialties and diagnostic health packages across Indian cities."
+              path="/telemedicine"
+            />
+
+            <FeatureCard
+              icon={<ShieldAlert size={24} />}
+              title={t('cardSosTitle') || 'Emergency SOS Protocol'}
+              desc={t('cardSosDesc') || 'One-tap integration with India national emergency services (112 / 108) and nearest emergency rooms.'}
+              path="/nearby?emergency=true"
+              isEmergency
             />
           </div>
         </div>
@@ -174,39 +256,18 @@ const Home = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, desc, delay, path, isAction, colorClass }) => {
-  const { language, setLanguage } = useLanguage();
-
-  const handleCardClick = (event) => {
-    if (isAction) {
-      event.preventDefault();
-      setLanguage(language === 'en' ? 'hi' : 'en');
-    }
-  };
-
-  const cardContent = (
-    <motion.div
-      className={`feature-card glass border-${colorClass}`}
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay }}
-      whileHover={{ y: -8, scale: 1.03 }}
-    >
-      <div className={`feature-icon gradient-${colorClass}`}>{icon}</div>
-      <h3>{title}</h3>
-      <p>{desc}</p>
-    </motion.div>
-  );
-
-  return path ? (
-    <Link to={path} className="feature-card-link">
-      {cardContent}
+const FeatureCard = ({ icon, title, desc, path, isEmergency }) => {
+  return (
+    <Link to={path} className={`feature-card glass ${isEmergency ? 'feature-card--emergency' : ''}`}>
+      <div className={`feature-icon-wrapper ${isEmergency ? 'icon-emergency' : ''}`}>
+        {icon}
+      </div>
+      <h3 className="feature-title">{title}</h3>
+      <p className="feature-desc">{desc}</p>
+      <span className="feature-link-label">
+        Access tool <ArrowRight size={14} className="feature-arrow" />
+      </span>
     </Link>
-  ) : (
-    <div onClick={handleCardClick} className="feature-card-link" style={{ cursor: 'pointer' }}>
-      {cardContent}
-    </div>
   );
 };
 

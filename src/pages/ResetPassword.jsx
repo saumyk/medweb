@@ -17,8 +17,8 @@ const ResetPassword = () => {
     event.preventDefault();
     setMessage('');
 
-    if (password.length < 6) {
-      setMessage('Your new password must be at least 6 characters.');
+    if (password.length < 8) {
+      setMessage('Your new password must be at least 8 characters.');
       return;
     }
     if (password !== confirmPassword) {
@@ -35,6 +35,8 @@ const ResetPassword = () => {
       return;
     }
 
+    setPassword('');
+    setConfirmPassword('');
     navigate('/dashboard', { replace: true });
   };
 
@@ -59,7 +61,7 @@ const ResetPassword = () => {
                 autoComplete="new-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                minLength="6"
+                minLength="8"
                 required
               />
               <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
@@ -75,7 +77,7 @@ const ResetPassword = () => {
                 autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
-                minLength="6"
+                minLength="8"
                 required
               />
             </div>
